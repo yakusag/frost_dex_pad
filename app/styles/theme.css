@@ -1,0 +1,100 @@
+:root {
+  --oui-font-family: 'Manrope', sans-serif;
+  --oui-font-size-base: 16px;
+
+  /* colors */
+  --oui-color-primary: 151 252 228;
+  --oui-color-primary-light: 151 252 228;
+  --oui-color-primary-darken: 97 202 178;
+  --oui-color-primary-contrast: 4 6 12;
+
+  --oui-color-link: 151 252 228;
+  --oui-color-link-light: 97 202 178;
+
+  --oui-color-secondary: 245 254 253;
+  --oui-color-tertiary: 151 252 228;
+  --oui-color-quaternary: 97 202 178;
+
+  --oui-color-danger: 255 100 100;
+  --oui-color-danger-light: 255 150 150;
+  --oui-color-danger-darken: 200 60 60;
+  --oui-color-danger-contrast: 255 255 255;
+
+  --oui-color-success: 151 252 228;
+  --oui-color-success-light: 180 255 240;
+  --oui-color-success-darken: 97 202 178;
+  --oui-color-success-contrast: 4 6 12;
+
+  --oui-color-warning: 255 200 100;
+  --oui-color-warning-light: 255 220 150;
+  --oui-color-warning-darken: 200 150 60;
+  --oui-color-warning-contrast: 4 6 12;
+
+  --oui-color-fill: 15 57 51;
+  --oui-color-fill-active: 22 75 67;
+
+  --oui-color-base-1: 4 6 12;
+  --oui-color-base-2: 8 20 18;
+  --oui-color-base-3: 12 34 30;
+  --oui-color-base-4: 15 44 40;
+  --oui-color-base-5: 15 57 51;
+  --oui-color-base-6: 20 68 62;
+  --oui-color-base-7: 25 80 72;
+  --oui-color-base-8: 10 28 25;
+  --oui-color-base-9: 6 14 13;
+  --oui-color-base-10: 4 6 12;
+
+  --oui-color-base-foreground: 245 254 253;
+  --oui-color-line: 97 202 178;
+
+  --oui-color-trading-loss: 255 100 100;
+  --oui-color-trading-loss-contrast: 255 255 255;
+  --oui-color-trading-profit: 151 252 228;
+  --oui-color-trading-profit-contrast: 4 6 12;
+
+  /* gradients */
+  --oui-gradient-primary-start: 97 202 178;
+  --oui-gradient-primary-end: 151 252 228;
+
+  --oui-gradient-secondary-start: 15 57 51;
+  --oui-gradient-secondary-end: 25 80 72;
+
+  --oui-gradient-success-start: 97 202 178;
+  --oui-gradient-success-end: 151 252 228;
+
+  --oui-gradient-danger-start: 200 60 60;
+  --oui-gradient-danger-end: 255 100 100;
+
+  --oui-gradient-brand-start: 97 202 178;
+  --oui-gradient-brand-end: 151 252 228;
+  --oui-gradient-brand-stop-start: 6.62%;
+  --oui-gradient-brand-stop-end: 86.5%;
+  --oui-gradient-brand-angle: 17.44deg;
+
+  --oui-gradient-warning-start: 200 150 60;
+  --oui-gradient-warning-end: 255 200 100;
+
+  --oui-gradient-neutral-start: 4 6 12;
+  --oui-gradient-neutral-end: 15 57 51;
+
+  /* rounded */
+  --oui-rounded-sm: 2px;
+  --oui-rounded: 4px;
+  --oui-rounded-md: 6px;
+  --oui-rounded-lg: 8px;
+  --oui-rounded-xl: 12px;
+  --oui-rounded-2xl: 16px;
+  --oui-rounded-full: 9999px;
+
+  /* spacing */
+  --oui-spacing-xs: 20rem;
+  --oui-spacing-sm: 22.5rem;
+  --oui-spacing-md: 26.25rem;
+  --oui-spacing-lg: 30rem;
+  --oui-spacing-xl: 33.75rem;
+}
+
+html, body {
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 16px !important;
+}
