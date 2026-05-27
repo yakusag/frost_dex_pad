@@ -405,17 +405,17 @@ export const useOrderlyConfig = () => {
             ? {
                 component: (
                   <img
-                    src={withBasePath("/logo.webp")}
+                    src={withBasePath("/logo.png")}
                     alt="logo"
                     style={{ height: "68px" }}
                   />
                 ),
               }
-            : { img: withBasePath("/orderly-logo.svg") },
+            : { img: withBasePath("/orderly-logo.png") },
           secondary: {
             img: getRuntimeConfigBoolean("VITE_HAS_SECONDARY_LOGO")
-              ? withBasePath("/logo-secondary.webp")
-              : withBasePath("/orderly-logo-secondary.svg"),
+              ? withBasePath("/logo-secondary.png")
+              : withBasePath("/orderly-logo-secondary.png"),
           },
         },
       },
