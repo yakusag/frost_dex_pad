@@ -17,7 +17,7 @@ window.__RUNTIME_CONFIG__ = {
   "VITE_APP_NAME": "FrostDex",
   "VITE_APP_DESCRIPTION": "FrostDex — Decentralized Exchange",
   "VITE_HAS_PRIMARY_LOGO": "true",
-  "VITE_HAS_SECONDARY_LOGO": "true",
+  "VITE_HAS_SECONDARY_LOGO": "false",
   "VITE_ENABLED_MENUS": "Rewards,Swap,Trading,Leaderboard,Portfolio,Markets,Vaults,Campaigns",
   "VITE_CUSTOM_MENUS": "",
   "VITE_ENABLE_SERVICE_DISCLAIMER_DIALOG": "false",
