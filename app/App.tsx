@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import OrderlyProvider from "@/components/orderlyProvider";
 import { HttpsRequiredWarning } from "@/components/HttpsRequiredWarning";
 import { withBasePath } from "./utils/base-path";
@@ -21,6 +22,7 @@ export default function App() {
       <OrderlyProvider>
         <Outlet />
       </OrderlyProvider>
+      <SpeedInsights />
     </>
   );
 }
