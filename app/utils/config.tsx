@@ -353,7 +353,7 @@ export const useOrderlyConfig = () => {
                 <img
                   src={withBasePath("/logo-secondary.png")}
                   alt="logo"
-                  style={{ height: "409px" }}
+                  style={{ height: "100px" }}
                 />
               ) : (
                 components.title
