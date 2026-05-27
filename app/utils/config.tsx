@@ -353,7 +353,7 @@ export const useOrderlyConfig = () => {
                 <img
                   src={withBasePath("/logo-secondary.webp")}
                   alt="logo"
-                  style={{ height: "100px" }}
+                  style={{ height: "200px" }}
                 />
               ) : (
                 components.title
