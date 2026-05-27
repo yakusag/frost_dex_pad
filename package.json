@@ -38,6 +38,7 @@
     "@solana/wallet-adapter-base": "^0.9.24",
     "@solana/wallet-adapter-wallets": "^0.19.36",
     "@tanstack/query-core": "^5.79.0",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "@web3-onboard/walletconnect": "^2.6.2",
     "ip-range-check": "^0.2.0",
