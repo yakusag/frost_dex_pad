@@ -407,7 +407,7 @@ export const useOrderlyConfig = () => {
                   <img
                     src={withBasePath("/logo.png")}
                     alt="logo"
-                    style={{ height: "409px" }}
+                    style={{ height: "100px" }}
                   />
                 ),
               }
