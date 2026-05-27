@@ -17,7 +17,7 @@ export const CUSTOM_TOKENS: CustomToken[] = [
     name: "Frost Token",
     decimals: 18,
     chainId: 42161,
-    logoURI: "",
+    logoURI: "https://cdn.jsdelivr.net/gh/free-whiteboard-online/Free-Erasorio-Alternative-for-Collaborative-Design@e38378154a3e9b30cef9789a22e287fe840c433b/uploads/2026-05-27T01-57-58-340Z-b6ppbdnwk.png",
     poolAddress: "0x4bec5199b83ad5a616f81927cabb8bfd7a41c652",
     pairWith: "WETH",
     uniswapPoolUrl:
