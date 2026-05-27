@@ -166,7 +166,7 @@ const getPnLBackgroundImages = (): string[] => {
 
     const customPosters: string[] = [];
     for (let i = 1; i <= customPnLCount; i++) {
-      customPosters.push(withBasePath(`/pnl/poster_bg_${i}.webp`));
+      customPosters.push(withBasePath(`/pnl/poster_bg_${i}.png`));
     }
 
     return customPosters;
@@ -351,9 +351,9 @@ export const useOrderlyConfig = () => {
               {isMobile &&
               getRuntimeConfigBoolean("VITE_HAS_SECONDARY_LOGO") ? (
                 <img
-                  src={withBasePath("/logo-secondary.webp")}
+                  src={withBasePath("/logo-secondary.png")}
                   alt="logo"
-                  style={{ height: "32px" }}
+                  style={{ height: "409px" }}
                 />
               ) : (
                 components.title
@@ -407,7 +407,7 @@ export const useOrderlyConfig = () => {
                   <img
                     src={withBasePath("/logo.png")}
                     alt="logo"
-                    style={{ height: "68px" }}
+                    style={{ height: "409px" }}
                   />
                 ),
               }
