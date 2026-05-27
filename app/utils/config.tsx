@@ -166,7 +166,7 @@ const getPnLBackgroundImages = (): string[] => {
 
     const customPosters: string[] = [];
     for (let i = 1; i <= customPnLCount; i++) {
-      customPosters.push(withBasePath(`/pnl/poster_bg_${i}.png`));
+      customPosters.push(withBasePath(`/pnl/poster_bg_${i}.webp`));
     }
 
     return customPosters;
@@ -353,7 +353,7 @@ export const useOrderlyConfig = () => {
                 <img
                   src={withBasePath("/logo-secondary.webp")}
                   alt="logo"
-                  style={{ height: "150px" }}
+                  style={{ height: "100px" }}
                 />
               ) : (
                 components.title
@@ -407,7 +407,7 @@ export const useOrderlyConfig = () => {
                   <img
                     src={withBasePath("/logo.webp")}
                     alt="logo"
-                    style={{ height: "150px" }}
+                    style={{ height: "100px" }}
                   />
                 ),
               }
