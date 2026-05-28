@@ -6,7 +6,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* animated gradient glow — top nav bar */
+/* ─── animated gradient glow — top nav bar ─────────────────────────── */
 header,
 nav,
 .oui-top-nav,
@@ -43,7 +43,7 @@ nav::after,
   100% { left: 100%;  }
 }
 
-/* frosted ice glow — cards & panels */
+/* ─── frosted ice glow — cards & panels ────────────────────────────── */
 .oui-bg-base-8,
 .oui-bg-base-7,
 .oui-bg-base-6 {
@@ -51,25 +51,88 @@ nav::after,
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* subtle glow on primary buttons & accents */
+/* ─── subtle glow on primary buttons & accents ─────────────────────── */
 .oui-bg-primary,
 [class*="oui-bg-primary"] {
   box-shadow: 0 0 12px 0 rgba(60, 230, 255, 0.25);
 }
 
-/* glowing border on focused/active inputs */
+/* ─── glowing border on focused inputs ─────────────────────────────── */
 .oui-input:focus-within,
 input:focus {
   box-shadow: 0 0 0 1px rgba(60, 230, 255, 0.4), 0 0 8px 0 rgba(60, 230, 255, 0.15) !important;
 }
 
-/* ice shimmer on order book rows hover */
+/* ─── ice shimmer on table/orderbook row hover ──────────────────────── */
 .oui-orderbook-row:hover,
 tr:hover td {
   background: rgba(60, 230, 255, 0.04) !important;
 }
 
-/* hide trading rewards on mobile */
+/* ─── custom ice scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(4, 6, 20, 0.8);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(0, 210, 140, 0.6), rgba(60, 230, 255, 0.6));
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(0, 210, 140, 0.9), rgba(60, 230, 255, 0.9));
+}
+
+/* ─── text selection highlight ──────────────────────────────────────── */
+::selection {
+  background: rgba(60, 230, 255, 0.2);
+  color: #e1f5ff;
+}
+
+/* ─── glassmorphism on modals & dialogs ─────────────────────────────── */
+[role="dialog"],
+[data-radix-popper-content-wrapper],
+.oui-dialog,
+[class*="oui-modal"],
+[class*="oui-popover"] {
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  background: rgba(6, 10, 30, 0.85) !important;
+  border: 1px solid rgba(60, 230, 255, 0.1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(60, 230, 255, 0.06) !important;
+}
+
+/* ─── glowing border on active/selected tabs ────────────────────────── */
+[aria-selected="true"],
+[data-state="active"] {
+  text-shadow: 0 0 8px rgba(60, 230, 255, 0.5);
+}
+
+/* ─── profit & loss number glow ─────────────────────────────────────── */
+[class*="oui-text-profit"],
+[class*="text-profit"] {
+  text-shadow: 0 0 6px rgba(60, 230, 180, 0.5);
+}
+[class*="oui-text-loss"],
+[class*="text-loss"] {
+  text-shadow: 0 0 6px rgba(255, 80, 110, 0.4);
+}
+
+/* ─── smooth page transitions ───────────────────────────────────────── */
+main,
+.oui-page,
+[class*="oui-content"] {
+  animation: page-fade-in 0.2s ease-out;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ─── hide trading rewards on mobile ────────────────────────────────── */
 .oui-portfolio-page .oui-box.oui-flex.oui-flex-nowrap > div:nth-child(2).oui-box.oui-flex.oui-justify-start.oui-flex-nowrap.oui-relative {
   display: none;
 }
