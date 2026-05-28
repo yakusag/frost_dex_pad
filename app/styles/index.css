@@ -6,6 +6,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* frosted ice glow — cards & panels */
+.oui-bg-base-8,
+.oui-bg-base-7,
+.oui-bg-base-6 {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* subtle glow on primary buttons & accents */
+.oui-bg-primary,
+[class*="oui-bg-primary"] {
+  box-shadow: 0 0 12px 0 rgba(60, 230, 255, 0.25);
+}
+
+/* glowing border on focused/active inputs */
+.oui-input:focus-within,
+input:focus {
+  box-shadow: 0 0 0 1px rgba(60, 230, 255, 0.4), 0 0 8px 0 rgba(60, 230, 255, 0.15) !important;
+}
+
+/* ice shimmer on order book rows hover */
+.oui-orderbook-row:hover,
+tr:hover td {
+  background: rgba(60, 230, 255, 0.04) !important;
+}
+
 /* hide trading rewards on mobile */
 .oui-portfolio-page .oui-box.oui-flex.oui-flex-nowrap > div:nth-child(2).oui-box.oui-flex.oui-justify-start.oui-flex-nowrap.oui-relative {
   display: none;
