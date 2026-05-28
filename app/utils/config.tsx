@@ -347,13 +347,13 @@ export const useOrderlyConfig = () => {
                 externalLinks={customMenus}
               />
             )}
-            <Link to="/" style={{ display: "inline-flex", alignItems: "center", overflow: "hidden", maxHeight: "44px" }}>
+            <Link to="/" style={{ display: "inline-flex", alignItems: "center", overflow: "hidden", maxHeight: "52px" }}>
               {isMobile &&
               getRuntimeConfigBoolean("VITE_HAS_SECONDARY_LOGO") ? (
                 <img
                   src={withBasePath("/logo-secondary.webp")}
                   alt="logo"
-                  style={{ height: "36px", maxHeight: "36px" }}
+                  style={{ height: "44px", maxHeight: "44px" }}
                 />
               ) : (
                 components.title
@@ -407,7 +407,7 @@ export const useOrderlyConfig = () => {
                   <img
                     src={withBasePath("/logo.webp")}
                     alt="logo"
-                    style={{ height: "36px", maxHeight: "36px" }}
+                    style={{ height: "44px", maxHeight: "44px" }}
                   />
                 ),
               }
