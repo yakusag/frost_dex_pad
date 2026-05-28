@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Analytics } from "@vercel/analytics/react";
 import OrderlyProvider from "@/components/orderlyProvider";
 import { HttpsRequiredWarning } from "@/components/HttpsRequiredWarning";
+import { NetworkStatus } from "@/components/NetworkStatus";
 import { withBasePath } from "./utils/base-path";
 import { getSEOConfig, getUserLanguage } from "./utils/seo";
 import { startFaviconAnimation } from "./utils/favicon-animation";
@@ -29,6 +30,7 @@ export default function App() {
         <link rel="icon" type="image/webp" href={withBasePath("/favicon.webp")} />
       </Helmet>
       <HttpsRequiredWarning />
+      <NetworkStatus />
       <OrderlyProvider>
         <Outlet />
       </OrderlyProvider>
