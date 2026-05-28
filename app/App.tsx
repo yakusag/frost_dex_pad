@@ -7,6 +7,7 @@ import OrderlyProvider from "@/components/orderlyProvider";
 import { HttpsRequiredWarning } from "@/components/HttpsRequiredWarning";
 import { withBasePath } from "./utils/base-path";
 import { getSEOConfig, getUserLanguage } from "./utils/seo";
+import { startFaviconAnimation } from "./utils/favicon-animation";
 
 export default function App() {
   const seoConfig = getSEOConfig();
@@ -16,6 +17,7 @@ export default function App() {
     if (typeof (window as any).__hideSplash === "function") {
       (window as any).__hideSplash();
     }
+    startFaviconAnimation(withBasePath("/favicon.webp"));
   }, []);
   
   return (
