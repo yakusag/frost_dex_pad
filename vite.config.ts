@@ -16,7 +16,7 @@ function loadConfigTitle(): string {
     const configText = fs.readFileSync(configPath, "utf-8");
     const jsonText = configText
       .replace(/window\.__RUNTIME_CONFIG__\s*=\s*/, "")
-      .replace(/;$/, "")
+      .replace(/;\s*$/, "")
       .trim();
 
     const config = JSON.parse(jsonText);
