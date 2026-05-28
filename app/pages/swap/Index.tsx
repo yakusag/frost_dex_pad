@@ -3,7 +3,8 @@ import { getPageMeta } from "@/utils/seo";
 import { renderSEOTags } from "@/utils/seo-tags";
 import { lazy, Suspense, useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import FrostTokenSwap from "@/components/FrostTokenSwap";
+import FrostSwapWidget from "@/components/FrostSwapWidget";
+import { FROST_TOKEN } from "@/utils/customTokens";
 
 const WooFiWidget = lazy(() => import("@/components/WooFiWidget"));
 
@@ -48,7 +49,48 @@ export default function SwapIndex() {
         </div>
 
         {activeTab === "frost" ? (
-          <FrostTokenSwap />
+          <div className="w-full max-w-md flex flex-col gap-4">
+            <FrostSwapWidget />
+            <div
+              className="rounded-xl p-4 flex flex-col gap-2"
+              style={{
+                background: "rgb(var(--oui-color-base-2))",
+                border: "1px solid rgba(var(--oui-color-primary), 0.15)",
+              }}
+            >
+              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(var(--oui-color-base-foreground), 0.4)" }}>
+                <span
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={{
+                    background: "rgba(var(--oui-color-primary), 0.12)",
+                    color: "rgb(var(--oui-color-primary))",
+                  }}
+                >i</span>
+                <span>
+                  Contract:{" "}
+                  <a
+                    href={`https://arbiscan.io/token/${FROST_TOKEN.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono hover:underline"
+                    style={{ color: "rgb(var(--oui-color-primary))" }}
+                  >
+                    {FROST_TOKEN.address.slice(0, 6)}…{FROST_TOKEN.address.slice(-4)}
+                  </a>
+                  {" · "}
+                  <a
+                    href={`https://dexscreener.com/arbitrum/${FROST_TOKEN.poolAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                    style={{ color: "rgb(var(--oui-color-primary))" }}
+                  >
+                    Chart ↗
+                  </a>
+                </span>
+              </div>
+            </div>
+          </div>
         ) : (
           <Suspense fallback={<LoadingSpinner />}>
             <WooFiWidget />
