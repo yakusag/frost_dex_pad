@@ -6,6 +6,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* animated gradient glow — top nav bar */
+header,
+nav,
+.oui-top-nav,
+[class*="oui-header"],
+[class*="oui-nav-bar"] {
+  position: relative;
+  overflow: hidden;
+}
+
+header::after,
+nav::after,
+.oui-top-nav::after,
+[class*="oui-header"]::after,
+[class*="oui-nav-bar"]::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -100%;
+  width: 300%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 210, 140, 0.6) 30%,
+    rgba(60, 230, 255, 0.9) 50%,
+    rgba(0, 210, 140, 0.6) 70%,
+    transparent 100%
+  );
+  animation: ice-glow-slide 4s linear infinite;
+}
+
+@keyframes ice-glow-slide {
+  0%   { left: -100%; }
+  100% { left: 100%;  }
+}
+
 /* frosted ice glow — cards & panels */
 .oui-bg-base-8,
 .oui-bg-base-7,
