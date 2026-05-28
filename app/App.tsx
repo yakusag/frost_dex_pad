@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -10,6 +11,12 @@ import { getSEOConfig, getUserLanguage } from "./utils/seo";
 export default function App() {
   const seoConfig = getSEOConfig();
   const defaultLanguage = getUserLanguage();
+
+  useEffect(() => {
+    if (typeof (window as any).__hideSplash === "function") {
+      (window as any).__hideSplash();
+    }
+  }, []);
   
   return (
     <>
