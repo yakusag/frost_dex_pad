@@ -132,6 +132,14 @@ main,
   to   { opacity: 1; transform: translateY(0);   }
 }
 
+/* ─── performance: GPU-accelerate main layout layers ────────────────── */
+header, nav, main, [class*="oui-scaffold"] {
+  contain: layout style;
+}
+.oui-orderbook-row, tr {
+  will-change: background-color;
+}
+
 /* ─── smooth scrolling ──────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;

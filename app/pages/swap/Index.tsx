@@ -4,6 +4,7 @@ import { renderSEOTags } from "@/utils/seo-tags";
 import { lazy, Suspense, useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import FrostSwapWidget from "@/components/FrostSwapWidget";
+import FrostPriceBanner from "@/components/FrostPriceBanner";
 import { FROST_TOKEN } from "@/utils/customTokens";
 
 const WooFiWidget = lazy(() => import("@/components/WooFiWidget"));
@@ -27,7 +28,8 @@ export default function SwapIndex() {
   return (
     <>
       {renderSEOTags(pageMeta, pageTitle)}
-      <div className="w-full h-full flex flex-col items-center p-4 pt-8 gap-6">
+      <FrostPriceBanner />
+      <div className="w-full h-full flex flex-col items-center p-4 pt-6 gap-6">
         <div
           className="flex gap-2 p-1 rounded-xl"
           style={{ background: "rgb(var(--oui-color-base-2))" }}
