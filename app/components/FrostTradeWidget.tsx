@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { FROST_TOKEN } from "@/utils/customTokens";
+import { useDraggable } from "@/hooks/useDraggable";
 
 interface FrostData {
   priceUsd: string;
   priceChange: { h24: number };
   volume: { h24: number };
+}
+
+interface Props {
+  onHide?: () => void;
 }
 
 function fmtPrice(n: number): string {
@@ -23,12 +28,23 @@ function fmtVol(n: number): string {
   return "$" + n.toFixed(0);
 }
 
-export default function FrostTradeWidget() {
+function getDefaultPos() {
+  if (typeof window === "undefined") return { x: 200, y: 400 };
+  return {
+    x: window.innerWidth - 164,
+    y: window.innerHeight - 260,
+  };
+}
+
+export default function FrostTradeWidget({ onHide }: Props) {
   const [data, setData] = useState<FrostData | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevPrice = useRef<number>(0);
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
+
+  const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps } =
+    useDraggable("frost-widget", getDefaultPos());
 
   const fetchPrice = async () => {
     try {
@@ -63,18 +79,62 @@ export default function FrostTradeWidget() {
   const vol = data?.volume?.h24 ?? 0;
   const up = change >= 0;
 
-  const priceFlashClass = flash === "up" ? "frost-widget-flash-up" : flash === "down" ? "frost-widget-flash-down" : "";
+  const priceFlashClass =
+    flash === "up"
+      ? "frost-widget-flash-up"
+      : flash === "down"
+      ? "frost-widget-flash-down"
+      : "";
 
   return (
-    <div className="frost-trade-widget">
-      <div className="frost-trade-widget__header" onClick={() => setCollapsed((v) => !v)}>
-        <div className="frost-trade-widget__title">
+    <div
+      ref={elementRef}
+      className="frost-trade-widget"
+      style={{
+        position: "fixed",
+        left: pos.x,
+        top: pos.y,
+        transition: isSnapping
+          ? "left 0.3s cubic-bezier(0.34,1.56,0.64,1), top 0.3s cubic-bezier(0.34,1.56,0.64,1)"
+          : isDragging
+          ? "none"
+          : undefined,
+        cursor: isDragging ? "grabbing" : undefined,
+        zIndex: isDragging ? 300 : 50,
+        userSelect: isDragging ? "none" : undefined,
+      }}
+    >
+      <div className="frost-trade-widget__header">
+        <div
+          className="frost-trade-widget__drag"
+          {...dragHandleProps}
+          title="Drag to move"
+        >
+          ⠿
+        </div>
+        <div
+          className="frost-trade-widget__title"
+          onClick={() => setCollapsed((v) => !v)}
+          style={{ flex: 1, cursor: "pointer" }}
+        >
           <span className="frost-trade-widget__icon">❄</span>
           <span>FROST</span>
         </div>
-        <div className="frost-trade-widget__toggle">
+        <div
+          className="frost-trade-widget__toggle"
+          onClick={() => setCollapsed((v) => !v)}
+        >
           {collapsed ? "▲" : "▼"}
         </div>
+        {onHide && (
+          <button
+            className="frost-trade-widget__close"
+            onClick={onHide}
+            title="Hide widget"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {!collapsed && (
@@ -99,7 +159,10 @@ export default function FrostTradeWidget() {
           </div>
 
           <div className="frost-trade-widget__actions">
-            <Link to="/swap" className="frost-trade-widget__btn frost-trade-widget__btn--primary">
+            <Link
+              to="/swap"
+              className="frost-trade-widget__btn frost-trade-widget__btn--primary"
+            >
               Buy ❄
             </Link>
             <a

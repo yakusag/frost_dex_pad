@@ -33,7 +33,7 @@ window.__RUNTIME_CONFIG__ = {
   "VITE_SEO_TWITTER_HANDLE": "",
   "VITE_SEO_THEME_COLOR": "#14b8a6",
   "VITE_SEO_KEYWORDS": "dex, crypto, trading, frost, frostdex, ethereum, arbitrum",
-  "VITE_AVAILABLE_LANGUAGES": "en,ar,pt,zh,de,es,fr,nl",
+  "VITE_AVAILABLE_LANGUAGES": "en,ar,dz,pt,zh,de,es,fr,nl",
   "VITE_USE_CUSTOM_PNL_POSTERS": "false",
   "VITE_CUSTOM_PNL_POSTER_COUNT": "0",
   "VITE_TRADING_VIEW_COLOR_CONFIG": "",

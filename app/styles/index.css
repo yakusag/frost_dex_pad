@@ -100,7 +100,7 @@ main,
   top: 0;
   left: 0;
   right: 0;
-  z-index: 60;
+  z-index: 200;
   height: 28px;
   background: rgba(11, 14, 17, 0.98);
   border-bottom: 1px solid rgba(30, 36, 50, 1);
@@ -171,47 +171,23 @@ main,
   filter: drop-shadow(0 0 4px rgba(56, 224, 248, 0.6));
 }
 
-/* push the Orderly scaffold navbar below the 28px ticker bar — desktop */
-@media (min-width: 768px) {
-  header[class*="oui"],
-  nav[class*="oui"],
-  [class*="oui-top-nav"],
-  [class*="oui-header"],
-  [class*="oui-nav-bar"],
-  [class*="oui-scaffold"] > header,
-  [class*="oui-scaffold"] > nav,
-  [class*="oui-scaffold"] > div > header,
-  [class*="oui-scaffold"] > div > nav {
-    top: 28px !important;
-    z-index: 65 !important;
-  }
-
-  /* extra offset so scaffold content clears ticker (28px) */
-  [class*="oui-scaffold"] > div > main,
-  [class*="oui-scaffold"] > main {
-    padding-top: 28px !important;
-  }
+/* ─── push all page content below the 28px ticker bar ───────────────── */
+body {
+  padding-top: 28px;
 }
 
-/* Mobile: ticker bar pushes the fixed mobile header down 28px */
-@media (max-width: 767px) {
-  header[class*="oui"],
-  nav[class*="oui"],
-  [class*="oui-top-nav"],
-  [class*="oui-header"],
-  [class*="oui-nav-bar"],
-  [class*="oui-scaffold"] > header,
-  [class*="oui-scaffold"] > nav,
-  [class*="oui-scaffold"] > div > header,
-  [class*="oui-scaffold"] > div > nav {
-    top: 28px !important;
-    z-index: 65 !important;
-  }
+/* Any OUI element that is sticky or fixed at top:0 must shift down */
+.oui-sticky.oui-top-0,
+.oui-fixed.oui-top-0,
+[class*="oui-sticky"][class*="oui-top-0"],
+[class*="oui-fixed"][class*="oui-top-0"] {
+  top: 28px !important;
+}
 
-  /* push trading content below ticker (28px) + mobile top bar (~48px) */
-  [class*="oui-scaffold"] > div > main,
-  [class*="oui-scaffold"] > main {
-    margin-top: 28px !important;
+/* Orderly symbol info bar on mobile — stays below the mobile header */
+@media (max-width: 767px) {
+  .oui-trading-symbolInfoBar-container {
+    scroll-margin-top: 28px;
   }
 }
 
@@ -416,11 +392,8 @@ select,
 }
 
 /* ─── frost trade widget ─────────────────────────────────────────── */
+/* position/top/left/z-index are set via inline styles by useDraggable */
 .frost-trade-widget {
-  position: fixed;
-  bottom: 80px;
-  right: 12px;
-  z-index: 50;
   width: 148px;
   background: rgba(11, 14, 17, 0.96);
   border: 1px solid rgba(56, 224, 248, 0.22);
@@ -431,25 +404,54 @@ select,
   backdrop-filter: blur(12px);
 }
 
-@media (min-width: 768px) {
-  .frost-trade-widget {
-    bottom: 24px;
-    right: 16px;
-  }
-}
-
 .frost-trade-widget__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px 7px;
-  cursor: pointer;
+  gap: 4px;
+  padding: 7px 8px 6px;
   border-bottom: 1px solid rgba(56, 224, 248, 0.1);
   user-select: none;
   background: rgba(56, 224, 248, 0.04);
 }
-.frost-trade-widget__header:hover {
+
+.frost-trade-widget__drag {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(56, 224, 248, 0.35);
+  font-size: 13px;
+  cursor: grab;
+  flex-shrink: 0;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.frost-trade-widget__drag:hover {
+  color: rgba(56, 224, 248, 0.7);
   background: rgba(56, 224, 248, 0.08);
+}
+.frost-trade-widget__drag:active { cursor: grabbing; }
+
+.frost-trade-widget__close {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: rgba(246, 70, 93, 0.4);
+  font-size: 9px;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+  padding: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.frost-trade-widget__close:hover {
+  color: #f6465d;
+  background: rgba(246, 70, 93, 0.12);
 }
 
 .frost-trade-widget__title {

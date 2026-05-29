@@ -6,14 +6,15 @@ interface Visibility {
   ai: boolean;
   whale: boolean;
   sentiment: boolean;
+  frost: boolean;
 }
 
 function load(): Visibility {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return { ai: true, whale: true, sentiment: true, ...JSON.parse(saved) };
+    if (saved) return { ai: true, whale: true, sentiment: true, frost: true, ...JSON.parse(saved) };
   } catch {}
-  return { ai: true, whale: true, sentiment: true };
+  return { ai: true, whale: true, sentiment: true, frost: true };
 }
 
 export function useWidgetVisibility() {
@@ -28,12 +29,12 @@ export function useWidgetVisibility() {
   }, []);
 
   const showAll = useCallback(() => {
-    const next = { ai: true, whale: true, sentiment: true };
+    const next = { ai: true, whale: true, sentiment: true, frost: true };
     setVisibility(next);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
   }, []);
 
-  const anyHidden = !visibility.ai || !visibility.whale || !visibility.sentiment;
+  const anyHidden = !visibility.ai || !visibility.whale || !visibility.sentiment || !visibility.frost;
 
   return { visibility, toggle, showAll, anyHidden };
 }

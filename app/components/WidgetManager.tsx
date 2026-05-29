@@ -1,13 +1,14 @@
 import { useState } from "react";
 
 interface Props {
-  visibility: { ai: boolean; whale: boolean; sentiment: boolean };
+  visibility: { ai: boolean; whale: boolean; sentiment: boolean; frost: boolean };
   anyHidden: boolean;
-  onToggle: (key: "ai" | "whale" | "sentiment") => void;
+  onToggle: (key: "ai" | "whale" | "sentiment" | "frost") => void;
   onShowAll: () => void;
 }
 
 const WIDGETS = [
+  { key: "frost" as const, label: "FROST Widget", icon: "❄" },
   { key: "ai" as const, label: "FrostAI", icon: "🤖" },
   { key: "whale" as const, label: "Whale Alerts", icon: "🐋" },
   { key: "sentiment" as const, label: "Market Mood", icon: "📊" },

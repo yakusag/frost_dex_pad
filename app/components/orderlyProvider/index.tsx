@@ -157,7 +157,7 @@ const OrderlyProvider = (props: { children: ReactNode }) => {
     []
   );
 
-  const RTL_LOCALES = ["ar"];
+  const RTL_LOCALES = ["ar", "dz"];
 
   const onLanguageChanged = async (lang: LocaleCode) => {
     if (typeof window !== "undefined") {
@@ -198,7 +198,10 @@ const OrderlyProvider = (props: { children: ReactNode }) => {
   const defaultLanguage = getDefaultLanguage();
 
   const availableLanguages = getAvailableLanguages();
-  const customLanguages = [{ localCode: "ar", displayName: "العربية" }];
+  const customLanguages = [
+    { localCode: "ar", displayName: "العربية" },
+    { localCode: "dz", displayName: "الدارجة" },
+  ];
   const filteredLanguages = [
     ...defaultLanguages.filter((lang) =>
       availableLanguages.includes(lang.localCode)
