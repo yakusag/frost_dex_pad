@@ -558,22 +558,24 @@ export default function BotPage() {
             >
               AI Trading Bot
             </h1>
-            <span
+            <div
               style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: 1.5,
-                textTransform: "uppercase",
-                color: "#38e0f8",
-                background: "rgba(56,224,248,0.15)",
-                border: "1px solid rgba(56,224,248,0.35)",
-                borderRadius: 4,
-                padding: "3px 9px",
-                boxShadow: "0 0 10px rgba(56,224,248,0.2)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "1.5px solid rgba(46,204,113,0.55)",
+                borderRadius: 8,
+                padding: "2px 8px",
+                background: "rgba(56,224,248,0.05)",
+                boxShadow: "0 0 14px rgba(56,224,248,0.22), 0 0 6px rgba(14,203,129,0.18)",
               }}
             >
-              BETA
-            </span>
+              <img
+                src="/frostdex-badge.png"
+                alt="FrostDex"
+                style={{ height: 28, objectFit: "contain", display: "block" }}
+              />
+            </div>
           </div>
           <div
             style={{

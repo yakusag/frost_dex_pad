@@ -76,20 +76,20 @@ export default function AIAssistant({ onHide }: Props) {
   return (
     <div
       ref={elementRef}
-      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto", transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none" }}
+      {...dragHandleProps}
+      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto", cursor: isDragging ? "grabbing" : "grab", transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Drag handle + hide — shown on hover when panel closed */}
+      {/* Hide button — shown on hover when panel closed */}
       {(hovered || isMobile) && !open && (
         <div className="widget-controls">
-          <span className="widget-drag-handle" {...dragHandleProps} title="Drag to move">⠿</span>
-          <button className="widget-hide-btn" onClick={onHide} title="Hide widget">✕</button>
+          <button className="widget-hide-btn" onMouseDown={e => e.stopPropagation()} onClick={onHide} title="Hide widget">✕</button>
         </div>
       )}
 
       {/* FAB */}
-      <button className="ai-assistant-fab" onClick={() => setOpen(v => !v)} aria-label="AI Trading Assistant">
+      <button className="ai-assistant-fab" onClick={() => { if (wasDragged()) return; setOpen(v => !v); }} aria-label="AI Trading Assistant">
         {open
           ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
           : <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12h6M9 16h4M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2h-2M9 4h6v2H9V4z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>

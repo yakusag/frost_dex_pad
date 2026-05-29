@@ -104,31 +104,29 @@ export default function FrostTradeWidget({ onHide }: Props) {
         userSelect: isDragging ? "none" : undefined,
       }}
     >
-      <div className="frost-trade-widget__header">
-        <div
-          className="frost-trade-widget__drag"
-          {...dragHandleProps}
-          title="Drag to move"
-        >
-          ⠿
-        </div>
+      <div
+        className="frost-trade-widget__header"
+        {...dragHandleProps}
+        style={{ cursor: isDragging ? "grabbing" : "grab" }}
+      >
         <div
           className="frost-trade-widget__title"
-          onClick={() => setCollapsed((v) => !v)}
-          style={{ flex: 1, cursor: "pointer" }}
+          onClick={() => { if (wasDragged()) return; setCollapsed((v) => !v); }}
+          style={{ flex: 1, cursor: isDragging ? "grabbing" : "grab" }}
         >
           <span className="frost-trade-widget__icon">❄</span>
           <span>FROST</span>
         </div>
         <div
           className="frost-trade-widget__toggle"
-          onClick={() => setCollapsed((v) => !v)}
+          onClick={() => { if (wasDragged()) return; setCollapsed((v) => !v); }}
         >
           {collapsed ? "▲" : "▼"}
         </div>
         {onHide && (
           <button
             className="frost-trade-widget__close"
+            onMouseDown={e => e.stopPropagation()}
             onClick={onHide}
             title="Hide widget"
           >

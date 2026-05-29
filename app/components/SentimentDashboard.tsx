@@ -73,18 +73,18 @@ export default function SentimentDashboard({ onHide }: Props) {
   return (
     <div
       ref={elementRef}
-      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto", transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none" }}
+      {...dragHandleProps}
+      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto", cursor: isDragging ? "grabbing" : "grab", transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {(hovered || isMobile) && !open && (
         <div className="widget-controls">
-          <span className="widget-drag-handle" {...dragHandleProps} title="Drag to move">⠿</span>
-          <button className="widget-hide-btn" onClick={onHide} title="Hide widget">✕</button>
+          <button className="widget-hide-btn" onMouseDown={e => e.stopPropagation()} onClick={onHide} title="Hide widget">✕</button>
         </div>
       )}
 
-      <button className="sentiment-fab" onClick={() => setOpen(v => !v)} aria-label="Market Sentiment">
+      <button className="sentiment-fab" onClick={() => { if (wasDragged()) return; setOpen(v => !v); }} aria-label="Market Sentiment">
         📊 <span>Mood</span>
       </button>
 

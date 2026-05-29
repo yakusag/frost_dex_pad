@@ -67,18 +67,6 @@ export default function PerpSymbol() {
         tradingViewConfig={config.tradingPage.tradingViewConfig}
         sharePnLConfig={config.tradingPage.sharePnLConfig}
       />
-      <div className="md:hidden pb-2 pt-8 text-center">
-        <span className="oui-text-2xs oui-text-base-contrast-54">
-          Charts powered by{" "}
-          <a
-            href="https://tradingview.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            TradingView
-          </a>
-        </span>
-      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ interface Position { x: number; y: number; }
 
 const SNAP_THRESHOLD = 60;
 const EDGE_MARGIN = 8;
+const DRAG_THRESHOLD_PX = 5;
 
 function clamp(val: number, min: number, max: number) {
   return Math.max(min, Math.min(max, val));
@@ -12,25 +13,19 @@ function clamp(val: number, min: number, max: number) {
 function snapToEdge(x: number, y: number, w: number, h: number): Position {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-
   const distLeft   = x;
   const distRight  = vw - (x + w);
   const distTop    = y;
   const distBottom = vh - (y + h);
-
   const minH = Math.min(distLeft, distRight);
   const minV = Math.min(distTop, distBottom);
-
-  let snappedX = x;
-  let snappedY = y;
-
+  let snappedX = x, snappedY = y;
   if (minH < SNAP_THRESHOLD && minH <= minV) {
     snappedX = distLeft < distRight ? EDGE_MARGIN : vw - w - EDGE_MARGIN;
   }
   if (minV < SNAP_THRESHOLD && minV < minH) {
     snappedY = distTop < distBottom ? EDGE_MARGIN : vh - h - EDGE_MARGIN;
   }
-
   return { x: snappedX, y: snappedY };
 }
 
@@ -47,6 +42,7 @@ export function useDraggable(id: string, defaultPos: Position) {
   const [isDragging, setIsDragging] = useState(false);
   const [isSnapping, setIsSnapping] = useState(false);
   const dragStartRef = useRef<{ mouseX: number; mouseY: number; posX: number; posY: number } | null>(null);
+  const hasDraggedRef = useRef(false);
   const elementRef = useRef<HTMLDivElement | null>(null);
 
   const savePos = useCallback((p: Position) => {
@@ -55,19 +51,23 @@ export function useDraggable(id: string, defaultPos: Position) {
 
   const startDrag = useCallback((clientX: number, clientY: number) => {
     dragStartRef.current = { mouseX: clientX, mouseY: clientY, posX: pos.x, posY: pos.y };
-    setIsDragging(true);
-    setIsSnapping(false);
+    hasDraggedRef.current = false;
   }, [pos]);
 
   useEffect(() => {
-    if (!isDragging) return;
-
     const onMove = (e: MouseEvent | TouchEvent) => {
       if (!dragStartRef.current) return;
       if ("touches" in e) e.preventDefault();
       const client = "touches" in e ? e.touches[0] : e;
       const dx = client.clientX - dragStartRef.current.mouseX;
       const dy = client.clientY - dragStartRef.current.mouseY;
+
+      if (!hasDraggedRef.current) {
+        if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD_PX) return;
+        hasDraggedRef.current = true;
+        setIsDragging(true);
+      }
+
       const el = elementRef.current;
       const w = el?.offsetWidth ?? 50;
       const h = el?.offsetHeight ?? 50;
@@ -77,8 +77,13 @@ export function useDraggable(id: string, defaultPos: Position) {
     };
 
     const onEnd = () => {
-      setIsDragging(false);
+      if (!dragStartRef.current) return;
+      const wasDrag = hasDraggedRef.current;
       dragStartRef.current = null;
+
+      if (!wasDrag) return;
+
+      setIsDragging(false);
 
       const el = elementRef.current;
       const w = el?.offsetWidth ?? 50;
@@ -104,7 +109,7 @@ export function useDraggable(id: string, defaultPos: Position) {
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);
     };
-  }, [isDragging, savePos]);
+  }, [savePos]);
 
   useEffect(() => {
     if (!isSnapping) return;
@@ -113,7 +118,6 @@ export function useDraggable(id: string, defaultPos: Position) {
   }, [isSnapping]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
     startDrag(e.clientX, e.clientY);
   }, [startDrag]);
 
@@ -123,6 +127,7 @@ export function useDraggable(id: string, defaultPos: Position) {
   }, [startDrag]);
 
   const isBottomHalf = pos.y > window.innerHeight / 2;
+  const wasDragged = useCallback(() => hasDraggedRef.current, []);
 
   return {
     pos,
@@ -130,6 +135,7 @@ export function useDraggable(id: string, defaultPos: Position) {
     isSnapping,
     elementRef,
     isBottomHalf,
+    wasDragged,
     dragHandleProps: { onMouseDown: handleMouseDown, onTouchStart: handleTouchStart },
   };
 }
