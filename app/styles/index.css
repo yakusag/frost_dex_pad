@@ -97,10 +97,10 @@ main,
 /* ─── market ticker bar ──────────────────────────────────────────────── */
 .market-ticker-bar {
   position: fixed;
-  top: 0;
+  top: 48px;
   left: 0;
   right: 0;
-  z-index: 9000;
+  z-index: 40;
   height: 28px;
   background: rgba(11, 14, 17, 0.98);
   border-bottom: 1px solid rgba(30, 36, 50, 1);
@@ -157,9 +157,15 @@ main,
 .ticker-change.up   { color: #0ecb81; }
 .ticker-change.down { color: #f6465d; }
 
-/* push page content below the ticker bar */
+/* push page content below the ticker bar (sits under the 48px navbar) */
 body {
-  padding-top: 28px;
+  padding-top: 0;
+}
+
+/* extra offset so scaffold content clears both navbar (48px) + ticker (28px) */
+[class*="oui-scaffold"] > div > main,
+[class*="oui-scaffold"] > main {
+  padding-top: 28px !important;
 }
 
 /* ─── referral welcome popup ────────────────────────────────────────── */
