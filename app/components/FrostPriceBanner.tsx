@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { FROST_TOKEN } from "@/utils/customTokens";
+
+const FrostDexScreenerChart = lazy(() => import("./FrostDexScreenerChart"));
 
 interface PairData {
   priceUsd: string;
@@ -23,6 +25,7 @@ function fmt(n: number, compact = false): string {
 export default function FrostPriceBanner() {
   const [data, setData] = useState<PairData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showChart, setShowChart] = useState(false);
 
   const fetchPrice = async () => {
     try {
@@ -54,79 +57,116 @@ export default function FrostPriceBanner() {
   const changeColor = up ? "rgb(60,230,180)" : "rgb(255,80,110)";
 
   return (
-    <div
-      className="w-full flex items-center justify-between flex-wrap gap-2 px-4 py-2.5"
-      style={{
-        background: "rgb(var(--oui-color-base-2))",
-        borderBottom: "1px solid rgba(var(--oui-color-primary), 0.12)",
-      }}
-    >
-      <div className="flex items-center gap-2.5">
-        <div
-          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-          style={{
-            background: "rgba(var(--oui-color-primary), 0.15)",
-            color: "rgb(var(--oui-color-primary))",
-            border: "1px solid rgba(var(--oui-color-primary), 0.3)",
-          }}
-        >
-          ❄
-        </div>
-        <div>
-          <div className="text-xs font-semibold" style={{ color: valColor }}>
-            FROST / WETH
+    <div style={{ width: "100%" }}>
+      <div
+        className="w-full flex items-center justify-between flex-wrap gap-2 px-4 py-2.5"
+        style={{
+          background: "rgb(var(--oui-color-base-2))",
+          borderBottom: showChart
+            ? "none"
+            : "1px solid rgba(var(--oui-color-primary), 0.12)",
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+            style={{
+              background: "rgba(var(--oui-color-primary), 0.15)",
+              color: "rgb(var(--oui-color-primary))",
+              border: "1px solid rgba(var(--oui-color-primary), 0.3)",
+            }}
+          >
+            ❄
           </div>
-          <div className="text-xs" style={{ color: statColor }}>
-            Arbitrum · Uniswap V3
+          <div>
+            <div className="text-xs font-semibold" style={{ color: valColor }}>
+              FROST / WETH
+            </div>
+            <div className="text-xs" style={{ color: statColor }}>
+              Arbitrum · Uniswap V3
+            </div>
           </div>
         </div>
+
+        {loading ? (
+          <div className="text-xs" style={{ color: statColor }}>Loading…</div>
+        ) : (
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="text-center">
+              <div className="text-xs" style={{ color: statColor }}>Price</div>
+              <div className="text-sm font-bold" style={{ color: "rgb(var(--oui-color-primary))" }}>
+                {fmt(price)}
+              </div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-xs" style={{ color: statColor }}>24h Change</div>
+              <div className="text-sm font-bold" style={{ color: changeColor }}>
+                {up ? "+" : ""}{change.toFixed(2)}%
+              </div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-xs" style={{ color: statColor }}>24h Volume</div>
+              <div className="text-sm font-semibold" style={{ color: valColor }}>
+                {fmt(vol, true)}
+              </div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-xs" style={{ color: statColor }}>Market Cap</div>
+              <div className="text-sm font-semibold" style={{ color: valColor }}>
+                {fmt(mc, true)}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowChart((v) => !v)}
+              style={{
+                background: showChart
+                  ? "rgba(var(--oui-color-primary), 0.15)"
+                  : "rgba(var(--oui-color-primary), 0.07)",
+                border: "1px solid rgba(var(--oui-color-primary), 0.3)",
+                borderRadius: 6,
+                padding: "3px 10px",
+                cursor: "pointer",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "rgb(var(--oui-color-primary))",
+                fontFamily: "Manrope, sans-serif",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                transition: "background 0.15s ease",
+              }}
+            >
+              📊 {showChart ? "Hide Chart" : "Live Chart"}
+            </button>
+          </div>
+        )}
       </div>
 
-      {loading ? (
-        <div className="text-xs" style={{ color: statColor }}>Loading…</div>
-      ) : (
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="text-center">
-            <div className="text-xs" style={{ color: statColor }}>Price</div>
-            <div className="text-sm font-bold" style={{ color: "rgb(var(--oui-color-primary))" }}>
-              {fmt(price)}
-            </div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-xs" style={{ color: statColor }}>24h Change</div>
+      {showChart && (
+        <Suspense
+          fallback={
             <div
-              className="text-sm font-bold"
-              style={{ color: changeColor }}
+              style={{
+                height: 60,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgb(var(--oui-color-base-2))",
+                borderBottom: "1px solid rgba(var(--oui-color-primary), 0.12)",
+                fontSize: 12,
+                color: "rgba(var(--oui-color-base-foreground), 0.4)",
+              }}
             >
-              {up ? "+" : ""}{change.toFixed(2)}%
+              Loading chart…
             </div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-xs" style={{ color: statColor }}>24h Volume</div>
-            <div className="text-sm font-semibold" style={{ color: valColor }}>
-              {fmt(vol, true)}
-            </div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-xs" style={{ color: statColor }}>Market Cap</div>
-            <div className="text-sm font-semibold" style={{ color: valColor }}>
-              {fmt(mc, true)}
-            </div>
-          </div>
-
-          <a
-            href={`https://dexscreener.com/arbitrum/${FROST_TOKEN.poolAddress}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-medium hover:opacity-80 transition-opacity"
-            style={{ color: "rgb(var(--oui-color-primary))" }}
-          >
-            Chart ↗
-          </a>
-        </div>
+          }
+        >
+          <FrostDexScreenerChart />
+        </Suspense>
       )}
     </div>
   );
