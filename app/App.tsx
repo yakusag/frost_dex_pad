@@ -14,6 +14,7 @@ import AIAssistant from "@/components/AIAssistant";
 import WhaleAlerts from "@/components/WhaleAlerts";
 import SentimentDashboard from "@/components/SentimentDashboard";
 import FrostTradeWidget from "@/components/FrostTradeWidget";
+import SmartMoney from "@/components/SmartMoney";
 import WidgetManager from "@/components/WidgetManager";
 import { useWidgetVisibility } from "@/hooks/useWidgetVisibility";
 import { withBasePath } from "./utils/base-path";
@@ -49,10 +50,11 @@ export default function App() {
         <LeverageAutoMax />
         <Outlet />
       </OrderlyProvider>
-      {visibility.frost && <FrostTradeWidget onHide={() => toggle("frost")} />}
-      {visibility.ai && <AIAssistant onHide={() => toggle("ai")} />}
-      {visibility.whale && <WhaleAlerts onHide={() => toggle("whale")} />}
-      {visibility.sentiment && <SentimentDashboard onHide={() => toggle("sentiment")} />}
+      {visibility.frost      && <FrostTradeWidget onHide={() => toggle("frost")} />}
+      {visibility.ai         && <AIAssistant      onHide={() => toggle("ai")} />}
+      {visibility.whale      && <WhaleAlerts       onHide={() => toggle("whale")} />}
+      {visibility.smartmoney && <SmartMoney        onHide={() => toggle("smartmoney")} />}
+      {visibility.sentiment  && <SentimentDashboard onHide={() => toggle("sentiment")} />}
       <WidgetManager
         visibility={visibility}
         anyHidden={anyHidden}

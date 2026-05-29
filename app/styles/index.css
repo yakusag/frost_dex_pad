@@ -1023,6 +1023,140 @@ select,
   text-align: right;
 }
 
+/* ─── SMART MONEY ───────────────────────────────────────────────────── */
+.sm-fab {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(9, 13, 20, 0.95);
+  border: 1px solid rgba(56, 224, 248, 0.3);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+.sm-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 20px rgba(56,224,248,0.2);
+}
+.sm-fab-icon { font-size: 18px; line-height: 1; }
+.sm-fab-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #060a0f;
+  padding: 0 2px;
+}
+.sm-panel {
+  max-height: 440px;
+  background: rgba(9, 13, 20, 0.97);
+  border: 1px solid rgba(56, 224, 248, 0.15);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+  font-family: 'Manrope', sans-serif;
+  animation: panel-in 0.2s ease;
+}
+.sm-header {
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sm-header-left { display: flex; align-items: center; gap: 8px; }
+.sm-title { font-size: 13px; font-weight: 700; color: #e8ecf1; }
+.sm-sub { font-size: 10px; color: rgba(180,190,210,0.45); margin-top: 1px; }
+.sm-summary { display: flex; align-items: center; gap: 2px; font-weight: 700; }
+.sm-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.sm-tab {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'Manrope', sans-serif;
+  background: none;
+  border: none;
+  color: rgba(180,190,210,0.5);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.sm-tab:hover { color: rgba(180,190,210,0.9); background: rgba(255,255,255,0.03); }
+.sm-tab--active { color: #38e0f8; border-bottom: 2px solid #38e0f8; }
+.sm-legend {
+  padding: 5px 14px;
+  font-size: 9px;
+  color: rgba(180,190,210,0.3);
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.sm-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.sm-empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(180,190,210,0.4);
+}
+.sm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.1s;
+}
+.sm-row:hover { background: rgba(255,255,255,0.03); }
+.sm-row-left { display: flex; align-items: center; gap: 7px; }
+.sm-base { font-size: 12px; font-weight: 700; color: #e8ecf1; min-width: 36px; }
+.sm-signal-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid;
+  letter-spacing: 0.04em;
+  background: transparent;
+}
+.sm-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.sm-row-stats { display: flex; align-items: center; gap: 4px; }
+.sm-stat { font-size: 11px; font-weight: 600; }
+.sm-stat-sep { color: rgba(180,190,210,0.2); font-size: 10px; }
+.sm-row-funding { font-size: 9px; font-weight: 500; }
+.sm-footer {
+  padding: 6px 14px;
+  font-size: 9px;
+  color: rgba(180,190,210,0.3);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  text-align: right;
+}
+
 /* ─── SENTIMENT DASHBOARD ───────────────────────────────────────────── */
 .sentiment-fab {
   display: flex;

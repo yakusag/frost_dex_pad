@@ -37,7 +37,7 @@ export default function WhaleAlerts({ onHide }: Props) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const defaultPos = { x: typeof window !== "undefined" ? window.innerWidth - 66 : 1200, y: typeof window !== "undefined" ? window.innerHeight - 178 : 500 };
-  const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps } = useDraggable("whale-alerts", defaultPos);
+  const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } = useDraggable("whale-alerts", defaultPos);
 
   const fetchAll = async () => {
     const all = (await Promise.all(SYMBOLS.map(fetchRecentTrades))).flat();
