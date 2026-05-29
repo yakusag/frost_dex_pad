@@ -97,10 +97,10 @@ main,
 /* ─── market ticker bar ──────────────────────────────────────────────── */
 .market-ticker-bar {
   position: fixed;
-  top: 48px;
+  top: 0;
   left: 0;
   right: 0;
-  z-index: 40;
+  z-index: 60;
   height: 28px;
   background: rgba(11, 14, 17, 0.98);
   border-bottom: 1px solid rgba(30, 36, 50, 1);
@@ -157,12 +157,32 @@ main,
 .ticker-change.up   { color: #0ecb81; }
 .ticker-change.down { color: #f6465d; }
 
-/* push page content below the ticker bar (sits under the 48px navbar) */
-body {
-  padding-top: 0;
+.ticker-item--frost {
+  background: rgba(56, 224, 248, 0.06);
+  border-right-color: rgba(56, 224, 248, 0.2);
+}
+.ticker-item--frost .ticker-base {
+  color: rgb(56, 224, 248);
+  font-weight: 700;
+}
+.ticker-frost-badge {
+  font-size: 10px;
+  color: rgb(56, 224, 248);
+  filter: drop-shadow(0 0 4px rgba(56, 224, 248, 0.6));
 }
 
-/* extra offset so scaffold content clears both navbar (48px) + ticker (28px) */
+/* push the Orderly scaffold navbar below the 28px ticker bar */
+header[class*="oui"],
+nav[class*="oui"],
+[class*="oui-top-nav"],
+[class*="oui-header"],
+[class*="oui-nav-bar"],
+[class*="oui-scaffold"] header,
+[class*="oui-scaffold"] nav {
+  top: 28px !important;
+}
+
+/* extra offset so scaffold content clears ticker (28px) + navbar (48px) */
 [class*="oui-scaffold"] > div > main,
 [class*="oui-scaffold"] > main {
   padding-top: 28px !important;

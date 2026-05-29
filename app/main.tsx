@@ -164,6 +164,33 @@ const router = createBrowserRouter([
   },
 ], { basename: basePath });
 
+function prefetchRoutes() {
+  const prefetch = () => {
+    import('./pages/perp/Layout');
+    import('./pages/perp/Index');
+    import('./pages/portfolio/Layout');
+    import('./pages/portfolio/Index');
+    import('./pages/markets/Layout');
+    import('./pages/markets/Index');
+    import('./pages/leaderboard/Layout');
+    import('./pages/leaderboard/Index');
+    import('./pages/swap/Layout');
+    import('./pages/swap/Index');
+    import('./pages/bot/Layout');
+    import('./pages/bot/Index');
+    import('./pages/rewards/Layout');
+    import('./pages/rewards/Index');
+    import('./pages/vaults/Layout');
+    import('./pages/vaults/Index');
+  };
+
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(prefetch, { timeout: 3000 });
+  } else {
+    setTimeout(prefetch, 2000);
+  }
+}
+
 loadRuntimeConfig().then(() => {
   loadAnalytics();
   
@@ -174,6 +201,8 @@ loadRuntimeConfig().then(() => {
       </HelmetProvider>
     </React.StrictMode>
   );
+
+  prefetchRoutes();
 });
 
 if ('serviceWorker' in navigator) {

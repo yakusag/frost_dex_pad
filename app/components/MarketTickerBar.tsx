@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { FROST_TOKEN } from "@/utils/customTokens";
 
 interface MarketItem {
   symbol: string;
   base: string;
   price: number;
   change: number;
+  isFrost?: boolean;
 }
 
 const SYMBOLS = [
@@ -28,6 +30,8 @@ function fmt(price: number, base: string): string {
   if (["PEPE", "BONK", "SHIB"].includes(base)) {
     return price.toFixed(8);
   }
+  if (price < 0.000001) return price.toFixed(10);
+  if (price < 0.0001) return price.toFixed(8);
   if (price < 0.01) return price.toFixed(6);
   if (price < 1) return price.toFixed(4);
   if (price < 100) return price.toFixed(3);
@@ -57,13 +61,43 @@ async function fetchMarkets(): Promise<MarketItem[]> {
   }
 }
 
+async function fetchFrostPrice(): Promise<MarketItem | null> {
+  try {
+    const res = await fetch(
+      `https://api.geckoterminal.com/api/v2/networks/arbitrum/pools/${FROST_TOKEN.poolAddress}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    const attrs = json?.data?.attributes;
+    if (!attrs) return null;
+    const price = parseFloat(attrs.base_token_price_usd ?? "0");
+    const change = parseFloat(attrs.price_change_percentage?.h24 ?? "0");
+    if (!price) return null;
+    return {
+      symbol: "FROST_USDC",
+      base: "FROST",
+      price,
+      change,
+      isFrost: true,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function MarketTickerBar() {
   const [items, setItems] = useState<MarketItem[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    fetchMarkets().then(setItems);
-    intervalRef.current = setInterval(() => fetchMarkets().then(setItems), 30_000);
+    async function load() {
+      const [markets, frost] = await Promise.all([fetchMarkets(), fetchFrostPrice()]);
+      const all = frost ? [frost, ...markets] : markets;
+      setItems(all);
+    }
+    load();
+    intervalRef.current = setInterval(load, 30_000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -77,7 +111,10 @@ export default function MarketTickerBar() {
     <div className="market-ticker-bar" aria-label="Live market prices">
       <div className="ticker-track">
         {doubled.map((item, i) => (
-          <div key={`${item.symbol}-${i}`} className="ticker-item">
+          <div key={`${item.symbol}-${i}`} className={`ticker-item${item.isFrost ? " ticker-item--frost" : ""}`}>
+            {item.isFrost && (
+              <span className="ticker-frost-badge">❄</span>
+            )}
             <span className="ticker-base">{item.base}</span>
             <span className="ticker-price">${fmt(item.price, item.base)}</span>
             <span className={`ticker-change ${item.change >= 0 ? "up" : "down"}`}>

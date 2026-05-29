@@ -180,6 +180,28 @@ const getPnLBackgroundImages = (): string[] => {
   ];
 };
 
+const BotActiveIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="8" width="18" height="13" rx="2" fill="currentColor" opacity="0.9"/>
+    <rect x="9" y="3" width="6" height="5" rx="1" fill="currentColor" opacity="0.7"/>
+    <circle cx="9" cy="13" r="1.5" fill="white"/>
+    <circle cx="15" cy="13" r="1.5" fill="white"/>
+    <rect x="9" y="16.5" width="6" height="1.5" rx="0.75" fill="white" opacity="0.7"/>
+    <line x1="12" y1="3" x2="12" y2="5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const BotInactiveIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="8" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
+    <rect x="9" y="3" width="6" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
+    <circle cx="9" cy="13" r="1.5" fill="currentColor" opacity="0.6"/>
+    <circle cx="15" cy="13" r="1.5" fill="currentColor" opacity="0.6"/>
+    <rect x="9" y="16.5" width="6" height="1.5" rx="0.75" fill="currentColor" opacity="0.4"/>
+    <line x1="12" y1="3" x2="12" y2="5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+  </svg>
+);
+
 const getBottomNavIcon = (menuId: string) => {
   switch (menuId) {
     case "Trading":
@@ -201,6 +223,11 @@ const getBottomNavIcon = (menuId: string) => {
       return {
         activeIcon: <MarketsActiveIcon />,
         inactiveIcon: <MarketsInactiveIcon />,
+      };
+    case "Bot":
+      return {
+        activeIcon: <BotActiveIcon />,
+        inactiveIcon: <BotInactiveIcon />,
       };
     default:
       throw new Error(`Unsupported menu id: ${menuId}`);
@@ -299,6 +326,7 @@ export const useOrderlyConfig = () => {
       "Portfolio",
       "Markets",
       "Leaderboard",
+      "Bot",
     ];
     const bottomNavMenus = enabledMenus
       .filter((menu) => supportedBottomNavMenus.includes(menu.id))
