@@ -6,129 +6,91 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── animated gradient glow — top nav bar ─────────────────────────── */
+/* ─── nav bottom border ───────────────────────────────────────────── */
 header,
 nav,
 .oui-top-nav,
 [class*="oui-header"],
 [class*="oui-nav-bar"] {
-  position: relative;
-  overflow: hidden;
+  border-bottom: 1px solid rgba(30, 36, 50, 1);
 }
 
-header::after,
-nav::after,
-.oui-top-nav::after,
-[class*="oui-header"]::after,
-[class*="oui-nav-bar"]::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: -100%;
-  width: 300%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(0, 210, 140, 0.6) 30%,
-    rgba(60, 230, 255, 0.9) 50%,
-    rgba(0, 210, 140, 0.6) 70%,
-    transparent 100%
-  );
-  animation: ice-glow-slide 4s linear infinite;
-}
-
-@keyframes ice-glow-slide {
-  0%   { left: -100%; }
-  100% { left: 100%;  }
-}
-
-/* ─── frosted ice glow — cards & panels ────────────────────────────── */
-.oui-bg-base-8,
-.oui-bg-base-7,
-.oui-bg-base-6 {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-/* ─── subtle glow on primary buttons & accents ─────────────────────── */
+/* ─── primary button glow ───────────────────────────────────────── */
 .oui-bg-primary,
 [class*="oui-bg-primary"] {
-  box-shadow: 0 0 12px 0 rgba(60, 230, 255, 0.25);
+  box-shadow: 0 0 10px 0 rgba(56, 224, 248, 0.2);
 }
 
 /* ─── glowing border on focused inputs ─────────────────────────────── */
 .oui-input:focus-within,
 input:focus {
-  box-shadow: 0 0 0 1px rgba(60, 230, 255, 0.4), 0 0 8px 0 rgba(60, 230, 255, 0.15) !important;
+  box-shadow: 0 0 0 1px rgba(56, 224, 248, 0.35) !important;
 }
 
-/* ─── ice shimmer on table/orderbook row hover ──────────────────────── */
+/* ─── row hover ─────────────────────────────────────────────────── */
 .oui-orderbook-row:hover,
 tr:hover td {
-  background: rgba(60, 230, 255, 0.04) !important;
+  background: rgba(56, 224, 248, 0.04) !important;
 }
 
-/* ─── custom ice scrollbar ──────────────────────────────────────────── */
+/* ─── custom scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(4, 6, 20, 0.8);
+  background: rgba(11, 14, 17, 0.8);
 }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(0, 210, 140, 0.6), rgba(60, 230, 255, 0.6));
+  background: rgba(56, 224, 248, 0.35);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(0, 210, 140, 0.9), rgba(60, 230, 255, 0.9));
+  background: rgba(56, 224, 248, 0.6);
 }
 
-/* ─── text selection highlight ──────────────────────────────────────── */
+/* ─── text selection ──────────────────────────────────────────────── */
 ::selection {
-  background: rgba(60, 230, 255, 0.2);
-  color: #e1f5ff;
+  background: rgba(56, 224, 248, 0.18);
+  color: #eaecef;
 }
 
-/* ─── glassmorphism on modals & dialogs ─────────────────────────────── */
+/* ─── modals & dialogs ─────────────────────────────────────────────── */
 [role="dialog"],
 [data-radix-popper-content-wrapper],
 .oui-dialog,
 [class*="oui-modal"],
 [class*="oui-popover"] {
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  background: rgba(6, 10, 30, 0.85) !important;
-  border: 1px solid rgba(60, 230, 255, 0.1) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(60, 230, 255, 0.06) !important;
+  background: rgba(14, 17, 22, 0.97) !important;
+  border: 1px solid rgba(30, 36, 50, 1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
 }
 
-/* ─── glowing border on active/selected tabs ────────────────────────── */
+/* ─── active tabs ─────────────────────────────────────────────────── */
 [aria-selected="true"],
 [data-state="active"] {
-  text-shadow: 0 0 8px rgba(60, 230, 255, 0.5);
+  color: rgb(56, 224, 248);
 }
 
-/* ─── profit & loss number glow ─────────────────────────────────────── */
+/* ─── profit & loss ─────────────────────────────────────────────── */
 [class*="oui-text-profit"],
 [class*="text-profit"] {
-  text-shadow: 0 0 6px rgba(60, 230, 180, 0.5);
+  color: rgb(14, 203, 129) !important;
 }
 [class*="oui-text-loss"],
 [class*="text-loss"] {
-  text-shadow: 0 0 6px rgba(255, 80, 110, 0.4);
+  color: rgb(246, 70, 93) !important;
 }
 
-/* ─── smooth page transitions ───────────────────────────────────────── */
+/* ─── page fade-in ──────────────────────────────────────────────────── */
 main,
 .oui-page,
 [class*="oui-content"] {
-  animation: page-fade-in 0.2s ease-out;
+  animation: page-fade-in 0.15s ease-out;
 }
 
 @keyframes page-fade-in {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(3px); }
   to   { opacity: 1; transform: translateY(0);   }
 }
 
@@ -140,9 +102,8 @@ main,
   right: 0;
   z-index: 9000;
   height: 28px;
-  background: rgba(4, 6, 20, 0.92);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(60, 230, 255, 0.1);
+  background: rgba(11, 14, 17, 0.98);
+  border-bottom: 1px solid rgba(30, 36, 50, 1);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -173,17 +134,17 @@ main,
   font-size: 11px;
   font-family: 'Manrope', sans-serif;
   font-weight: 600;
-  border-right: 1px solid rgba(60, 230, 255, 0.08);
+  border-right: 1px solid rgba(30, 36, 50, 1);
   cursor: default;
 }
 
 .ticker-base {
-  color: rgba(180, 210, 255, 0.7);
+  color: rgba(180, 190, 210, 0.7);
   letter-spacing: 0.5px;
 }
 
 .ticker-price {
-  color: #e2eeff;
+  color: #eaecef;
   font-weight: 700;
   letter-spacing: 0.2px;
 }
@@ -193,8 +154,8 @@ main,
   font-weight: 600;
   letter-spacing: 0.2px;
 }
-.ticker-change.up   { color: #00d28c; }
-.ticker-change.down { color: #ff4d6a; }
+.ticker-change.up   { color: #0ecb81; }
+.ticker-change.down { color: #f6465d; }
 
 /* push page content below the ticker bar */
 body {
@@ -206,16 +167,15 @@ body {
   position: fixed;
   inset: 0;
   z-index: 99990;
-  background: rgba(4, 6, 20, 0.75);
-  backdrop-filter: blur(10px);
+  background: rgba(11, 14, 17, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  animation: rw-fade-in 0.4s ease forwards;
+  animation: rw-fade-in 0.3s ease forwards;
 }
 .referral-welcome-overlay.rw-closing {
-  animation: rw-fade-out 0.4s ease forwards;
+  animation: rw-fade-out 0.3s ease forwards;
 }
 @keyframes rw-fade-in {
   from { opacity: 0; }
@@ -230,64 +190,59 @@ body {
   position: relative;
   width: 100%;
   max-width: 380px;
-  background: linear-gradient(160deg, rgba(18,40,98,0.95) 0%, rgba(8,16,48,0.98) 100%);
-  border: 1px solid rgba(60,230,255,0.25);
-  border-radius: 24px;
+  background: rgb(20, 24, 30);
+  border: 1px solid rgba(30, 36, 50, 1);
+  border-radius: 16px;
   padding: 40px 32px 32px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 0 60px rgba(60,230,255,0.1), 0 24px 64px rgba(0,0,0,0.6);
-  overflow: hidden;
-  animation: rw-slide-up 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  animation: rw-slide-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 @keyframes rw-slide-up {
-  from { opacity: 0; transform: translateY(32px) scale(0.95); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .rw-closing .referral-welcome-card {
-  animation: rw-slide-down 0.35s ease forwards;
+  animation: rw-slide-down 0.25s ease forwards;
 }
 @keyframes rw-slide-down {
-  from { opacity: 1; transform: translateY(0) scale(1); }
-  to   { opacity: 0; transform: translateY(24px) scale(0.95); }
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(16px); }
 }
 
 .rw-glow {
   position: absolute;
-  top: -60px; left: 50%; transform: translateX(-50%);
-  width: 220px; height: 220px;
+  top: -40px; left: 50%; transform: translateX(-50%);
+  width: 160px; height: 160px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(60,230,255,0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(56, 224, 248, 0.12) 0%, transparent 70%);
   pointer-events: none;
 }
 
 .rw-icon {
-  font-size: 52px;
-  animation: rw-spin 8s linear infinite;
-  filter: drop-shadow(0 0 16px rgba(60,230,255,0.7));
-}
-@keyframes rw-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  font-size: 48px;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(56, 224, 248, 0.5));
 }
 
 .rw-title {
   font-family: 'Manrope', sans-serif;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(135deg, #3ce6ff 0%, #00d28c 100%);
+  background: linear-gradient(135deg, #38e0f8 0%, #0ecb81 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   text-align: center;
 }
 
 .rw-sub {
   font-size: 13px;
-  color: rgba(180,210,255,0.65);
+  color: rgba(180, 190, 210, 0.6);
   text-align: center;
   margin-top: -8px;
 }
@@ -297,9 +252,9 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  background: rgba(60,230,255,0.06);
-  border: 1px solid rgba(60,230,255,0.2);
-  border-radius: 12px;
+  background: rgba(56, 224, 248, 0.05);
+  border: 1px solid rgba(56, 224, 248, 0.15);
+  border-radius: 10px;
   padding: 10px 24px;
   width: 100%;
 }
@@ -308,13 +263,13 @@ body {
   font-weight: 600;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: rgba(60,230,255,0.5);
+  color: rgba(56, 224, 248, 0.45);
 }
 .rw-code-value {
   font-size: 20px;
   font-weight: 700;
   font-family: 'Manrope', monospace;
-  color: #3ce6ff;
+  color: #38e0f8;
   letter-spacing: 3px;
   text-transform: uppercase;
 }
@@ -331,8 +286,8 @@ body {
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  color: rgba(180,210,255,0.8);
-  background: rgba(255,255,255,0.03);
+  color: rgba(180, 190, 210, 0.8);
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 8px;
   padding: 8px 12px;
 }
@@ -342,28 +297,19 @@ body {
   width: 100%;
   margin-top: 8px;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
   font-family: 'Manrope', sans-serif;
   font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #3ce6ff 0%, #00d28c 100%);
-  color: #040614;
-  transition: opacity 0.2s, transform 0.15s;
-  box-shadow: 0 0 20px rgba(60,230,255,0.35);
+  letter-spacing: 0.3px;
+  background: linear-gradient(135deg, #38e0f8 0%, #0ecb81 100%);
+  color: #0b0e11;
+  transition: opacity 0.15s ease;
 }
-.rw-btn:hover  { opacity: 0.9; transform: translateY(-1px); }
-.rw-btn:active { opacity: 1;   transform: translateY(0); }
-
-/* ─── performance: GPU-accelerate main layout layers ────────────────── */
-header, nav, main, [class*="oui-scaffold"] {
-  contain: layout style;
-}
-.oui-orderbook-row, tr {
-  will-change: background-color;
-}
+.rw-btn:hover  { opacity: 0.88; }
+.rw-btn:active { opacity: 1; }
 
 /* ─── smooth scrolling ──────────────────────────────────────────────── */
 html {
@@ -378,35 +324,34 @@ a:active,
   transition: transform 0.08s ease;
 }
 
-/* ─── all interactive elements — smooth transitions ─────────────────── */
+/* ─── transitions ──────────────────────────────────────────────────── */
 button,
 a,
 input,
 select,
 [role="button"],
 [role="tab"] {
-  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
 
-/* ─── price flash — green when price goes up ─────────────────────────── */
+/* ─── price flash ────────────────────────────────────────────────── */
 .price-flash-up {
-  animation: flash-up 0.6s ease-out;
+  animation: flash-up 0.5s ease-out;
 }
 @keyframes flash-up {
-  0%   { color: rgb(60, 230, 180); text-shadow: 0 0 8px rgba(60,230,180,0.8); }
-  100% { color: inherit;           text-shadow: none; }
+  0%   { color: rgb(14, 203, 129); }
+  100% { color: inherit; }
 }
 
-/* ─── price flash — red when price goes down ─────────────────────────── */
 .price-flash-down {
-  animation: flash-down 0.6s ease-out;
+  animation: flash-down 0.5s ease-out;
 }
 @keyframes flash-down {
-  0%   { color: rgb(255, 80, 110); text-shadow: 0 0 8px rgba(255,80,110,0.8); }
-  100% { color: inherit;           text-shadow: none; }
+  0%   { color: rgb(246, 70, 93); }
+  100% { color: inherit; }
 }
 
-/* ─── network status slide-up animation ─────────────────────────────── */
+/* ─── network status ─────────────────────────────────────────────── */
 @keyframes net-slide-up {
   from { opacity: 0; transform: translateX(-50%) translateY(12px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0);    }
@@ -415,4 +360,33 @@ select,
 /* ─── hide trading rewards on mobile ────────────────────────────────── */
 .oui-portfolio-page .oui-box.oui-flex.oui-flex-nowrap > div:nth-child(2).oui-box.oui-flex.oui-justify-start.oui-flex-nowrap.oui-relative {
   display: none;
+}
+
+/* ─── bot page styles ─────────────────────────────────────────────── */
+.bot-card {
+  background: rgb(20, 24, 30);
+  border: 1px solid rgba(30, 36, 50, 1);
+  border-radius: 12px;
+  padding: 20px;
+}
+.bot-card:hover {
+  border-color: rgba(56, 224, 248, 0.2);
+}
+.bot-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.bot-status-dot.running {
+  background: #0ecb81;
+  box-shadow: 0 0 6px rgba(14, 203, 129, 0.7);
+  animation: dot-pulse 2s ease-in-out infinite;
+}
+.bot-status-dot.stopped {
+  background: rgba(180, 190, 210, 0.3);
+}
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
 }
