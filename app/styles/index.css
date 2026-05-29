@@ -562,11 +562,109 @@ select,
 }
 
 /* ─── AI ASSISTANT ──────────────────────────────────────────────────── */
-.ai-assistant-fab {
+/* ─── WIDGET DRAG CONTROLS ───────────────────────────────────────────── */
+.widget-controls {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: panel-in 0.12s ease;
+  z-index: 10;
+}
+.widget-controls--right { left: auto; right: 0; }
+.widget-drag-handle {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: rgba(20, 28, 40, 0.95);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(180,190,210,0.7);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  line-height: 1;
+}
+.widget-drag-handle:active { cursor: grabbing; }
+.widget-hide-btn {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: rgba(20, 28, 40, 0.95);
+  border: 1px solid rgba(246,70,93,0.25);
+  color: rgba(246,70,93,0.7);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.widget-hide-btn:hover { background: rgba(246,70,93,0.15); color: #f6465d; }
+
+/* ─── WIDGET MANAGER ─────────────────────────────────────────────────── */
+.wm-wrap {
   position: fixed;
   bottom: 80px;
-  left: 12px;
-  z-index: 200;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 210;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.wm-fab {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(20, 28, 40, 0.96);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(180,190,210,0.7);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  transition: border-color 0.15s, color 0.15s;
+}
+.wm-fab:hover { color: #e8ecf1; border-color: rgba(255,255,255,0.3); }
+.wm-panel {
+  background: rgba(9, 13, 20, 0.97);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 10px;
+  min-width: 180px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  backdrop-filter: blur(16px);
+  font-family: 'Manrope', sans-serif;
+  animation: panel-in 0.15s ease;
+  order: -1;
+}
+.wm-title { font-size: 10px; font-weight: 700; color: rgba(180,190,210,0.4); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+.wm-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.wm-row:last-of-type { border-bottom: none; }
+.wm-label { font-size: 12px; color: #e8ecf1; }
+.wm-toggle {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.06em;
+  padding: 3px 8px; border-radius: 6px; cursor: pointer; border: none;
+  transition: background 0.15s;
+}
+.wm-toggle--on { background: rgba(14,203,129,0.15); color: #0ecb81; }
+.wm-toggle--off { background: rgba(246,70,93,0.12); color: #f6465d; }
+.wm-show-all {
+  width: 100%; margin-top: 8px; padding: 6px;
+  background: rgba(56,224,248,0.08); border: 1px solid rgba(56,224,248,0.2);
+  border-radius: 7px; color: #38e0f8; font-size: 11px; font-weight: 700;
+  cursor: pointer; font-family: 'Manrope', sans-serif;
+  transition: background 0.15s;
+}
+.wm-show-all:hover { background: rgba(56,224,248,0.14); }
+
+/* ─── AI ASSISTANT ──────────────────────────────────────────────────── */
+.ai-assistant-fab {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -578,10 +676,11 @@ select,
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(56, 224, 248, 0.15), 0 0 0 0 rgba(56,224,248,0.4);
+  box-shadow: 0 4px 20px rgba(56, 224, 248, 0.15);
   animation: ai-fab-pulse 3s ease-in-out infinite;
   font-family: 'Manrope', sans-serif;
   transition: box-shadow 0.2s, transform 0.15s;
+  white-space: nowrap;
 }
 .ai-assistant-fab:hover {
   transform: translateY(-1px);
@@ -592,12 +691,6 @@ select,
   50% { box-shadow: 0 4px 20px rgba(56,224,248,0.25), 0 0 0 6px rgba(56,224,248,0); }
 }
 .ai-assistant-panel {
-  position: fixed;
-  bottom: 136px;
-  left: 12px;
-  z-index: 199;
-  width: 340px;
-  max-width: calc(100vw - 24px);
   max-height: 520px;
   background: rgba(9, 13, 20, 0.97);
   border: 1px solid rgba(56, 224, 248, 0.2);
@@ -800,10 +893,6 @@ select,
 
 /* ─── WHALE ALERTS ──────────────────────────────────────────────────── */
 .whale-fab {
-  position: fixed;
-  bottom: 136px;
-  right: 12px;
-  z-index: 200;
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -817,6 +906,7 @@ select,
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
   transition: transform 0.15s, box-shadow 0.15s;
   backdrop-filter: blur(10px);
+  position: relative;
 }
 .whale-fab:hover {
   transform: scale(1.08);
@@ -838,12 +928,6 @@ select,
   50% { transform: scale(1.3); }
 }
 .whale-panel {
-  position: fixed;
-  bottom: 188px;
-  right: 12px;
-  z-index: 199;
-  width: 300px;
-  max-width: calc(100vw - 24px);
   max-height: 400px;
   background: rgba(9, 13, 20, 0.97);
   border: 1px solid rgba(14, 203, 129, 0.18);
@@ -912,10 +996,6 @@ select,
 
 /* ─── SENTIMENT DASHBOARD ───────────────────────────────────────────── */
 .sentiment-fab {
-  position: fixed;
-  bottom: 188px;
-  left: 12px;
-  z-index: 200;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -931,18 +1011,13 @@ select,
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
   font-family: 'Manrope', sans-serif;
   transition: border-color 0.15s, transform 0.15s;
+  white-space: nowrap;
 }
 .sentiment-fab:hover {
   transform: translateY(-1px);
   border-color: rgba(180,190,210,0.35);
 }
 .sentiment-panel {
-  position: fixed;
-  bottom: 240px;
-  left: 12px;
-  z-index: 199;
-  width: 280px;
-  max-width: calc(100vw - 24px);
   background: rgba(9, 13, 20, 0.97);
   border: 1px solid rgba(180,190,210,0.12);
   border-radius: 14px;

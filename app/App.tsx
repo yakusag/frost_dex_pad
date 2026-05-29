@@ -13,6 +13,8 @@ import MarketTickerBar from "@/components/MarketTickerBar";
 import AIAssistant from "@/components/AIAssistant";
 import WhaleAlerts from "@/components/WhaleAlerts";
 import SentimentDashboard from "@/components/SentimentDashboard";
+import WidgetManager from "@/components/WidgetManager";
+import { useWidgetVisibility } from "@/hooks/useWidgetVisibility";
 import { withBasePath } from "./utils/base-path";
 import { getSEOConfig, getUserLanguage } from "./utils/seo";
 import { startFaviconAnimation } from "./utils/favicon-animation";
@@ -20,6 +22,7 @@ import { startFaviconAnimation } from "./utils/favicon-animation";
 export default function App() {
   const seoConfig = getSEOConfig();
   const defaultLanguage = getUserLanguage();
+  const { visibility, toggle, showAll, anyHidden } = useWidgetVisibility();
 
   useEffect(() => {
     if (typeof (window as any).__hideSplash === "function") {
@@ -27,7 +30,7 @@ export default function App() {
     }
     startFaviconAnimation(withBasePath("/favicon.webp"));
   }, []);
-  
+
   return (
     <>
       <Helmet>
@@ -45,12 +48,17 @@ export default function App() {
         <LeverageAutoMax />
         <Outlet />
       </OrderlyProvider>
-      <AIAssistant />
-      <WhaleAlerts />
-      <SentimentDashboard />
+      {visibility.ai && <AIAssistant onHide={() => toggle("ai")} />}
+      {visibility.whale && <WhaleAlerts onHide={() => toggle("whale")} />}
+      {visibility.sentiment && <SentimentDashboard onHide={() => toggle("sentiment")} />}
+      <WidgetManager
+        visibility={visibility}
+        anyHidden={anyHidden}
+        onToggle={toggle}
+        onShowAll={showAll}
+      />
       <SpeedInsights />
       <Analytics />
     </>
   );
 }
-
