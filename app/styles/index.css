@@ -132,6 +132,75 @@ main,
   to   { opacity: 1; transform: translateY(0);   }
 }
 
+/* ─── market ticker bar ──────────────────────────────────────────────── */
+.market-ticker-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9000;
+  height: 28px;
+  background: rgba(4, 6, 20, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(60, 230, 255, 0.1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.ticker-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  white-space: nowrap;
+  animation: ticker-scroll 60s linear infinite;
+  will-change: transform;
+}
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px;
+  font-size: 11px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  border-right: 1px solid rgba(60, 230, 255, 0.08);
+  cursor: default;
+}
+
+.ticker-base {
+  color: rgba(180, 210, 255, 0.7);
+  letter-spacing: 0.5px;
+}
+
+.ticker-price {
+  color: #e2eeff;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.ticker-change {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.ticker-change.up   { color: #00d28c; }
+.ticker-change.down { color: #ff4d6a; }
+
+/* push page content below the ticker bar */
+body {
+  padding-top: 28px;
+}
+
 /* ─── referral welcome popup ────────────────────────────────────────── */
 .referral-welcome-overlay {
   position: fixed;

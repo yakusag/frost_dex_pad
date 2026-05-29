@@ -9,6 +9,7 @@ import { NetworkStatus } from "@/components/NetworkStatus";
 import LeverageAutoMax from "@/components/LeverageAutoMax";
 import ReferralHandler from "@/components/ReferralHandler";
 import ReferralWelcome from "@/components/ReferralWelcome";
+import MarketTickerBar from "@/components/MarketTickerBar";
 import { withBasePath } from "./utils/base-path";
 import { getSEOConfig, getUserLanguage } from "./utils/seo";
 import { startFaviconAnimation } from "./utils/favicon-animation";
@@ -36,6 +37,7 @@ export default function App() {
       <NetworkStatus />
       <ReferralHandler />
       <ReferralWelcome />
+      <MarketTickerBar />
       <OrderlyProvider>
         <LeverageAutoMax />
         <Outlet />
