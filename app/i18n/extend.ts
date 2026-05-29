@@ -34,4 +34,16 @@ export const extendMessagesDz = {
   "extend.tradingLeaderboard.campaigns": "الكامبانيات",
 };
 
+export const extendMessagesMa = {
+  "extend.tradingRewards.description": "ترايد على FrostDex وربح الريواردز",
+  "extend.affiliate.tag": "خصم ٤٠٪",
+  "extend.affiliate.description": "دعو المتاجرين، وربح ٤٠٪ من فراياتهم",
+  "extend.staking": "الستيكينغ",
+  "extend.staking.description": "ستيك ORDER/esORDER وربح VALOR",
+  "extend.swap": "بادل",
+  "extend.tradingPoints.points": "النقاط",
+  "extend.tradingLeaderboard.leaderboard": "لوحة المتصدرين",
+  "extend.tradingLeaderboard.campaigns": "الكامبانيات",
+};
+
 export type ExtendLocaleMessages = typeof extendMessages;
