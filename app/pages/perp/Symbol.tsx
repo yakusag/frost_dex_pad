@@ -9,6 +9,7 @@ import { useOrderlyConfig } from "@/utils/config";
 import { getPageMeta } from "@/utils/seo";
 import { renderSEOTags } from "@/utils/seo-tags";
 import { getRuntimeConfig } from "@/utils/runtime-config";
+import FrostTradeWidget from "@/components/FrostTradeWidget";
 
 function LiveTitle({ symbol }: { symbol: string }) {
   const ticker = useTickerStream(symbol);
@@ -67,6 +68,7 @@ export default function PerpSymbol() {
         tradingViewConfig={config.tradingPage.tradingViewConfig}
         sharePnLConfig={config.tradingPage.sharePnLConfig}
       />
+      <FrostTradeWidget />
       <div className="md:hidden pb-2 pt-8 text-center">
         <span className="oui-text-2xs oui-text-base-contrast-54">
           Charts powered by{" "}

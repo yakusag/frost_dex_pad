@@ -388,6 +388,150 @@ select,
   display: none;
 }
 
+/* ─── frost trade widget ─────────────────────────────────────────── */
+.frost-trade-widget {
+  position: fixed;
+  bottom: 80px;
+  right: 12px;
+  z-index: 50;
+  width: 148px;
+  background: rgba(11, 14, 17, 0.96);
+  border: 1px solid rgba(56, 224, 248, 0.22);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 12px rgba(56,224,248,0.06);
+  font-family: 'Manrope', sans-serif;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+
+@media (min-width: 768px) {
+  .frost-trade-widget {
+    bottom: 24px;
+    right: 16px;
+  }
+}
+
+.frost-trade-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 7px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(56, 224, 248, 0.1);
+  user-select: none;
+  background: rgba(56, 224, 248, 0.04);
+}
+.frost-trade-widget__header:hover {
+  background: rgba(56, 224, 248, 0.08);
+}
+
+.frost-trade-widget__title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(56, 224, 248);
+  letter-spacing: 0.5px;
+}
+
+.frost-trade-widget__icon {
+  font-size: 11px;
+  filter: drop-shadow(0 0 4px rgba(56,224,248,0.7));
+}
+
+.frost-trade-widget__toggle {
+  font-size: 8px;
+  color: rgba(56, 224, 248, 0.5);
+}
+
+.frost-trade-widget__body {
+  padding: 10px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.frost-trade-widget__price {
+  font-size: 15px;
+  font-weight: 800;
+  color: rgb(234, 236, 239);
+  letter-spacing: 0.2px;
+  transition: color 0.4s ease;
+}
+
+.frost-trade-widget__loading {
+  color: rgba(234, 236, 239, 0.3);
+}
+
+.frost-widget-flash-up {
+  animation: frost-flash-up 0.7s ease-out;
+}
+.frost-widget-flash-down {
+  animation: frost-flash-down 0.7s ease-out;
+}
+@keyframes frost-flash-up {
+  0%   { color: rgb(14, 203, 129); }
+  100% { color: rgb(234, 236, 239); }
+}
+@keyframes frost-flash-down {
+  0%   { color: rgb(246, 70, 93); }
+  100% { color: rgb(234, 236, 239); }
+}
+
+.frost-trade-widget__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.frost-trade-widget__label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(180, 190, 210, 0.45);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.frost-trade-widget__change,
+.frost-trade-widget__val {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgb(234, 236, 239);
+}
+
+.frost-trade-widget__actions {
+  display: flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.frost-trade-widget__btn {
+  flex: 1;
+  padding: 5px 0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: opacity 0.12s ease;
+  letter-spacing: 0.2px;
+  display: block;
+}
+.frost-trade-widget__btn:hover { opacity: 0.82; }
+
+.frost-trade-widget__btn--primary {
+  background: linear-gradient(135deg, rgb(56,224,248) 0%, rgb(14,203,129) 100%);
+  color: rgb(11, 14, 17) !important;
+}
+
+.frost-trade-widget__btn--secondary {
+  background: rgba(56, 224, 248, 0.1);
+  border: 1px solid rgba(56, 224, 248, 0.25);
+  color: rgb(56, 224, 248) !important;
+}
+
 /* ─── bot page styles ─────────────────────────────────────────────── */
 .bot-card {
   background: rgb(20, 24, 30);
