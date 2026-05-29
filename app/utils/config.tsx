@@ -305,7 +305,6 @@ export const useOrderlyConfig = () => {
         name: t("extend.tradingPoints.points"),
       },
       { id: "Bot", href: "/bot", name: "🤖 Bot" },
-      { id: "Competitions", href: "/competitions", name: "🏆 Compete" },
     ];
 
     const defaultEnabledMenus = allMenuItems.filter((menu) => menu.isDefault);
