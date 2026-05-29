@@ -51,45 +51,99 @@ export default function SwapIndex() {
         </div>
 
         {activeTab === "frost" ? (
-          <div className="w-full max-w-md flex flex-col gap-4">
-            <FrostSwapWidget />
+          <div className="w-full flex flex-col gap-4" style={{ maxWidth: 900 }}>
+            {/* Chart + Swap side by side on wider screens, stacked on mobile */}
             <div
-              className="rounded-xl p-4 flex flex-col gap-2"
-              style={{
-                background: "rgb(var(--oui-color-base-2))",
-                border: "1px solid rgba(var(--oui-color-primary), 0.15)",
-              }}
+              className="flex flex-col gap-4"
+              style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 380px", gap: 16, alignItems: "start" }}
             >
-              <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(var(--oui-color-base-foreground), 0.4)" }}>
-                <span
-                  className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{
-                    background: "rgba(var(--oui-color-primary), 0.12)",
-                    color: "rgb(var(--oui-color-primary))",
-                  }}
-                >i</span>
-                <span>
-                  Contract:{" "}
-                  <a
-                    href={`https://arbiscan.io/token/${FROST_TOKEN.address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono hover:underline"
-                    style={{ color: "rgb(var(--oui-color-primary))" }}
-                  >
-                    {FROST_TOKEN.address.slice(0, 6)}…{FROST_TOKEN.address.slice(-4)}
-                  </a>
-                  {" · "}
+              {/* FROST/WETH live chart */}
+              <div
+                className="rounded-xl overflow-hidden"
+                style={{
+                  background: "rgb(var(--oui-color-base-2))",
+                  border: "1px solid rgba(var(--oui-color-primary), 0.15)",
+                  minHeight: 420,
+                }}
+              >
+                <div
+                  className="flex items-center justify-between px-4 py-2.5"
+                  style={{ borderBottom: "1px solid rgba(var(--oui-color-primary), 0.1)" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold" style={{ color: "rgb(var(--oui-color-base-foreground))" }}>
+                      FROST / WETH
+                    </span>
+                    <span
+                      className="text-xs px-2 py-0.5 rounded"
+                      style={{
+                        background: "rgba(var(--oui-color-primary), 0.1)",
+                        color: "rgb(var(--oui-color-primary))",
+                      }}
+                    >
+                      Uniswap V3 · Arbitrum
+                    </span>
+                  </div>
                   <a
                     href={`https://dexscreener.com/arbitrum/${FROST_TOKEN.poolAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:underline"
-                    style={{ color: "rgb(var(--oui-color-primary))" }}
+                    className="text-xs hover:opacity-80 transition-opacity"
+                    style={{ color: "rgba(var(--oui-color-base-foreground), 0.4)" }}
                   >
-                    Chart ↗
+                    Full chart ↗
                   </a>
-                </span>
+                </div>
+                <iframe
+                  src={`https://www.geckoterminal.com/arbitrum/pools/${FROST_TOKEN.poolAddress}?embed=1&info=0&swaps=0&light_chart=0`}
+                  style={{ width: "100%", height: 380, border: "none", display: "block" }}
+                  title="FROST/WETH price chart"
+                  allow="clipboard-write"
+                />
+              </div>
+
+              {/* Swap widget + contract info */}
+              <div className="flex flex-col gap-3">
+                <FrostSwapWidget />
+                <div
+                  className="rounded-xl p-4"
+                  style={{
+                    background: "rgb(var(--oui-color-base-2))",
+                    border: "1px solid rgba(var(--oui-color-primary), 0.15)",
+                  }}
+                >
+                  <div className="flex items-center gap-2 text-xs" style={{ color: "rgba(var(--oui-color-base-foreground), 0.4)" }}>
+                    <span
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{
+                        background: "rgba(var(--oui-color-primary), 0.12)",
+                        color: "rgb(var(--oui-color-primary))",
+                      }}
+                    >i</span>
+                    <span>
+                      Contract:{" "}
+                      <a
+                        href={`https://arbiscan.io/token/${FROST_TOKEN.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono hover:underline"
+                        style={{ color: "rgb(var(--oui-color-primary))" }}
+                      >
+                        {FROST_TOKEN.address.slice(0, 6)}…{FROST_TOKEN.address.slice(-4)}
+                      </a>
+                      {" · "}
+                      <a
+                        href={FROST_TOKEN.uniswapPoolUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                        style={{ color: "rgb(var(--oui-color-primary))" }}
+                      >
+                        Trade on Uniswap ↗
+                      </a>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import BotChart, { Candle, Signal } from "./BotChart";
+import { useBinanceFeed } from "@/hooks/useBinanceFeed";
 
 type Strategy = "grid" | "dca" | "signal";
 type Timeframe = "15m" | "1h" | "4h" | "1d";
@@ -16,11 +17,11 @@ interface BacktestResult {
 }
 
 const SYMBOLS = [
-  { value: "BTC", label: "BTC/USDC", base: 65000, vol: 0.022 },
-  { value: "ETH", label: "ETH/USDC", base: 2000, vol: 0.028 },
-  { value: "SOL", label: "SOL/USDC", base: 80, vol: 0.038 },
-  { value: "ARB", label: "ARB/USDC", base: 0.104, vol: 0.045 },
-  { value: "BNB", label: "BNB/USDC", base: 635, vol: 0.025 },
+  { value: "BTC", label: "BTC/USDT" },
+  { value: "ETH", label: "ETH/USDT" },
+  { value: "SOL", label: "SOL/USDT" },
+  { value: "ARB", label: "ARB/USDT" },
+  { value: "BNB", label: "BNB/USDT" },
 ];
 
 const TIMEFRAMES: Timeframe[] = ["15m", "1h", "4h", "1d"];
@@ -37,41 +38,6 @@ const TF_CANDLES: Record<Timeframe, number> = {
   "1d": 180,
 };
 
-function generateCandles(symbol: string, tf: Timeframe, seed = 42): Candle[] {
-  const sym = SYMBOLS.find((s) => s.value === symbol) || SYMBOLS[0];
-  const count = TF_CANDLES[tf];
-  const interval = TF_MS[tf];
-  const now = Date.now();
-  const startT = now - count * interval;
-
-  // seeded pseudo-random
-  let s = seed + symbol.charCodeAt(0) + ["15m","1h","4h","1d"].indexOf(tf);
-  const rand = () => {
-    s = (s * 1103515245 + 12345) & 0x7fffffff;
-    return s / 0x7fffffff;
-  };
-
-  const candles: Candle[] = [];
-  let price = sym.base;
-  // add trend component
-  const trendStrength = (rand() - 0.5) * 0.3;
-
-  for (let i = 0; i < count; i++) {
-    const t = startT + i * interval;
-    const trend = 1 + trendStrength / count;
-    const change = (rand() - 0.49) * sym.vol * trend;
-    const open = price;
-    const close = price * (1 + change);
-    const hi = Math.max(open, close) * (1 + rand() * sym.vol * 0.5);
-    const lo = Math.min(open, close) * (1 - rand() * sym.vol * 0.5);
-    candles.push({
-      t, o: open, h: hi, l: lo, c: close,
-      v: (rand() * 0.8 + 0.2) * sym.base * 50,
-    });
-    price = close;
-  }
-  return candles;
-}
 
 function computeRSI(candles: Candle[], period = 14): number[] {
   const rsi: number[] = Array(candles.length).fill(50);
@@ -233,10 +199,9 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
   const [investment, setInvestment] = useState(1000);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
-  const [candles, setCandles] = useState<Candle[]>([]);
-  const [liveCandles, setLiveCandles] = useState<Candle[]>([]);
   const [realtimeMode, setRealtimeMode] = useState(false);
-  const liveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const feed = useBinanceFeed(symbol, tf, realtimeMode);
 
   // Params
   const [rsiOversold, setRsiOversold] = useState(35);
@@ -247,52 +212,15 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
   const [dcaInterval, setDcaInterval] = useState(8);
   const [dcaAmount, setDcaAmount] = useState(100);
 
-  // Load candles on symbol/tf change
+  // Reset results when symbol/tf changes
   useEffect(() => {
-    const c = generateCandles(symbol, tf);
-    setCandles(c);
-    setLiveCandles(c.slice(-60));
     setResult(null);
   }, [symbol, tf]);
 
-  // Real-time simulation
-  useEffect(() => {
-    if (!realtimeMode) {
-      if (liveRef.current) clearInterval(liveRef.current);
-      return;
-    }
-    const sym = SYMBOLS.find((s) => s.value === symbol) || SYMBOLS[0];
-    liveRef.current = setInterval(() => {
-      setLiveCandles((prev) => {
-        const last = prev[prev.length - 1];
-        const change = (Math.random() - 0.49) * sym.vol;
-        const close = last.c * (1 + change);
-        const now = Date.now();
-        // extend last candle or create new one
-        const tfMs = TF_MS[tf];
-        if (now - last.t < tfMs) {
-          const updated = {
-            ...last,
-            c: close,
-            h: Math.max(last.h, close),
-            l: Math.min(last.l, close),
-          };
-          return [...prev.slice(0, -1), updated];
-        } else {
-          const newCandle: Candle = {
-            t: last.t + tfMs, o: last.c, h: Math.max(last.c, close),
-            l: Math.min(last.c, close), c: close,
-            v: Math.random() * sym.base * 30,
-          };
-          return [...prev.slice(-59), newCandle];
-        }
-      });
-    }, 800);
-    return () => { if (liveRef.current) clearInterval(liveRef.current); };
-  }, [realtimeMode, symbol, tf]);
-
   const handleBacktest = useCallback(() => {
+    if (feed.candles.length < 20) return;
     setRunning(true);
+    const snapshot = [...feed.candles];
     setTimeout(() => {
       const params: Record<string, number> =
         strategy === "signal"
@@ -300,16 +228,23 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
           : strategy === "grid"
           ? { grids }
           : { intervalCandles: dcaInterval, amountPerBuy: dcaAmount };
-      const res = runBacktest(candles, strategy, params, investment);
+      const res = runBacktest(snapshot, strategy, params, investment);
       setResult(res);
       setRunning(false);
-    }, 600);
-  }, [candles, strategy, rsiOversold, rsiOverbought, emaFast, emaSlow, grids, dcaInterval, dcaAmount, investment]);
+    }, 400);
+  }, [feed.candles, strategy, rsiOversold, rsiOverbought, emaFast, emaSlow, grids, dcaInterval, dcaAmount, investment]);
 
-  const chartData = realtimeMode ? liveCandles : candles;
+  const chartData = feed.candles;
   const chartSignals = result?.signals || [];
 
   const symInfo = SYMBOLS.find((s) => s.value === symbol) || SYMBOLS[0];
+
+  const fmtPrice = (p: number | null) => {
+    if (!p) return "—";
+    if (p >= 1000) return p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (p >= 1) return p.toFixed(4);
+    return p.toFixed(6);
+  };
 
   return (
     <div style={{ fontFamily: "Manrope, sans-serif" }}>
@@ -362,33 +297,33 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
             onClick={() => setRealtimeMode((v) => !v)}
             style={{
               ...btnSm,
-              background: realtimeMode ? "rgba(14,203,129,0.12)" : "rgb(20,24,30)",
-              border: `1px solid ${realtimeMode ? "rgba(14,203,129,0.35)" : "rgba(30,36,50,1)"}`,
-              color: realtimeMode ? "#0ecb81" : "rgba(180,190,210,0.55)",
+              background: feed.wsConnected ? "rgba(14,203,129,0.12)" : realtimeMode ? "rgba(240,185,11,0.1)" : "rgb(20,24,30)",
+              border: `1px solid ${feed.wsConnected ? "rgba(14,203,129,0.35)" : realtimeMode ? "rgba(240,185,11,0.3)" : "rgba(30,36,50,1)"}`,
+              color: feed.wsConnected ? "#0ecb81" : realtimeMode ? "#f0b90b" : "rgba(180,190,210,0.55)",
               display: "flex", alignItems: "center", gap: 5, padding: "7px 12px",
             }}
           >
             <span style={{
               width: 6, height: 6, borderRadius: "50%",
-              background: realtimeMode ? "#0ecb81" : "rgba(180,190,210,0.3)",
-              boxShadow: realtimeMode ? "0 0 6px #0ecb81" : "none",
-              animation: realtimeMode ? "dot-pulse 1.5s ease infinite" : "none",
+              background: feed.wsConnected ? "#0ecb81" : realtimeMode ? "#f0b90b" : "rgba(180,190,210,0.3)",
+              boxShadow: feed.wsConnected ? "0 0 6px #0ecb81" : "none",
+              animation: feed.wsConnected ? "dot-pulse 1.5s ease infinite" : "none",
               display: "inline-block",
             }} />
-            Live
+            {feed.wsConnected ? "Live" : realtimeMode ? "Connecting…" : "Live"}
           </button>
           <button
             onClick={handleBacktest}
-            disabled={running}
+            disabled={running || feed.loading || feed.candles.length < 20}
             style={{
-              background: running ? "rgba(56,224,248,0.25)" : "linear-gradient(135deg,#38e0f8,#0ecb81)",
+              background: (running || feed.loading || feed.candles.length < 20) ? "rgba(56,224,248,0.18)" : "linear-gradient(135deg,#38e0f8,#0ecb81)",
               border: "none", borderRadius: 6, padding: "7px 18px",
               color: "#0b0e11", fontSize: 13, fontWeight: 700,
-              cursor: running ? "not-allowed" : "pointer",
+              cursor: (running || feed.loading || feed.candles.length < 20) ? "not-allowed" : "pointer",
               fontFamily: "Manrope, sans-serif",
             }}
           >
-            {running ? "Running..." : "▶ Backtest"}
+            {running ? "Running..." : feed.loading ? "Loading…" : "▶ Backtest"}
           </button>
         </div>
       </div>
@@ -421,25 +356,57 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "12px 16px", borderBottom: "1px solid rgba(30,36,50,1)",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontWeight: 700, fontSize: 14, color: "#eaecef" }}>{symInfo.label}</span>
             <span style={{ fontSize: 11, color: "rgba(180,190,210,0.45)", background: "rgba(30,36,50,1)", padding: "2px 6px", borderRadius: 4 }}>
               {tf}
             </span>
-            {realtimeMode && (
-              <span style={{ fontSize: 10, color: "#0ecb81", fontWeight: 700, letterSpacing: 0.5 }}>● LIVE</span>
+            {/* Live price */}
+            {feed.latestPrice !== null && (
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#eaecef", letterSpacing: -0.3 }}>
+                ${fmtPrice(feed.latestPrice)}
+              </span>
+            )}
+            {realtimeMode && feed.wsConnected && (
+              <span style={{ fontSize: 10, color: "#0ecb81", fontWeight: 700, letterSpacing: 0.5 }}>
+                ● LIVE
+              </span>
+            )}
+            {realtimeMode && !feed.wsConnected && (
+              <span style={{ fontSize: 10, color: "#f0b90b", fontWeight: 700, letterSpacing: 0.5 }}>
+                ◌ CONNECTING
+              </span>
+            )}
+            {feed.loading && (
+              <span style={{ fontSize: 10, color: "rgba(180,190,210,0.4)" }}>Loading data…</span>
             )}
           </div>
-          <div style={{ fontSize: 11, color: "rgba(180,190,210,0.4)" }}>
-            {chartData.length} candles · {result ? `${result.signals.length} signals` : "Run backtest to see signals"}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {feed.error && (
+              <span style={{ fontSize: 10, color: "#f6465d" }}>⚠ {feed.error}</span>
+            )}
+            {!feed.error && !feed.loading && (
+              <span style={{ fontSize: 10, color: "rgba(56,224,248,0.5)", background: "rgba(56,224,248,0.07)", padding: "2px 6px", borderRadius: 4 }}>
+                Binance · Real Data
+              </span>
+            )}
+            <span style={{ fontSize: 11, color: "rgba(180,190,210,0.4)" }}>
+              {chartData.length} candles{result ? ` · ${result.signals.length} signals` : ""}
+            </span>
           </div>
         </div>
-        <BotChart
-          candles={chartData}
-          signals={chartSignals}
-          height={320}
-          showVolume
-        />
+        {feed.loading ? (
+          <div style={{ height: 320, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(180,190,210,0.3)", fontSize: 13 }}>
+            <span>Fetching candles from Binance…</span>
+          </div>
+        ) : (
+          <BotChart
+            candles={chartData}
+            signals={chartSignals}
+            height={320}
+            showVolume
+          />
+        )}
       </div>
 
       {/* Results */}
