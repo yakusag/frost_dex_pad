@@ -38,7 +38,8 @@ export default function AIAssistant({ onHide }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("frost_ai_key") || "");
+  const envKey = (import.meta.env.VITE_OPENAI_API_KEY as string) || "";
+  const [apiKey, setApiKey] = useState(() => envKey || localStorage.getItem("frost_ai_key") || "");
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [error, setError] = useState("");
   const [hovered, setHovered] = useState(false);

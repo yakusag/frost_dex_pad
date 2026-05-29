@@ -10,4 +10,28 @@ export const extendMessages = {
   "extend.tradingLeaderboard.campaigns": "Campaigns",
 };
 
+export const extendMessagesAr = {
+  "extend.tradingRewards.description": "تداول على FrostDex لكسب المكافآت",
+  "extend.affiliate.tag": "خصم 40%",
+  "extend.affiliate.description": "ادعُ المتداولين، اكسب 40% من رسومهم",
+  "extend.staking": "الرهن",
+  "extend.staking.description": "ارهن ORDER/esORDER للحصول على VALOR",
+  "extend.swap": "تبادل",
+  "extend.tradingPoints.points": "النقاط",
+  "extend.tradingLeaderboard.leaderboard": "لوحة المتصدرين",
+  "extend.tradingLeaderboard.campaigns": "الحملات",
+};
+
+export const extendMessagesDz = {
+  "extend.tradingRewards.description": "ترايد على FrostDex وربح الريواردز",
+  "extend.affiliate.tag": "خصم ٤٠٪",
+  "extend.affiliate.description": "دعو المتاجرين، وربح ٤٠٪ من فراياتهم",
+  "extend.staking": "الستيكينغ",
+  "extend.staking.description": "ستيك ORDER/esORDER وربح VALOR",
+  "extend.swap": "بادل",
+  "extend.tradingPoints.points": "النقاط",
+  "extend.tradingLeaderboard.leaderboard": "لوحة المتصدرين",
+  "extend.tradingLeaderboard.campaigns": "الكامبانيات",
+};
+
 export type ExtendLocaleMessages = typeof extendMessages;
