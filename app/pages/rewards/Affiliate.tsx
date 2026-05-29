@@ -4,11 +4,11 @@ import { Dashboard, ReferralProvider } from "@orderly.network/affiliate";
 import { getRuntimeConfig } from "@/utils/runtime-config";
 
 export default function RewardsAffiliate() {
-  const brokerName = getRuntimeConfig("VITE_ORDERLY_BROKER_NAME");
-  const referralLinkUrl =
+  const brokerName = getRuntimeConfig("VITE_ORDERLY_BROKER_NAME") || "FrostDex";
+  const siteUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : "https://orderly.network";
+      : "https://frostdex.pw";
 
   return (
     <>
@@ -16,9 +16,9 @@ export default function RewardsAffiliate() {
         <title>{generatePageTitle("Affiliate")}</title>
       </Helmet>
       <ReferralProvider
-        becomeAnAffiliateUrl="https://orderly.network"
-        learnAffiliateUrl="https://orderly.network"
-        referralLinkUrl={referralLinkUrl}
+        becomeAnAffiliateUrl={siteUrl + "/rewards/affiliate"}
+        learnAffiliateUrl={siteUrl + "/rewards/affiliate"}
+        referralLinkUrl={siteUrl}
         overwrite={{
           shortBrokerName: brokerName,
           brokerName: brokerName,
