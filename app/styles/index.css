@@ -171,21 +171,48 @@ main,
   filter: drop-shadow(0 0 4px rgba(56, 224, 248, 0.6));
 }
 
-/* push the Orderly scaffold navbar below the 28px ticker bar */
-header[class*="oui"],
-nav[class*="oui"],
-[class*="oui-top-nav"],
-[class*="oui-header"],
-[class*="oui-nav-bar"],
-[class*="oui-scaffold"] header,
-[class*="oui-scaffold"] nav {
-  top: 28px !important;
+/* push the Orderly scaffold navbar below the 28px ticker bar — desktop */
+@media (min-width: 768px) {
+  header[class*="oui"],
+  nav[class*="oui"],
+  [class*="oui-top-nav"],
+  [class*="oui-header"],
+  [class*="oui-nav-bar"],
+  [class*="oui-scaffold"] > header,
+  [class*="oui-scaffold"] > nav,
+  [class*="oui-scaffold"] > div > header,
+  [class*="oui-scaffold"] > div > nav {
+    top: 28px !important;
+    z-index: 65 !important;
+  }
+
+  /* extra offset so scaffold content clears ticker (28px) */
+  [class*="oui-scaffold"] > div > main,
+  [class*="oui-scaffold"] > main {
+    padding-top: 28px !important;
+  }
 }
 
-/* extra offset so scaffold content clears ticker (28px) + navbar (48px) */
-[class*="oui-scaffold"] > div > main,
-[class*="oui-scaffold"] > main {
-  padding-top: 28px !important;
+/* Mobile: ticker bar pushes the fixed mobile header down 28px */
+@media (max-width: 767px) {
+  header[class*="oui"],
+  nav[class*="oui"],
+  [class*="oui-top-nav"],
+  [class*="oui-header"],
+  [class*="oui-nav-bar"],
+  [class*="oui-scaffold"] > header,
+  [class*="oui-scaffold"] > nav,
+  [class*="oui-scaffold"] > div > header,
+  [class*="oui-scaffold"] > div > nav {
+    top: 28px !important;
+    z-index: 65 !important;
+  }
+
+  /* push trading content below ticker (28px) + mobile top bar (~48px) */
+  [class*="oui-scaffold"] > div > main,
+  [class*="oui-scaffold"] > main {
+    margin-top: 28px !important;
+  }
 }
 
 /* ─── referral welcome popup ────────────────────────────────────────── */

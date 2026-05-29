@@ -42,6 +42,7 @@ export default function AIAssistant({ onHide }: Props) {
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [error, setError] = useState("");
   const [hovered, setHovered] = useState(false);
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -79,7 +80,7 @@ export default function AIAssistant({ onHide }: Props) {
       onMouseLeave={() => setHovered(false)}
     >
       {/* Drag handle + hide — shown on hover when panel closed */}
-      {hovered && !open && (
+      {(hovered || isMobile) && !open && (
         <div className="widget-controls">
           <span className="widget-drag-handle" {...dragHandleProps} title="Drag to move">⠿</span>
           <button className="widget-hide-btn" onClick={onHide} title="Hide widget">✕</button>

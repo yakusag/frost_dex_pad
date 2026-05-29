@@ -32,6 +32,7 @@ export default function WhaleAlerts({ onHide }: Props) {
   const [open, setOpen] = useState(false);
   const [hasNew, setHasNew] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const seenIds = useRef<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -63,7 +64,7 @@ export default function WhaleAlerts({ onHide }: Props) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {hovered && !open && (
+      {(hovered || isMobile) && !open && (
         <div className="widget-controls widget-controls--right">
           <span className="widget-drag-handle" {...dragHandleProps} title="Drag to move">⠿</span>
           <button className="widget-hide-btn" onClick={onHide} title="Hide widget">✕</button>
