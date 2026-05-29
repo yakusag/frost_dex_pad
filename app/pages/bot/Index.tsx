@@ -1,10 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import {
-  useOrderEntry,
-  useSymbolsInfo,
-  usePrivateQuery,
-  useAccount,
-} from "@orderly.network/hooks";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
+
+const BotBacktest = lazy(() => import("@/components/BotBacktest"));
 
 type BotStrategy = "grid" | "dca" | "signal";
 type BotStatus = "running" | "stopped" | "paused";
@@ -93,7 +89,7 @@ export default function BotPage() {
       return [];
     }
   });
-  const [tab, setTab] = useState<"bots" | "create" | "logs">("bots");
+  const [tab, setTab] = useState<"bots" | "create" | "logs" | "backtest">("bots");
   const [strategy, setStrategy] = useState<BotStrategy>("grid");
   const [symbol, setSymbol] = useState("PERP_BTC_USDC");
   const [investment, setInvestment] = useState("500");
@@ -296,7 +292,7 @@ export default function BotPage() {
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid rgba(30,36,50,1)", paddingBottom: 0 }}>
-        {(["bots", "create", "logs"] as const).map((t) => (
+        {(["bots", "create", "backtest", "logs"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -315,7 +311,13 @@ export default function BotPage() {
               transition: "color 0.15s ease",
             }}
           >
-            {t === "bots" ? `My Bots (${bots.length})` : t === "create" ? "+ Create Bot" : `Trade Log (${logs.length})`}
+            {t === "bots"
+              ? `My Bots (${bots.length})`
+              : t === "create"
+              ? "+ Create Bot"
+              : t === "backtest"
+              ? "📊 Chart & Backtest"
+              : `Trade Log (${logs.length})`}
           </button>
         ))}
       </div>
@@ -749,6 +751,19 @@ export default function BotPage() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tab: Chart & Backtest */}
+      {tab === "backtest" && (
+        <div>
+          <Suspense fallback={
+            <div style={{ textAlign: "center", padding: "64px 24px", color: "rgba(180,190,210,0.35)", fontSize: 13 }}>
+              Loading chart...
+            </div>
+          }>
+            <BotBacktest defaultStrategy="signal" defaultSymbol="BTC" />
+          </Suspense>
         </div>
       )}
     </div>
