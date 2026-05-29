@@ -25,17 +25,19 @@
     <link rel="dns-prefetch" href="https://arbiscan.io" />
 
     <style>
+      /* ── base ── */
       #splash {
         position: fixed;
         inset: 0;
         z-index: 99999;
-        background: #04060e;
+        background: radial-gradient(ellipse at 50% 40%, #0a1a4a 0%, #04060e 70%);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 28px;
-        transition: opacity 0.5s ease, visibility 0.5s ease;
+        gap: 0;
+        transition: opacity 0.6s ease, visibility 0.6s ease;
+        overflow: hidden;
       }
       #splash.hidden {
         opacity: 0;
@@ -43,37 +45,80 @@
         pointer-events: none;
       }
 
-      /* logo */
-      #splash img {
-        width: 120px;
-        height: 120px;
-        object-fit: contain;
-        filter: drop-shadow(0 0 24px rgba(60, 230, 255, 0.5));
-        animation: splash-pulse 2s ease-in-out infinite;
+      /* ── aurora rays behind everything ── */
+      #splash-aurora {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
       }
-      @keyframes splash-pulse {
-        0%, 100% { filter: drop-shadow(0 0 18px rgba(60,230,255,0.4)); transform: scale(1);   }
-        50%       { filter: drop-shadow(0 0 36px rgba(60,230,255,0.8)); transform: scale(1.06); }
+      #splash-aurora::before,
+      #splash-aurora::after {
+        content: '';
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+      }
+      #splash-aurora::before {
+        width: 500px; height: 300px;
+        top: -60px; left: -80px;
+        background: radial-gradient(ellipse, rgba(60,230,255,0.12) 0%, transparent 70%);
+        animation: aurora-drift 7s ease-in-out infinite alternate;
+      }
+      #splash-aurora::after {
+        width: 400px; height: 250px;
+        bottom: -40px; right: -60px;
+        background: radial-gradient(ellipse, rgba(0,210,140,0.10) 0%, transparent 70%);
+        animation: aurora-drift 9s ease-in-out infinite alternate-reverse;
+      }
+      @keyframes aurora-drift {
+        from { transform: translate(0, 0) scale(1); }
+        to   { transform: translate(40px, 30px) scale(1.15); }
       }
 
-      /* brand name */
+      /* ── snowflake icon ── */
+      #splash-flake {
+        font-size: 88px;
+        line-height: 1;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 0 28px rgba(60,230,255,0.65))
+                drop-shadow(0 0 8px rgba(60,230,255,0.9));
+        animation: flake-appear 0.7s cubic-bezier(0.34,1.56,0.64,1) both,
+                   flake-pulse 3s ease-in-out 0.7s infinite;
+      }
+      @keyframes flake-appear {
+        from { opacity: 0; transform: scale(0.4) rotate(-30deg); }
+        to   { opacity: 1; transform: scale(1) rotate(0deg); }
+      }
+      @keyframes flake-pulse {
+        0%, 100% { filter: drop-shadow(0 0 22px rgba(60,230,255,0.55)) drop-shadow(0 0 6px rgba(60,230,255,0.8));  transform: scale(1); }
+        50%      { filter: drop-shadow(0 0 42px rgba(60,230,255,0.9))  drop-shadow(0 0 14px rgba(60,230,255,1));   transform: scale(1.07); }
+      }
+
+      /* ── brand name ── */
       #splash-name {
-        font-family: 'Manrope', 'Segoe UI', sans-serif;
-        font-size: 28px;
-        font-weight: 700;
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        background: linear-gradient(135deg, #00d28c 0%, #3ce6ff 100%);
+        font-family: 'Manrope', 'Segoe UI', system-ui, sans-serif;
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: 10px;
+        text-transform: lowercase;
+        background: linear-gradient(135deg, #ffffff 0%, #3ce6ff 55%, #00d28c 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        margin-bottom: 36px;
+        animation: name-appear 0.6s ease 0.3s both;
+      }
+      @keyframes name-appear {
+        from { opacity: 0; transform: translateY(12px); letter-spacing: 4px; }
+        to   { opacity: 1; transform: translateY(0);    letter-spacing: 10px; }
       }
 
-      /* progress bar */
+      /* ── progress bar ── */
       #splash-bar-track {
-        width: 160px;
+        width: 140px;
         height: 2px;
-        background: rgba(60, 230, 255, 0.1);
+        background: rgba(60, 230, 255, 0.08);
         border-radius: 9999px;
         overflow: hidden;
       }
@@ -81,66 +126,78 @@
         height: 100%;
         width: 0%;
         border-radius: 9999px;
-        background: linear-gradient(90deg, #00d28c, #3ce6ff);
-        animation: splash-load 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        box-shadow: 0 0 8px rgba(60, 230, 255, 0.7);
+        background: linear-gradient(90deg, #3ce6ff, #00d28c);
+        box-shadow: 0 0 10px rgba(60, 230, 255, 0.8);
+        animation: splash-load 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
       }
       @keyframes splash-load {
         0%   { width: 0%;   }
-        60%  { width: 75%;  }
+        60%  { width: 72%;  }
         85%  { width: 90%;  }
         100% { width: 100%; }
       }
 
-      /* floating ice particles */
-      #splash-particles {
-        position: absolute;
-        inset: 0;
-        overflow: hidden;
-        pointer-events: none;
+      /* ── tagline ── */
+      #splash-tag {
+        margin-top: 18px;
+        font-family: 'Manrope', 'Segoe UI', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: rgba(60, 230, 255, 0.35);
+        animation: name-appear 0.6s ease 0.6s both;
       }
+
+      /* ── falling snowflakes ── */
+      #splash-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
       .sp {
         position: absolute;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(60,230,255,0.6), transparent 70%);
-        animation: sp-float linear infinite;
+        color: rgba(60,230,255,0.55);
+        font-size: 14px;
+        user-select: none;
+        animation: sp-fall linear infinite;
       }
-      @keyframes sp-float {
-        0%   { transform: translateY(110vh) scale(0.6); opacity: 0;   }
+      @keyframes sp-fall {
+        0%   { transform: translateY(-40px) rotate(0deg);   opacity: 0; }
         10%  { opacity: 1; }
-        90%  { opacity: 0.6; }
-        100% { transform: translateY(-20vh) scale(1.1);  opacity: 0;   }
+        90%  { opacity: 0.4; }
+        100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
       }
     </style>
   </head>
   <body>
     <!-- splash screen -->
     <div id="splash">
+      <div id="splash-aurora"></div>
       <div id="splash-particles"></div>
-      <img src="/logo.webp" alt="FrostDex" onerror="this.style.display='none'" />
-      <div id="splash-name">FrostDex</div>
+      <div id="splash-flake">❄️</div>
+      <div id="splash-name">frostdex</div>
       <div id="splash-bar-track">
         <div id="splash-bar"></div>
       </div>
+      <div id="splash-tag">Decentralized Exchange</div>
     </div>
 
     <div id="root"></div>
     <script type="module" src="/app/main.tsx"></script>
 
     <script>
-      /* generate floating ice particles */
+      /* generate falling snowflakes */
       (function () {
         var container = document.getElementById('splash-particles');
-        for (var i = 0; i < 18; i++) {
+        var flakes = ['❄', '❅', '❆', '✦', '·'];
+        for (var i = 0; i < 22; i++) {
           var p = document.createElement('div');
           p.className = 'sp';
-          var size = Math.random() * 6 + 3;
+          var size = Math.random() * 14 + 8;
+          p.textContent = flakes[Math.floor(Math.random() * flakes.length)];
           p.style.cssText = [
-            'width:'  + size + 'px',
-            'height:' + size + 'px',
-            'left:'   + Math.random() * 100 + '%',
-            'animation-duration:' + (Math.random() * 6 + 5) + 's',
-            'animation-delay:' + (Math.random() * 5) + 's'
+            'font-size:' + size + 'px',
+            'left:' + Math.random() * 100 + '%',
+            'animation-duration:' + (Math.random() * 8 + 6) + 's',
+            'animation-delay:' + (Math.random() * 6) + 's',
+            'opacity:' + (Math.random() * 0.4 + 0.2)
           ].join(';');
           container.appendChild(p);
         }
