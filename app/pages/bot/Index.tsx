@@ -250,7 +250,7 @@ export default function BotPage() {
           </span>
         </div>
         <p style={{ color: "rgba(180,190,210,0.55)", fontSize: 13, margin: 0 }}>
-          Automated trading strategies powered by Orderly Network
+          Automated trading strategies powered by FrostDex
         </p>
       </div>
 
