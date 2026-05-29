@@ -157,6 +157,8 @@ const OrderlyProvider = (props: { children: ReactNode }) => {
     []
   );
 
+  const RTL_LOCALES = ["ar"];
+
   const onLanguageChanged = async (lang: LocaleCode) => {
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
@@ -166,8 +168,19 @@ const OrderlyProvider = (props: { children: ReactNode }) => {
         url.searchParams.set("lang", lang);
       }
       window.history.replaceState({}, "", url.toString());
+
+      const isRtl = RTL_LOCALES.includes(lang);
+      document.documentElement.setAttribute("dir", isRtl ? "rtl" : "ltr");
+      document.documentElement.setAttribute("lang", lang);
     }
   };
+
+  // Apply RTL on initial load
+  if (typeof window !== "undefined") {
+    const isRtl = RTL_LOCALES.includes(getDefaultLanguage());
+    document.documentElement.setAttribute("dir", isRtl ? "rtl" : "ltr");
+    document.documentElement.setAttribute("lang", getDefaultLanguage());
+  }
 
   const loadPath = (lang: LocaleCode) => {
     const availableLanguages = getAvailableLanguages();
@@ -185,9 +198,15 @@ const OrderlyProvider = (props: { children: ReactNode }) => {
   const defaultLanguage = getDefaultLanguage();
 
   const availableLanguages = getAvailableLanguages();
-  const filteredLanguages = defaultLanguages.filter((lang) =>
-    availableLanguages.includes(lang.localCode)
-  );
+  const customLanguages = [{ localCode: "ar", displayName: "العربية" }];
+  const filteredLanguages = [
+    ...defaultLanguages.filter((lang) =>
+      availableLanguages.includes(lang.localCode)
+    ),
+    ...customLanguages.filter((lang) =>
+      availableLanguages.includes(lang.localCode)
+    ),
+  ];
 
   const appProvider = (
     <OrderlyAppProvider

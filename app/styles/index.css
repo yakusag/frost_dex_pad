@@ -1155,3 +1155,69 @@ select,
   transition: color 0.15s;
 }
 .sentiment-refresh:hover { color: #38e0f8; }
+
+/* ─── RTL (Arabic) support ──────────────────────────────────────────── */
+[dir="rtl"] {
+  font-family: "Segoe UI", "Tahoma", "Arial", sans-serif;
+}
+
+[dir="rtl"] .oui-left-nav,
+[dir="rtl"] [class*="oui-left-nav"] {
+  left: unset;
+  right: 0;
+}
+
+[dir="rtl"] .oui-main-content,
+[dir="rtl"] [class*="oui-main-content"] {
+  margin-left: unset;
+  margin-right: var(--oui-nav-width, 56px);
+}
+
+[dir="rtl"] .oui-flex-row,
+[dir="rtl"] [class*="oui-flex-row"] {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] input,
+[dir="rtl"] textarea {
+  text-align: right;
+}
+
+[dir="rtl"] .oui-number-input input {
+  text-align: right;
+}
+
+[dir="rtl"] [class*="oui-toast"],
+[dir="rtl"] [class*="oui-notification"] {
+  right: unset;
+  left: 16px;
+}
+
+[dir="rtl"] [class*="oui-dropdown"],
+[dir="rtl"] [class*="oui-popover"],
+[dir="rtl"] [data-radix-popper-content-wrapper] {
+  direction: rtl;
+}
+
+[dir="rtl"] .widget-drag-handle,
+[dir="rtl"] [class*="widget"] {
+  direction: rtl;
+}
+
+[dir="rtl"] table,
+[dir="rtl"] th,
+[dir="rtl"] td {
+  text-align: right;
+}
+
+[dir="rtl"] .oui-orderbook-row,
+[dir="rtl"] [class*="oui-orderbook"] {
+  direction: rtl;
+}
+
+[dir="rtl"] .market-ticker-bar,
+[dir="rtl"] [class*="market-ticker"] {
+  direction: rtl;
+  flex-direction: row-reverse;
+}
+
