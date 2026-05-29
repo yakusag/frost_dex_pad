@@ -37,7 +37,7 @@ export default function WhaleAlerts({ onHide }: Props) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const defaultPos = { x: typeof window !== "undefined" ? window.innerWidth - 66 : 1200, y: typeof window !== "undefined" ? window.innerHeight - 178 : 500 };
-  const { pos, isDragging, elementRef, isBottomHalf, dragHandleProps } = useDraggable("whale-alerts", defaultPos);
+  const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps } = useDraggable("whale-alerts", defaultPos);
 
   const fetchAll = async () => {
     const all = (await Promise.all(SYMBOLS.map(fetchRecentTrades))).flat();
@@ -60,7 +60,7 @@ export default function WhaleAlerts({ onHide }: Props) {
   return (
     <div
       ref={elementRef}
-      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto" }}
+      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto", transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

@@ -47,7 +47,7 @@ export default function AIAssistant({ onHide }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const defaultPos = { x: 12, y: typeof window !== "undefined" ? window.innerHeight - 122 : 600 };
-  const { pos, isDragging, elementRef, isBottomHalf, dragHandleProps } = useDraggable("ai-assistant", defaultPos);
+  const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps } = useDraggable("ai-assistant", defaultPos);
 
   useEffect(() => {
     if (open) { setTimeout(() => inputRef.current?.focus(), 100); bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }
@@ -75,7 +75,7 @@ export default function AIAssistant({ onHide }: Props) {
   return (
     <div
       ref={elementRef}
-      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto" }}
+      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto", transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

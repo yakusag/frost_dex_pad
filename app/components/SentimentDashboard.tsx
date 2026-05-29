@@ -48,7 +48,7 @@ export default function SentimentDashboard({ onHide }: Props) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const defaultPos = { x: 12, y: typeof window !== "undefined" ? window.innerHeight - 224 : 450 };
-  const { pos, isDragging, elementRef, isBottomHalf, dragHandleProps } = useDraggable("sentiment-dashboard", defaultPos);
+  const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps } = useDraggable("sentiment-dashboard", defaultPos);
 
   const load = async () => {
     setLoading(true);
@@ -73,7 +73,7 @@ export default function SentimentDashboard({ onHide }: Props) {
   return (
     <div
       ref={elementRef}
-      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto" }}
+      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto", transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
