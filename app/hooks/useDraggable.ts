@@ -70,6 +70,7 @@ export function useDraggable(id: string, defaultPos: Position) {
   }, [startDrag]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
     startDrag(e.touches[0].clientX, e.touches[0].clientY);
   }, [startDrag]);
 
