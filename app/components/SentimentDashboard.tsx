@@ -1,0 +1,229 @@
+import { useEffect, useRef, useState } from "react";
+
+interface MarketSentiment {
+  fearGreed: number;
+  label: string;
+  btcDominance: number;
+  bullishPct: number;
+  totalSymbols: number;
+  bullishCount: number;
+  bearishCount: number;
+  timestamp: number;
+}
+
+async function fetchFearGreed(): Promise<{ value: number; label: string } | null> {
+  try {
+    const res = await fetch("https://api.alternative.me/fng/?limit=1", { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const d = json?.data?.[0];
+    if (!d) return null;
+    return { value: Number(d.value), label: d.value_classification };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchMarketMomentum(): Promise<{ bullishPct: number; bullish: number; bearish: number; total: number } | null> {
+  try {
+    const res = await fetch("https://api.orderly.org/v1/public/futures", { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const rows: any[] = json?.data?.rows ?? [];
+    if (!rows.length) return null;
+    let bullish = 0, bearish = 0;
+    for (const r of rows) {
+      const close = Number(r["24h_close"] ?? 0);
+      const open = Number(r["24h_open"] ?? 0);
+      if (open > 0) {
+        if (close >= open) bullish++;
+        else bearish++;
+      }
+    }
+    const total = bullish + bearish;
+    return { bullishPct: total > 0 ? Math.round((bullish / total) * 100) : 50, bullish, bearish, total };
+  } catch {
+    return null;
+  }
+}
+
+function getFGColor(v: number): string {
+  if (v <= 25) return "#f6465d";
+  if (v <= 45) return "#ff9500";
+  if (v <= 55) return "#eaecef";
+  if (v <= 75) return "#0ecb81";
+  return "#38e0f8";
+}
+
+function getFGLabel(v: number): string {
+  if (v <= 25) return "Extreme Fear";
+  if (v <= 45) return "Fear";
+  if (v <= 55) return "Neutral";
+  if (v <= 75) return "Greed";
+  return "Extreme Greed";
+}
+
+function GaugeArc({ value }: { value: number }) {
+  const pct = value / 100;
+  const r = 40;
+  const cx = 60, cy = 55;
+  const startAngle = Math.PI;
+  const endAngle = 0;
+  const angle = startAngle - pct * Math.PI;
+  const x1 = cx + r * Math.cos(startAngle);
+  const y1 = cy + r * Math.sin(startAngle);
+  const x2 = cx + r * Math.cos(endAngle);
+  const y2 = cy + r * Math.sin(endAngle);
+  const nx = cx + r * Math.cos(angle);
+  const ny = cy + r * Math.sin(angle);
+  const largeArc = pct > 0.5 ? 1 : 0;
+
+  return (
+    <svg width="120" height="70" viewBox="0 0 120 70" style={{ display: "block", margin: "0 auto" }}>
+      {/* bg arc */}
+      <path
+        d={`M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`}
+        fill="none"
+        stroke="rgba(255,255,255,0.08)"
+        strokeWidth="8"
+        strokeLinecap="round"
+      />
+      {/* filled arc */}
+      {value > 0 && (
+        <path
+          d={`M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${nx} ${ny}`}
+          fill="none"
+          stroke={getFGColor(value)}
+          strokeWidth="8"
+          strokeLinecap="round"
+        />
+      )}
+      {/* needle */}
+      <line
+        x1={cx}
+        y1={cy}
+        x2={cx + (r - 8) * Math.cos(angle)}
+        y2={cy + (r - 8) * Math.sin(angle)}
+        stroke={getFGColor(value)}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx={cx} cy={cy} r="3" fill={getFGColor(value)} />
+    </svg>
+  );
+}
+
+export default function SentimentDashboard() {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<MarketSentiment | null>(null);
+  const [loading, setLoading] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    const [fg, momentum] = await Promise.all([fetchFearGreed(), fetchMarketMomentum()]);
+    const fgVal = fg?.value ?? 50;
+    setData({
+      fearGreed: fgVal,
+      label: fg?.label ?? getFGLabel(fgVal),
+      btcDominance: 0,
+      bullishPct: momentum?.bullishPct ?? 50,
+      totalSymbols: momentum?.total ?? 0,
+      bullishCount: momentum?.bullish ?? 0,
+      bearishCount: momentum?.bearish ?? 0,
+      timestamp: Date.now(),
+    });
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (open && !data) load();
+    if (open) {
+      intervalRef.current = setInterval(load, 60_000);
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [open]);
+
+  const fgColor = data ? getFGColor(data.fearGreed) : "#eaecef";
+
+  return (
+    <>
+      <button className="sentiment-fab" onClick={() => setOpen((v) => !v)} aria-label="Market Sentiment">
+        📊
+        <span>Mood</span>
+      </button>
+
+      {open && (
+        <div className="sentiment-panel">
+          <div className="sentiment-header">
+            <span className="sentiment-title">📊 Market Sentiment</span>
+            <button className="sentiment-close" onClick={() => setOpen(false)}>✕</button>
+          </div>
+
+          {loading && !data && (
+            <div className="sentiment-loading">Loading…</div>
+          )}
+
+          {data && (
+            <div className="sentiment-body">
+              {/* Fear & Greed */}
+              <div className="sentiment-card">
+                <div className="sentiment-card-title">Fear & Greed Index</div>
+                <GaugeArc value={data.fearGreed} />
+                <div className="sentiment-fg-value" style={{ color: fgColor }}>
+                  {data.fearGreed}
+                </div>
+                <div className="sentiment-fg-label" style={{ color: fgColor }}>
+                  {data.label}
+                </div>
+                <div className="sentiment-fg-scale">
+                  <span style={{ color: "#f6465d" }}>Fear</span>
+                  <span style={{ color: "#eaecef" }}>Neutral</span>
+                  <span style={{ color: "#0ecb81" }}>Greed</span>
+                </div>
+              </div>
+
+              {/* Market momentum */}
+              <div className="sentiment-card">
+                <div className="sentiment-card-title">Perp Markets ({data.totalSymbols} pairs)</div>
+                <div className="sentiment-bar-wrap">
+                  <div
+                    className="sentiment-bar-fill sentiment-bar-fill--bull"
+                    style={{ width: `${data.bullishPct}%` }}
+                  />
+                  <div
+                    className="sentiment-bar-fill sentiment-bar-fill--bear"
+                    style={{ width: `${100 - data.bullishPct}%` }}
+                  />
+                </div>
+                <div className="sentiment-bar-labels">
+                  <span style={{ color: "#0ecb81" }}>
+                    ▲ Bullish {data.bullishCount} ({data.bullishPct}%)
+                  </span>
+                  <span style={{ color: "#f6465d" }}>
+                    ▼ Bearish {data.bearishCount} ({100 - data.bullishPct}%)
+                  </span>
+                </div>
+                <div className="sentiment-mood-label" style={{
+                  color: data.bullishPct >= 60 ? "#0ecb81" : data.bullishPct <= 40 ? "#f6465d" : "#eaecef"
+                }}>
+                  {data.bullishPct >= 65 ? "🔥 Strong Bullish" :
+                   data.bullishPct >= 55 ? "📈 Mildly Bullish" :
+                   data.bullishPct <= 35 ? "🧊 Strong Bearish" :
+                   data.bullishPct <= 45 ? "📉 Mildly Bearish" : "⚖ Neutral"}
+                </div>
+              </div>
+
+              <div className="sentiment-updated">
+                Updated {new Date(data.timestamp).toLocaleTimeString()}
+                <button className="sentiment-refresh" onClick={load} disabled={loading}>
+                  {loading ? "…" : "↺"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
