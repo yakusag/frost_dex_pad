@@ -471,7 +471,6 @@ export default function BotPage() {
       style={{
         minHeight: "100vh",
         background: "rgb(11, 14, 17)",
-        padding: "24px 16px",
         maxWidth: 1100,
         margin: "0 auto",
       }}
@@ -487,75 +486,124 @@ export default function BotPage() {
           />
         ))}
 
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
+      {/* Hero Header with FrostDex background */}
+      <div
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: "0 0 20px 20px",
+          marginBottom: 24,
+          minHeight: 180,
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        {/* Background image */}
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            marginBottom: 6,
+            position: "absolute",
+            inset: 0,
+            backgroundImage: "url(/bot-bg.png)",
+            backgroundSize: "cover",
+            backgroundPosition: "center 30%",
+            backgroundRepeat: "no-repeat",
+            opacity: 0.18,
+            filter: "blur(1px)",
           }}
-        >
-          <span style={{ fontSize: 28 }}>🤖</span>
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 800,
-              fontFamily: "Manrope, sans-serif",
-              background: "linear-gradient(135deg, #38e0f8 0%, #0ecb81 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              margin: 0,
-            }}
-          >
-            AI Trading Bot
-          </h1>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-              color: "#38e0f8",
-              background: "rgba(56,224,248,0.1)",
-              border: "1px solid rgba(56,224,248,0.2)",
-              borderRadius: 4,
-              padding: "2px 8px",
-            }}
-          >
-            BETA
-          </span>
-        </div>
+        />
+        {/* Dark gradient overlay */}
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            flexWrap: "wrap",
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(135deg, rgba(11,14,17,0.85) 0%, rgba(11,14,17,0.6) 50%, rgba(11,14,17,0.85) 100%)",
           }}
-        >
-          <p
+        />
+        {/* Cyan glow bottom */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            background:
+              "linear-gradient(90deg, transparent 0%, rgba(56,224,248,0.5) 50%, transparent 100%)",
+          }}
+        />
+
+        {/* Content */}
+        <div style={{ position: "relative", zIndex: 1, padding: "28px 24px 24px" }}>
+          <div
             style={{
-              color: "rgba(180,190,210,0.55)",
-              fontSize: 13,
-              margin: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 8,
             }}
           >
-            Automated trading strategies —
-          </p>
-          <span
+            <span style={{ fontSize: 32 }}>🤖</span>
+            <h1
+              style={{
+                fontSize: 26,
+                fontWeight: 800,
+                fontFamily: "Manrope, sans-serif",
+                background: "linear-gradient(135deg, #38e0f8 0%, #0ecb81 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                margin: 0,
+              }}
+            >
+              AI Trading Bot
+            </h1>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 1.5,
+                textTransform: "uppercase",
+                color: "#38e0f8",
+                background: "rgba(56,224,248,0.15)",
+                border: "1px solid rgba(56,224,248,0.35)",
+                borderRadius: 4,
+                padding: "3px 9px",
+                boxShadow: "0 0 10px rgba(56,224,248,0.2)",
+              }}
+            >
+              BETA
+            </span>
+          </div>
+          <div
             style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#38e0f8",
-              letterSpacing: 0.5,
-              fontFamily: "Manrope, sans-serif",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
             }}
           >
-            ❄ Powered by FrostDex
-          </span>
+            <p
+              style={{
+                color: "rgba(180,190,210,0.65)",
+                fontSize: 13,
+                margin: 0,
+              }}
+            >
+              Automated trading strategies —
+            </p>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#38e0f8",
+                letterSpacing: 0.5,
+                fontFamily: "Manrope, sans-serif",
+                textShadow: "0 0 12px rgba(56,224,248,0.6)",
+              }}
+            >
+              ❄ Powered by FrostDex
+            </span>
           {liveCount > 0 && (
             <span
               style={{
@@ -586,6 +634,7 @@ export default function BotPage() {
             </span>
           )}
         </div>
+        </div>
       </div>
 
       {/* Stats Row */}
@@ -595,6 +644,7 @@ export default function BotPage() {
           gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
           gap: 12,
           marginBottom: 24,
+          padding: "0 16px",
         }}
       >
         {[
@@ -668,6 +718,7 @@ export default function BotPage() {
           borderBottom: "1px solid rgba(30,36,50,1)",
           paddingBottom: 0,
           overflowX: "auto",
+          padding: "0 16px",
         }}
       >
         {(["bots", "create", "backtest", "logs"] as const).map((t) => (
@@ -706,7 +757,7 @@ export default function BotPage() {
 
       {/* ── Tab: My Bots ──────────────────────────────────────────────── */}
       {tab === "bots" && (
-        <div>
+        <div style={{ padding: "0 16px" }}>
           {bots.length === 0 ? (
             <div
               style={{
