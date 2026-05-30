@@ -51,6 +51,7 @@ export default defineConfig(() => {
     },
     define: {
       "import.meta.env.GROQ_API_KEY": JSON.stringify(process.env.GROQ_API_KEY || ""),
+      "import.meta.env.VITE_GROQ_API_KEY": JSON.stringify(process.env.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY || ""),
     },
     base: basePath,
     plugins: [
@@ -66,6 +67,19 @@ export default defineConfig(() => {
     ],
     build: {
       outDir: "build/client",
+      target: "esnext",
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            "vendor-react":    ["react", "react-dom", "react-router-dom"],
+            "vendor-orderly":  ["@orderly.network/react-app", "@orderly.network/ui", "@orderly.network/ui-scaffold"],
+            "vendor-orderly2": ["@orderly.network/trading", "@orderly.network/markets", "@orderly.network/portfolio"],
+            "vendor-orderly3": ["@orderly.network/affiliate", "@orderly.network/vaults", "@orderly.network/wallet-connector"],
+            "vendor-web3":     ["wagmi"],
+          },
+        },
+      },
     },
     optimizeDeps: {
       include: ["react", "react-dom", "react-router-dom"],

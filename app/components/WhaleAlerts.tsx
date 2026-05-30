@@ -51,7 +51,6 @@ export default function WhaleAlerts({ onHide }: Props) {
   const [hovered, setHovered] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [lookup, setLookup]   = useState<WhaleLookup | null>(null);
-  const [showSearch, setShowSearch] = useState(false);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const seenIds  = useRef<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -115,60 +114,54 @@ export default function WhaleAlerts({ onHide }: Props) {
               <span className="whale-panel-title">🐋 Whale Alerts</span>
               <span className="whale-panel-sub">Trades &gt; {fmtVal(WHALE_THRESHOLD)}</span>
             </div>
-            <button
-              className="whale-search-toggle"
-              onClick={() => { setShowSearch(v => !v); setLookup(null); setSearchInput(""); }}
-              title="Search whale address"
-            >🔍</button>
           </div>
 
-          {/* Address search */}
-          {showSearch && (
-            <div className="whale-search-box" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
-              <div className="whale-search-row">
-                <input
-                  className="whale-search-input"
-                  placeholder="0x… wallet address"
-                  value={searchInput}
-                  onChange={e => setSearchInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
-                  onMouseDown={e => e.stopPropagation()}
-                />
-                <button className="whale-search-btn" onClick={handleSearch} onMouseDown={e => e.stopPropagation()}>
-                  {lookup?.loading ? "…" : "Go"}
-                </button>
-              </div>
-
-              {lookup && !lookup.loading && (
-                <div className="whale-lookup-result">
-                  {lookup.error ? (
-                    <div className="whale-lookup-error">{lookup.error}</div>
-                  ) : lookup.found ? (
-                    <div className="whale-lookup-found">
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <span style={{ color: "#0ecb81", fontSize: 12 }}>✓</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "#e8ecf1" }}>Orderly Trader Found</span>
-                      </div>
-                      <div className="whale-lookup-addr">{shortAddr(lookup.address)}</div>
-                      {lookup.accountId && (
-                        <div className="whale-lookup-id">Account ID: {shortAddr(lookup.accountId)}</div>
-                      )}
-                      <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                        <a className="whale-lookup-link" href={`https://arbiscan.io/address/${lookup.address}`} target="_blank" rel="noopener noreferrer">Arbiscan ↗</a>
-                        <a className="whale-lookup-link" href={`https://app.orderly.network/portfolio?account=${lookup.address}`} target="_blank" rel="noopener noreferrer">Orderly ↗</a>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="whale-lookup-notfound">
-                      <div style={{ color: "rgba(246,70,93,0.8)", fontSize: 11, marginBottom: 4 }}>⚠ Not found on Orderly Network</div>
-                      <div className="whale-lookup-addr">{shortAddr(lookup.address)}</div>
-                      <a className="whale-lookup-link" style={{ marginTop: 6, display: "inline-block" }} href={`https://arbiscan.io/address/${lookup.address}`} target="_blank" rel="noopener noreferrer">View on Arbiscan ↗</a>
-                    </div>
-                  )}
-                </div>
-              )}
+          {/* Address search — always visible */}
+          <div className="whale-search-box" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
+            <div className="whale-search-row">
+              <span className="whale-search-icon">🔍</span>
+              <input
+                className="whale-search-input"
+                placeholder="Paste 0x… wallet address"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
+                onMouseDown={e => e.stopPropagation()}
+              />
+              <button className="whale-search-btn" onClick={handleSearch} onMouseDown={e => e.stopPropagation()}>
+                {lookup?.loading ? "…" : "Go"}
+              </button>
             </div>
-          )}
+
+            {lookup && !lookup.loading && (
+              <div className="whale-lookup-result">
+                {lookup.error ? (
+                  <div className="whale-lookup-error">{lookup.error}</div>
+                ) : lookup.found ? (
+                  <div className="whale-lookup-found">
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <span style={{ color: "#0ecb81", fontSize: 12 }}>✓</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#e8ecf1" }}>Orderly Trader Found</span>
+                    </div>
+                    <div className="whale-lookup-addr">{shortAddr(lookup.address)}</div>
+                    {lookup.accountId && (
+                      <div className="whale-lookup-id">Account ID: {shortAddr(lookup.accountId)}</div>
+                    )}
+                    <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                      <a className="whale-lookup-link" href={`https://arbiscan.io/address/${lookup.address}`} target="_blank" rel="noopener noreferrer">Arbiscan ↗</a>
+                      <a className="whale-lookup-link" href={`https://app.orderly.network/portfolio?account=${lookup.address}`} target="_blank" rel="noopener noreferrer">Orderly ↗</a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="whale-lookup-notfound">
+                    <div style={{ color: "rgba(246,70,93,0.8)", fontSize: 11, marginBottom: 4 }}>⚠ Not found on Orderly Network</div>
+                    <div className="whale-lookup-addr">{shortAddr(lookup.address)}</div>
+                    <a className="whale-lookup-link" style={{ marginTop: 6, display: "inline-block" }} href={`https://arbiscan.io/address/${lookup.address}`} target="_blank" rel="noopener noreferrer">View on Arbiscan ↗</a>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Alerts list */}
           <div className="whale-list" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>

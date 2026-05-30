@@ -16,6 +16,7 @@ import SentimentDashboard from "@/components/SentimentDashboard";
 import FrostTradeWidget from "@/components/FrostTradeWidget";
 import SmartMoney from "@/components/SmartMoney";
 import LiqHeatmap from "@/components/LiqHeatmap";
+import MACWidget from "@/components/MACWidget";
 import WidgetManager from "@/components/WidgetManager";
 import { useWidgetVisibility } from "@/hooks/useWidgetVisibility";
 import { withBasePath } from "./utils/base-path";
@@ -56,6 +57,7 @@ export default function App() {
       {visibility.whale      && <WhaleAlerts         onHide={() => toggle("whale")} />}
       {visibility.smartmoney && <SmartMoney          onHide={() => toggle("smartmoney")} />}
       {visibility.liq        && <LiqHeatmap          onHide={() => toggle("liq")} />}
+      {visibility.mac        && <MACWidget            onHide={() => toggle("mac")} />}
       {visibility.sentiment  && <SentimentDashboard  onHide={() => toggle("sentiment")} />}
       <WidgetManager
         visibility={visibility}

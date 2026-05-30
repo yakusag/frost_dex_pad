@@ -57,11 +57,7 @@ export default function AIAssistant({ onHide }: Props) {
   const [hovered, setHovered] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Use the platform API key — supports both VITE_GROQ_API_KEY and GROQ_API_KEY
-  const envKey = (import.meta.env.VITE_GROQ_API_KEY as string) || (import.meta.env.GROQ_API_KEY as string) || "";
-  // Fallback: allow user to set their own key only if no env key configured
-  const [userKey, setUserKey] = useState(() => localStorage.getItem("frost_groq_key") || "");
-  const apiKey = envKey || userKey;
+  const apiKey = (import.meta.env.VITE_GROQ_API_KEY as string) || (import.meta.env.GROQ_API_KEY as string) || "";
   const needsKey = !apiKey;
 
   const [model, setModel] = useState(() => localStorage.getItem("frost_groq_model") || GROQ_MODELS[0].id);
@@ -81,7 +77,6 @@ export default function AIAssistant({ onHide }: Props) {
   }, [open, messages]);
 
   const saveModel = (m: string) => { setModel(m); localStorage.setItem("frost_groq_model", m); };
-  const saveUserKey = (k: string) => { setUserKey(k); localStorage.setItem("frost_groq_key", k); };
 
   const send = async (text?: string) => {
     const content = (text ?? input).trim();
@@ -146,11 +141,11 @@ export default function AIAssistant({ onHide }: Props) {
             </div>
           </div>
 
-          {/* Settings panel — model picker + optional key if no env key */}
+          {/* Settings panel — model picker only */}
           {showSettings && (
             <div className="ai-key-box" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
               <p className="ai-key-label" style={{ color: "#38e0f8" }}>Model</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {GROQ_MODELS.map(m => (
                   <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: model === m.id ? "#38e0f8" : "rgba(180,190,210,0.7)", cursor: "pointer" }}>
                     <input type="radio" name="groq-model" value={m.id} checked={model === m.id} onChange={() => saveModel(m.id)} style={{ accentColor: "#38e0f8" }} />
@@ -158,26 +153,18 @@ export default function AIAssistant({ onHide }: Props) {
                   </label>
                 ))}
               </div>
-
-              {/* Only show key input if no platform key configured */}
-              {!envKey && (
-                <>
-                  <p className="ai-key-label" style={{ color: "#38e0f8", marginTop: 4 }}>API Key</p>
-                  <p className="ai-key-sub">Stored locally in your browser only</p>
-                  <div className="ai-key-row">
-                    <input type="password" placeholder="gsk_..." defaultValue={userKey} className="ai-key-input"
-                      onKeyDown={e => { if (e.key === "Enter") saveUserKey((e.target as HTMLInputElement).value); }}
-                      id="ai-key-field" onMouseDown={e => e.stopPropagation()} />
-                    <button className="ai-key-save" onClick={() => { const v = (document.getElementById("ai-key-field") as HTMLInputElement)?.value; if (v) saveUserKey(v); }}>Save</button>
-                  </div>
-                  <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="ai-key-link">Get free Groq API key →</a>
-                </>
-              )}
             </div>
           )}
 
           <div className="ai-messages" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
-            {messages.length === 0 && !showSettings && (
+            {needsKey && (
+              <div className="ai-welcome">
+                <div className="ai-welcome-icon">❄</div>
+                <div className="ai-welcome-title">FrostAI</div>
+                <div className="ai-welcome-sub" style={{ color: "rgba(246,70,93,0.8)" }}>AI assistant is not configured yet.</div>
+              </div>
+            )}
+            {messages.length === 0 && !showSettings && !needsKey && (
               <div className="ai-welcome">
                 <div className="ai-welcome-icon">❄</div>
                 <div className="ai-welcome-title">FrostAI</div>
