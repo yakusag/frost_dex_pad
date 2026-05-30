@@ -124,7 +124,7 @@ export default function WhaleAlerts({ onHide }: Props) {
 
           {/* Address search */}
           {showSearch && (
-            <div className="whale-search-box">
+            <div className="whale-search-box" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
               <div className="whale-search-row">
                 <input
                   className="whale-search-input"
@@ -171,7 +171,7 @@ export default function WhaleAlerts({ onHide }: Props) {
           )}
 
           {/* Alerts list */}
-          <div className="whale-list">
+          <div className="whale-list" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
             {alerts.length === 0 && <div className="whale-empty">Watching for whale trades…</div>}
             {alerts.map(a => (
               <div key={a.id} className={`whale-item whale-item--${a.side}`}>

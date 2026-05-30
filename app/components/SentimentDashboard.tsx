@@ -48,7 +48,7 @@ export default function SentimentDashboard({ onHide }: Props) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const defaultPos = { x: 12, y: typeof window !== "undefined" ? window.innerHeight - 224 : 450 };
-  const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps } = useDraggable("sentiment-dashboard", defaultPos);
+  const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } = useDraggable("sentiment-dashboard", defaultPos);
 
   const load = async () => {
     setLoading(true);
@@ -84,7 +84,7 @@ export default function SentimentDashboard({ onHide }: Props) {
         </div>
       )}
 
-      <button className="sentiment-fab" onClick={() => { if (wasDragged()) return; setOpen(v => !v); }} aria-label="Market Sentiment">
+      <button className="sentiment-fab" onClick={() => { if ((wasDragged as () => boolean)()) return; setOpen(v => !v); }} aria-label="Market Sentiment">
         📊 <span>Mood</span>
       </button>
 

@@ -158,7 +158,7 @@ export default function LiqHeatmap({ onHide }: Props) {
           </div>
 
           {/* Symbol picker — scrollable row */}
-          <div className="liq-symbols">
+          <div className="liq-symbols" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
             {BASES.map((b, i) => (
               <button key={b} className={`liq-sym-btn ${symIdx === i ? "liq-sym-btn--active" : ""}`}
                 onClick={() => { setSymIdx(i); load(i); }}>
@@ -173,7 +173,7 @@ export default function LiqHeatmap({ onHide }: Props) {
             <span style={{ color: "rgba(56,224,248,0.7)" }}>──</span> Mark price
           </div>
 
-          <div className="liq-grid">
+          <div className="liq-grid" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
             {loading && levels.length === 0 && <div className="liq-empty">Loading price levels…</div>}
             {levels.map((lv, i) => {
               const isAbove  = lv.price > markPrice;

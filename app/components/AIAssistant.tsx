@@ -148,7 +148,7 @@ export default function AIAssistant({ onHide }: Props) {
 
           {/* Settings panel — model picker + optional key if no env key */}
           {showSettings && (
-            <div className="ai-key-box">
+            <div className="ai-key-box" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
               <p className="ai-key-label" style={{ color: "#38e0f8" }}>Model</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
                 {GROQ_MODELS.map(m => (
@@ -176,7 +176,7 @@ export default function AIAssistant({ onHide }: Props) {
             </div>
           )}
 
-          <div className="ai-messages">
+          <div className="ai-messages" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
             {messages.length === 0 && !showSettings && (
               <div className="ai-welcome">
                 <div className="ai-welcome-icon">❄</div>
@@ -200,7 +200,7 @@ export default function AIAssistant({ onHide }: Props) {
             <div ref={bottomRef} />
           </div>
 
-          <div className="ai-input-row">
+          <div className="ai-input-row" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
             <input ref={inputRef} className="ai-input" placeholder="Ask about markets, strategies…" value={input}
               onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} disabled={loading} />
             <button className="ai-send-btn" onClick={() => send()} disabled={loading || !input.trim()}>↑</button>
