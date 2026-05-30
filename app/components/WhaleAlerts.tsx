@@ -2,12 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { useDraggable } from "@/hooks/useDraggable";
 
 interface WhaleAlert { id: string; symbol: string; side: "buy" | "sell"; size: number; price: number; value: number; time: number; }
+interface WhaleLookup { address: string; accountId: string | null; found: boolean; loading: boolean; error: string; }
 
-const SYMBOLS = ["PERP_BTC_USDC","PERP_ETH_USDC","PERP_SOL_USDC","PERP_ARB_USDC","PERP_BNB_USDC","PERP_AVAX_USDC","PERP_DOGE_USDC","PERP_SUI_USDC","PERP_LINK_USDC"];
+const SYMBOLS = [
+  "PERP_BTC_USDC","PERP_ETH_USDC","PERP_SOL_USDC","PERP_ARB_USDC",
+  "PERP_BNB_USDC","PERP_AVAX_USDC","PERP_DOGE_USDC","PERP_SUI_USDC",
+  "PERP_LINK_USDC","PERP_XAU_USDC","PERP_XAG_USDC","PERP_CL_USDC",
+];
 const WHALE_THRESHOLD = 50_000;
 
 function fmtVal(v: number) { if (v >= 1e6) return "$" + (v/1e6).toFixed(2) + "M"; if (v >= 1e3) return "$" + (v/1e3).toFixed(0) + "K"; return "$" + v.toFixed(0); }
 function fmtTime(ts: number) { const d = Math.floor((Date.now()-ts)/1000); if (d < 60) return `${d}s ago`; if (d < 3600) return `${Math.floor(d/60)}m ago`; return `${Math.floor(d/3600)}h ago`; }
+function shortAddr(a: string) { return a.slice(0, 6) + "…" + a.slice(-4); }
+function isValidAddr(a: string) { return /^0x[0-9a-fA-F]{40}$/.test(a.trim()); }
 
 async function fetchRecentTrades(symbol: string): Promise<WhaleAlert[]> {
   try {
@@ -25,15 +32,28 @@ async function fetchRecentTrades(symbol: string): Promise<WhaleAlert[]> {
   } catch { return []; }
 }
 
+async function lookupWhaleAddress(address: string): Promise<{ accountId: string | null; found: boolean }> {
+  try {
+    const res = await fetch(`https://api.orderly.org/v1/public/account?address=${address.trim()}&chain_id=42161`, { cache: "no-store" });
+    if (!res.ok) return { accountId: null, found: false };
+    const json = await res.json();
+    const accountId = json?.data?.account_id ?? null;
+    return { accountId, found: !!accountId };
+  } catch { return { accountId: null, found: false }; }
+}
+
 interface Props { onHide: () => void; }
 
 export default function WhaleAlerts({ onHide }: Props) {
-  const [alerts, setAlerts] = useState<WhaleAlert[]>([]);
-  const [open, setOpen] = useState(false);
-  const [hasNew, setHasNew] = useState(false);
+  const [alerts, setAlerts]   = useState<WhaleAlert[]>([]);
+  const [open, setOpen]       = useState(false);
+  const [hasNew, setHasNew]   = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [lookup, setLookup]   = useState<WhaleLookup | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-  const seenIds = useRef<Set<string>>(new Set());
+  const seenIds  = useRef<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const defaultPos = { x: typeof window !== "undefined" ? window.innerWidth - 66 : 1200, y: typeof window !== "undefined" ? window.innerHeight - 178 : 500 };
@@ -50,6 +70,17 @@ export default function WhaleAlerts({ onHide }: Props) {
   };
 
   useEffect(() => { fetchAll(); intervalRef.current = setInterval(fetchAll, 15_000); return () => { if (intervalRef.current) clearInterval(intervalRef.current); }; }, []);
+
+  const handleSearch = async () => {
+    const addr = searchInput.trim();
+    if (!isValidAddr(addr)) {
+      setLookup({ address: addr, accountId: null, found: false, loading: false, error: "Invalid address format" });
+      return;
+    }
+    setLookup({ address: addr, accountId: null, found: false, loading: true, error: "" });
+    const result = await lookupWhaleAddress(addr);
+    setLookup({ address: addr, accountId: result.accountId, found: result.found, loading: false, error: "" });
+  };
 
   const base = (sym: string) => sym.split("_")[1];
 
@@ -77,11 +108,69 @@ export default function WhaleAlerts({ onHide }: Props) {
       </button>
 
       {open && (
-        <div className="whale-panel" style={{ ...panelStyle, width: 300, maxWidth: "calc(100vw - 24px)" }}>
+        <div className="whale-panel" style={{ ...panelStyle, width: 310, maxWidth: "calc(100vw - 24px)" }}>
+          {/* Header */}
           <div className="whale-panel-header">
-            <span className="whale-panel-title">🐋 Whale Alerts</span>
-            <span className="whale-panel-sub">Trades &gt; {fmtVal(WHALE_THRESHOLD)}</span>
+            <div>
+              <span className="whale-panel-title">🐋 Whale Alerts</span>
+              <span className="whale-panel-sub">Trades &gt; {fmtVal(WHALE_THRESHOLD)}</span>
+            </div>
+            <button
+              className="whale-search-toggle"
+              onClick={() => { setShowSearch(v => !v); setLookup(null); setSearchInput(""); }}
+              title="Search whale address"
+            >🔍</button>
           </div>
+
+          {/* Address search */}
+          {showSearch && (
+            <div className="whale-search-box">
+              <div className="whale-search-row">
+                <input
+                  className="whale-search-input"
+                  placeholder="0x… wallet address"
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
+                  onMouseDown={e => e.stopPropagation()}
+                />
+                <button className="whale-search-btn" onClick={handleSearch} onMouseDown={e => e.stopPropagation()}>
+                  {lookup?.loading ? "…" : "Go"}
+                </button>
+              </div>
+
+              {lookup && !lookup.loading && (
+                <div className="whale-lookup-result">
+                  {lookup.error ? (
+                    <div className="whale-lookup-error">{lookup.error}</div>
+                  ) : lookup.found ? (
+                    <div className="whale-lookup-found">
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <span style={{ color: "#0ecb81", fontSize: 12 }}>✓</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#e8ecf1" }}>Orderly Trader Found</span>
+                      </div>
+                      <div className="whale-lookup-addr">{shortAddr(lookup.address)}</div>
+                      {lookup.accountId && (
+                        <div className="whale-lookup-id">Account ID: {shortAddr(lookup.accountId)}</div>
+                      )}
+                      <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                        <a className="whale-lookup-link" href={`https://arbiscan.io/address/${lookup.address}`} target="_blank" rel="noopener noreferrer">Arbiscan ↗</a>
+                        <a className="whale-lookup-link" href={`https://app.orderly.network/portfolio?account=${lookup.address}`} target="_blank" rel="noopener noreferrer">Orderly ↗</a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="whale-lookup-notfound">
+                      <div style={{ color: "rgba(246,70,93,0.8)", fontSize: 11, marginBottom: 4 }}>⚠ Not found on Orderly Network</div>
+                      <div className="whale-lookup-addr">{shortAddr(lookup.address)}</div>
+                      <a className="whale-lookup-link" style={{ marginTop: 6, display: "inline-block" }} href={`https://arbiscan.io/address/${lookup.address}`} target="_blank" rel="noopener noreferrer">View on Arbiscan ↗</a>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Alerts list */}
           <div className="whale-list">
             {alerts.length === 0 && <div className="whale-empty">Watching for whale trades…</div>}
             {alerts.map(a => (

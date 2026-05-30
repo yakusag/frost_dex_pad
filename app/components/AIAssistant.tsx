@@ -49,20 +49,25 @@ const SUGGESTIONS = [
 interface Props { onHide: () => void; }
 
 export default function AIAssistant({ onHide }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]     = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput]   = useState("");
   const [loading, setLoading] = useState(false);
-
-  const envKey = (import.meta.env.VITE_GROQ_API_KEY as string) || "";
-  const [apiKey, setApiKey] = useState(() => envKey || localStorage.getItem("frost_groq_key") || "");
-  const [model, setModel] = useState(() => localStorage.getItem("frost_groq_model") || GROQ_MODELS[0].id);
-  const [showKeyInput, setShowKeyInput] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError]   = useState("");
   const [hovered, setHovered] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Use the platform API key — no user key needed
+  const envKey = (import.meta.env.VITE_GROQ_API_KEY as string) || "";
+  // Fallback: allow user to set their own key only if no env key configured
+  const [userKey, setUserKey] = useState(() => localStorage.getItem("frost_groq_key") || "");
+  const apiKey = envKey || userKey;
+  const needsKey = !apiKey;
+
+  const [model, setModel] = useState(() => localStorage.getItem("frost_groq_model") || GROQ_MODELS[0].id);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
 
   const defaultPos = { x: 12, y: typeof window !== "undefined" ? window.innerHeight - 122 : 600 };
   const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } =
@@ -75,22 +80,13 @@ export default function AIAssistant({ onHide }: Props) {
     }
   }, [open, messages]);
 
-  const saveKey = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem("frost_groq_key", key);
-    setShowKeyInput(false);
-    setError("");
-  };
-
-  const saveModel = (m: string) => {
-    setModel(m);
-    localStorage.setItem("frost_groq_model", m);
-  };
+  const saveModel = (m: string) => { setModel(m); localStorage.setItem("frost_groq_model", m); };
+  const saveUserKey = (k: string) => { setUserKey(k); localStorage.setItem("frost_groq_key", k); };
 
   const send = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || loading) return;
-    if (!apiKey) { setShowKeyInput(true); return; }
+    if (needsKey) { setShowSettings(true); return; }
     const userMsg: Message = { role: "user", content };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -101,10 +97,8 @@ export default function AIAssistant({ onHide }: Props) {
       const reply = await askGroq(newMessages, apiKey, model);
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
     } catch (e: any) {
-      setError(e.message || "Error. Check your Groq API key.");
-    } finally {
-      setLoading(false);
-    }
+      setError(e.message || "Error. Check API key.");
+    } finally { setLoading(false); }
   };
 
   const panelStyle: React.CSSProperties = isBottomHalf
@@ -115,15 +109,7 @@ export default function AIAssistant({ onHide }: Props) {
     <div
       ref={elementRef}
       {...dragHandleProps}
-      style={{
-        position: "fixed",
-        left: pos.x,
-        top: pos.y,
-        zIndex: 200,
-        userSelect: isDragging ? "none" : "auto",
-        cursor: isDragging ? "grabbing" : "grab",
-        transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none",
-      }}
+      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto", cursor: isDragging ? "grabbing" : "grab", transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -133,11 +119,7 @@ export default function AIAssistant({ onHide }: Props) {
         </div>
       )}
 
-      <button
-        className="ai-assistant-fab"
-        onClick={() => { if (wasDragged()) return; setOpen(v => !v); }}
-        aria-label="AI Trading Assistant"
-      >
+      <button className="ai-assistant-fab" onClick={() => { if (wasDragged()) return; setOpen(v => !v); }} aria-label="AI Trading Assistant">
         {open
           ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
           : <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12h6M9 16h4M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2h-2M9 4h6v2H9V4z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
@@ -159,86 +141,49 @@ export default function AIAssistant({ onHide }: Props) {
               </div>
             </div>
             <div className="ai-panel-actions">
-              <button className="ai-icon-btn" onClick={() => setShowKeyInput(v => !v)} title="Settings">⚙</button>
-              {messages.length > 0 && (
-                <button className="ai-icon-btn" onClick={() => setMessages([])} title="Clear chat">🗑</button>
-              )}
+              <button className="ai-icon-btn" onClick={() => setShowSettings(v => !v)} title="Settings">⚙</button>
+              {messages.length > 0 && <button className="ai-icon-btn" onClick={() => setMessages([])} title="Clear chat">🗑</button>}
             </div>
           </div>
 
-          {showKeyInput && (
+          {/* Settings panel — model picker + optional key if no env key */}
+          {showSettings && (
             <div className="ai-key-box">
-              <p className="ai-key-label" style={{ color: "#38e0f8" }}>Groq API Key</p>
-              <p className="ai-key-sub">Free · Fast · No limits — stored in your browser only</p>
-              <div className="ai-key-row">
-                <input
-                  type="password"
-                  placeholder="gsk_..."
-                  defaultValue={apiKey}
-                  className="ai-key-input"
-                  onKeyDown={e => { if (e.key === "Enter") saveKey((e.target as HTMLInputElement).value); }}
-                  id="ai-key-field"
-                />
-                <button
-                  className="ai-key-save"
-                  onClick={() => {
-                    const v = (document.getElementById("ai-key-field") as HTMLInputElement)?.value;
-                    if (v) saveKey(v);
-                  }}
-                >Save</button>
+              <p className="ai-key-label" style={{ color: "#38e0f8" }}>Model</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+                {GROQ_MODELS.map(m => (
+                  <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: model === m.id ? "#38e0f8" : "rgba(180,190,210,0.7)", cursor: "pointer" }}>
+                    <input type="radio" name="groq-model" value={m.id} checked={model === m.id} onChange={() => saveModel(m.id)} style={{ accentColor: "#38e0f8" }} />
+                    {m.label}
+                  </label>
+                ))}
               </div>
-              <a
-                href="https://console.groq.com/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ai-key-link"
-              >
-                Get free Groq API key →
-              </a>
 
-              <div style={{ marginTop: 10 }}>
-                <p className="ai-key-sub" style={{ marginBottom: 4 }}>Model</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {GROQ_MODELS.map(m => (
-                    <label
-                      key={m.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        fontSize: 12,
-                        color: model === m.id ? "#38e0f8" : "rgba(180,190,210,0.7)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="groq-model"
-                        value={m.id}
-                        checked={model === m.id}
-                        onChange={() => saveModel(m.id)}
-                        style={{ accentColor: "#38e0f8" }}
-                      />
-                      {m.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
+              {/* Only show key input if no platform key configured */}
+              {!envKey && (
+                <>
+                  <p className="ai-key-label" style={{ color: "#38e0f8", marginTop: 4 }}>API Key</p>
+                  <p className="ai-key-sub">Stored locally in your browser only</p>
+                  <div className="ai-key-row">
+                    <input type="password" placeholder="gsk_..." defaultValue={userKey} className="ai-key-input"
+                      onKeyDown={e => { if (e.key === "Enter") saveUserKey((e.target as HTMLInputElement).value); }}
+                      id="ai-key-field" onMouseDown={e => e.stopPropagation()} />
+                    <button className="ai-key-save" onClick={() => { const v = (document.getElementById("ai-key-field") as HTMLInputElement)?.value; if (v) saveUserKey(v); }}>Save</button>
+                  </div>
+                  <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="ai-key-link">Get free Groq API key →</a>
+                </>
+              )}
             </div>
           )}
 
           <div className="ai-messages">
-            {messages.length === 0 && !showKeyInput && (
+            {messages.length === 0 && !showSettings && (
               <div className="ai-welcome">
                 <div className="ai-welcome-icon">❄</div>
                 <div className="ai-welcome-title">FrostAI</div>
-                <div className="ai-welcome-sub">
-                  Ask me anything about crypto trading, market analysis, or FrostDex.
-                </div>
+                <div className="ai-welcome-sub">Ask me anything about crypto trading, market analysis, or FrostDex.</div>
                 <div className="ai-suggestions">
-                  {SUGGESTIONS.map(s => (
-                    <button key={s} className="ai-suggestion" onClick={() => send(s)}>{s}</button>
-                  ))}
+                  {SUGGESTIONS.map(s => <button key={s} className="ai-suggestion" onClick={() => send(s)}>{s}</button>)}
                 </div>
               </div>
             )}
@@ -246,32 +191,18 @@ export default function AIAssistant({ onHide }: Props) {
               <div key={i} className={`ai-msg ai-msg--${msg.role}`}>
                 {msg.role === "assistant" && <span className="ai-msg-avatar">❄</span>}
                 <div className="ai-msg-bubble">
-                  {msg.content.split("\n").map((line, j) => (
-                    <span key={j}>{line}{j < msg.content.split("\n").length - 1 && <br />}</span>
-                  ))}
+                  {msg.content.split("\n").map((line, j) => <span key={j}>{line}{j < msg.content.split("\n").length - 1 && <br />}</span>)}
                 </div>
               </div>
             ))}
-            {loading && (
-              <div className="ai-msg ai-msg--assistant">
-                <span className="ai-msg-avatar">❄</span>
-                <div className="ai-msg-bubble ai-thinking"><span /><span /><span /></div>
-              </div>
-            )}
+            {loading && <div className="ai-msg ai-msg--assistant"><span className="ai-msg-avatar">❄</span><div className="ai-msg-bubble ai-thinking"><span/><span/><span/></div></div>}
             {error && <div className="ai-error">{error}</div>}
             <div ref={bottomRef} />
           </div>
 
           <div className="ai-input-row">
-            <input
-              ref={inputRef}
-              className="ai-input"
-              placeholder="Ask about markets, strategies…"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") send(); }}
-              disabled={loading}
-            />
+            <input ref={inputRef} className="ai-input" placeholder="Ask about markets, strategies…" value={input}
+              onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send(); }} disabled={loading} />
             <button className="ai-send-btn" onClick={() => send()} disabled={loading || !input.trim()}>↑</button>
           </div>
         </div>

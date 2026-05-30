@@ -20,10 +20,19 @@ interface LiqLevel {
   usd: number;
 }
 
-const SYMBOLS = ["PERP_BTC_USDC", "PERP_ETH_USDC", "PERP_SOL_USDC", "PERP_ARB_USDC", "PERP_BNB_USDC"];
-const BASES   = ["BTC", "ETH", "SOL", "ARB", "BNB"];
+const SYMBOLS = [
+  "PERP_BTC_USDC",
+  "PERP_ETH_USDC",
+  "PERP_SOL_USDC",
+  "PERP_ARB_USDC",
+  "PERP_BNB_USDC",
+  "PERP_XAU_USDC",
+  "PERP_XAG_USDC",
+  "PERP_CL_USDC",
+  "PERP_NATGAS_USDC_arthur",
+];
+const BASES = ["BTC", "ETH", "SOL", "ARB", "BNB", "XAU", "XAG", "OIL", "GAS"];
 
-// Leverage → distance from entry before liquidation (approximate, 0.5% maint. margin)
 const LEVERAGE_LEVELS = [
   { lev: 100, pct: 0.5,  label: "100x", weight: 0.06 },
   { lev: 75,  pct: 0.8,  label: "75x",  weight: 0.07 },
@@ -57,37 +66,18 @@ async function fetchFutures(symbol: string): Promise<FuturesRow | null> {
 function buildLevels(mark: number, oi: number): LiqLevel[] {
   const levels: LiqLevel[] = [];
   const notional = mark * oi;
-
   for (const lv of LEVERAGE_LEVELS) {
-    // LONG liq zone: below mark price
-    const longPrice = mark * (1 - lv.pct / 100);
-    levels.push({
-      price: longPrice,
-      pct: -lv.pct,
-      side: "long",
-      intensity: lv.weight,
-      leverage: lv.label,
-      usd: notional * lv.weight * 0.6,
-    });
-    // SHORT liq zone: above mark price
-    const shortPrice = mark * (1 + lv.pct / 100);
-    levels.push({
-      price: shortPrice,
-      pct: lv.pct,
-      side: "short",
-      intensity: lv.weight,
-      leverage: lv.label,
-      usd: notional * lv.weight * 0.4,
-    });
+    levels.push({ price: mark * (1 - lv.pct / 100), pct: -lv.pct, side: "long",  intensity: lv.weight, leverage: lv.label, usd: notional * lv.weight * 0.6 });
+    levels.push({ price: mark * (1 + lv.pct / 100), pct:  lv.pct, side: "short", intensity: lv.weight, leverage: lv.label, usd: notional * lv.weight * 0.4 });
   }
-
   return levels.sort((a, b) => b.price - a.price);
 }
 
 function fmtPrice(p: number): string {
   if (p >= 10000) return p.toFixed(0);
-  if (p >= 100)   return p.toFixed(1);
-  return p.toFixed(3);
+  if (p >= 100)   return p.toFixed(2);
+  if (p >= 1)     return p.toFixed(3);
+  return p.toFixed(4);
 }
 function fmtUSD(v: number): string {
   if (v >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
@@ -98,29 +88,23 @@ function fmtUSD(v: number): string {
 interface Props { onHide: () => void; }
 
 export default function LiqHeatmap({ onHide }: Props) {
-  const [open, setOpen] = useState(false);
-  const [symIdx, setSymIdx] = useState(0);
-  const [row, setRow] = useState<FuturesRow | null>(null);
-  const [levels, setLevels] = useState<LiqLevel[]>([]);
+  const [open, setOpen]       = useState(false);
+  const [symIdx, setSymIdx]   = useState(0);
+  const [row, setRow]         = useState<FuturesRow | null>(null);
+  const [levels, setLevels]   = useState<LiqLevel[]>([]);
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-  const defaultPos = {
-    x: typeof window !== "undefined" ? window.innerWidth - 120 : 1160,
-    y: 60,
-  };
+  const defaultPos = { x: typeof window !== "undefined" ? window.innerWidth - 120 : 1160, y: 60 };
   const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } =
     useDraggable("liq-heatmap", defaultPos);
 
   const load = async (idx = symIdx) => {
     setLoading(true);
     const data = await fetchFutures(SYMBOLS[idx]);
-    if (data) {
-      setRow(data);
-      setLevels(buildLevels(data.mark_price, data.open_interest));
-    }
+    if (data) { setRow(data); setLevels(buildLevels(data.mark_price, data.open_interest)); }
     setLoading(false);
   };
 
@@ -134,24 +118,14 @@ export default function LiqHeatmap({ onHide }: Props) {
     ? { position: "absolute", bottom: "calc(100% + 8px)", right: 0 }
     : { position: "absolute", top: "calc(100% + 8px)", right: 0 };
 
-  const markPrice = row?.mark_price ?? 0;
+  const markPrice   = row?.mark_price ?? 0;
   const maxIntensity = Math.max(...levels.map(l => l.intensity), 0.01);
 
   return (
     <div
       ref={elementRef}
       {...dragHandleProps}
-      style={{
-        position: "fixed",
-        left: pos.x,
-        top: pos.y,
-        zIndex: 200,
-        userSelect: isDragging ? "none" : "auto",
-        cursor: isDragging ? "grabbing" : "grab",
-        transition: isSnapping
-          ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)"
-          : "none",
-      }}
+      style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 200, userSelect: isDragging ? "none" : "auto", cursor: isDragging ? "grabbing" : "grab", transition: isSnapping ? "left 0.25s cubic-bezier(.22,1,.36,1), top 0.25s cubic-bezier(.22,1,.36,1)" : "none" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -161,19 +135,12 @@ export default function LiqHeatmap({ onHide }: Props) {
         </div>
       )}
 
-      {/* FAB */}
-      <button
-        className="liq-fab"
-        onClick={() => { if (wasDragged()) return; setOpen(v => !v); }}
-        aria-label="Liquidation Heatmap"
-      >
+      <button className="liq-fab" onClick={() => { if (wasDragged()) return; setOpen(v => !v); }} aria-label="Liquidation Heatmap">
         <span style={{ fontSize: 16 }}>🔥</span>
       </button>
 
       {open && (
-        <div className="liq-panel" style={{ ...panelStyle, width: 290, maxWidth: "calc(100vw - 24px)" }}>
-
-          {/* Header */}
+        <div className="liq-panel" style={{ ...panelStyle, width: 300, maxWidth: "calc(100vw - 24px)" }}>
           <div className="liq-header">
             <div className="liq-header-left">
               <span style={{ fontSize: 14 }}>🔥</span>
@@ -190,41 +157,29 @@ export default function LiqHeatmap({ onHide }: Props) {
             )}
           </div>
 
-          {/* Symbol picker */}
+          {/* Symbol picker — scrollable row */}
           <div className="liq-symbols">
             {BASES.map((b, i) => (
-              <button
-                key={b}
-                className={`liq-sym-btn ${symIdx === i ? "liq-sym-btn--active" : ""}`}
-                onClick={() => { setSymIdx(i); load(i); }}
-              >
+              <button key={b} className={`liq-sym-btn ${symIdx === i ? "liq-sym-btn--active" : ""}`}
+                onClick={() => { setSymIdx(i); load(i); }}>
                 {b}
               </button>
             ))}
           </div>
 
-          {/* Legend */}
           <div className="liq-legend">
             <span style={{ color: "#0ecb81" }}>■</span> Short liq &nbsp;
             <span style={{ color: "#f6465d" }}>■</span> Long liq &nbsp;
             <span style={{ color: "rgba(56,224,248,0.7)" }}>──</span> Mark price
           </div>
 
-          {/* Heatmap grid */}
           <div className="liq-grid">
-            {loading && levels.length === 0 && (
-              <div className="liq-empty">Loading price levels…</div>
-            )}
+            {loading && levels.length === 0 && <div className="liq-empty">Loading price levels…</div>}
             {levels.map((lv, i) => {
-              const isAbove = lv.price > markPrice;
-              const isBelow = lv.price < markPrice;
-              const barPct  = Math.round((lv.intensity / maxIntensity) * 100);
-              const color   = isAbove ? "#0ecb81" : "#f6465d";
-              const isMarkRow =
-                i < levels.length - 1 &&
-                levels[i].price > markPrice &&
-                levels[i + 1].price < markPrice;
-
+              const isAbove  = lv.price > markPrice;
+              const barPct   = Math.round((lv.intensity / maxIntensity) * 100);
+              const color    = isAbove ? "#0ecb81" : "#f6465d";
+              const isMarkRow = i < levels.length - 1 && levels[i].price > markPrice && levels[i + 1].price < markPrice;
               return (
                 <div key={`${lv.leverage}-${lv.side}`}>
                   {isMarkRow && (
@@ -233,16 +188,11 @@ export default function LiqHeatmap({ onHide }: Props) {
                       <div className="liq-mark-dash" />
                     </div>
                   )}
-                  <div className={`liq-row ${isAbove ? "liq-row--short" : "liq-row--long"}`}>
+                  <div className={`liq-row liq-row--${isAbove ? "short" : "long"}`}>
                     <div className="liq-row-price">${fmtPrice(lv.price)}</div>
                     <div className="liq-bar-wrap">
-                      <div
-                        className="liq-bar"
-                        style={{ width: `${barPct}%`, background: color, opacity: 0.15 + (barPct / 100) * 0.7 }}
-                      />
-                      <span className="liq-bar-label" style={{ color }}>
-                        {fmtUSD(lv.usd)}
-                      </span>
+                      <div className="liq-bar" style={{ width: `${barPct}%`, background: color, opacity: 0.15 + (barPct / 100) * 0.7 }} />
+                      <span className="liq-bar-label" style={{ color }}>{fmtUSD(lv.usd)}</span>
                     </div>
                     <div className="liq-row-lev">{lv.leverage}</div>
                   </div>
@@ -251,9 +201,7 @@ export default function LiqHeatmap({ onHide }: Props) {
             })}
           </div>
 
-          <div className="liq-footer">
-            Estimated · updates every 20s · Not financial advice
-          </div>
+          <div className="liq-footer">Estimated · updates every 20s · Not financial advice</div>
         </div>
       )}
     </div>

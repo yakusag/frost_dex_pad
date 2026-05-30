@@ -1022,6 +1022,43 @@ select,
   border-top: 1px solid rgba(255,255,255,0.04);
   text-align: right;
 }
+.whale-search-toggle {
+  background: none; border: none; cursor: pointer; font-size: 14px;
+  color: rgba(180,190,210,0.5); padding: 2px 4px; border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.whale-search-toggle:hover { color: #38e0f8; background: rgba(56,224,248,0.08); }
+.whale-search-box {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+}
+.whale-search-row { display: flex; gap: 6px; }
+.whale-search-input {
+  flex: 1; padding: 6px 10px; font-size: 11px; font-family: 'Manrope', sans-serif;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; color: #e8ecf1; outline: none;
+  transition: border-color 0.15s;
+}
+.whale-search-input::placeholder { color: rgba(180,190,210,0.35); }
+.whale-search-input:focus { border-color: rgba(56,224,248,0.4); }
+.whale-search-btn {
+  padding: 6px 12px; font-size: 11px; font-weight: 700; font-family: 'Manrope', sans-serif;
+  background: rgba(56,224,248,0.12); border: 1px solid rgba(56,224,248,0.3);
+  border-radius: 8px; color: #38e0f8; cursor: pointer; transition: background 0.15s;
+}
+.whale-search-btn:hover { background: rgba(56,224,248,0.2); }
+.whale-lookup-result { margin-top: 8px; }
+.whale-lookup-error { font-size: 11px; color: rgba(246,70,93,0.8); }
+.whale-lookup-found, .whale-lookup-notfound { font-size: 11px; }
+.whale-lookup-addr { font-size: 11px; font-family: monospace; color: rgba(180,190,210,0.6); }
+.whale-lookup-id { font-size: 10px; color: rgba(180,190,210,0.4); margin-top: 2px; font-family: monospace; }
+.whale-lookup-link {
+  display: inline-block; font-size: 10px; color: #38e0f8; text-decoration: none;
+  padding: 3px 8px; border: 1px solid rgba(56,224,248,0.25); border-radius: 6px;
+  transition: background 0.15s;
+}
+.whale-lookup-link:hover { background: rgba(56,224,248,0.1); }
 
 /* ─── LIQ HEATMAP ───────────────────────────────────────────────────── */
 .liq-fab {

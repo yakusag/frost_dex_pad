@@ -65,14 +65,32 @@ const POPULAR_SYMBOLS = [
   "PERP_DOGE_USDC",
   "PERP_LINK_USDC",
   "PERP_OP_USDC",
+  "PERP_XAU_USDC",
+  "PERP_XAG_USDC",
+  "PERP_CL_USDC",
+  "PERP_NATGAS_USDC_arthur",
 ];
 
+const SYMBOL_DISPLAY_MAP: Record<string, string> = {
+  "PERP_XAU_USDC":           "XAU/USDC",
+  "PERP_XAG_USDC":           "XAG/USDC",
+  "PERP_CL_USDC":            "OIL/USDC",
+  "PERP_NATGAS_USDC_arthur": "GAS/USDC",
+};
+
+const BASE_SYMBOL_MAP: Record<string, string> = {
+  "PERP_XAU_USDC":           "XAU",
+  "PERP_XAG_USDC":           "XAG",
+  "PERP_CL_USDC":            "CL",
+  "PERP_NATGAS_USDC_arthur": "NATGAS",
+};
+
 function symbolDisplay(s: string) {
-  return s.replace("PERP_", "").replace("_USDC", "/USDC");
+  return SYMBOL_DISPLAY_MAP[s] ?? s.replace("PERP_", "").replace("_USDC", "/USDC");
 }
 
 function getBaseSymbol(s: string) {
-  return s.replace("PERP_", "").replace("_USDC", "");
+  return BASE_SYMBOL_MAP[s] ?? s.replace("PERP_", "").replace(/_USDC.*/, "");
 }
 
 function generateId() {
