@@ -57,8 +57,8 @@ export default function AIAssistant({ onHide }: Props) {
   const [hovered, setHovered] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Use the platform API key — no user key needed
-  const envKey = (import.meta.env.VITE_GROQ_API_KEY as string) || "";
+  // Use the platform API key — supports both VITE_GROQ_API_KEY and GROQ_API_KEY
+  const envKey = (import.meta.env.VITE_GROQ_API_KEY as string) || (import.meta.env.GROQ_API_KEY as string) || "";
   // Fallback: allow user to set their own key only if no env key configured
   const [userKey, setUserKey] = useState(() => localStorage.getItem("frost_groq_key") || "");
   const apiKey = envKey || userKey;

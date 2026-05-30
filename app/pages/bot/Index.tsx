@@ -86,11 +86,15 @@ const BASE_SYMBOL_MAP: Record<string, string> = {
 };
 
 function symbolDisplay(s: string) {
-  return SYMBOL_DISPLAY_MAP[s] ?? s.replace("PERP_", "").replace("_USDC", "/USDC");
+  if (SYMBOL_DISPLAY_MAP[s]) return SYMBOL_DISPLAY_MAP[s];
+  const m = s.match(/^PERP_(.+?)_USDC/);
+  return m ? `${m[1]}/USDC` : s;
 }
 
 function getBaseSymbol(s: string) {
-  return BASE_SYMBOL_MAP[s] ?? s.replace("PERP_", "").replace(/_USDC.*/, "");
+  if (BASE_SYMBOL_MAP[s]) return BASE_SYMBOL_MAP[s];
+  const m = s.match(/^PERP_(.+?)_USDC/);
+  return m ? m[1] : s;
 }
 
 function generateId() {
@@ -348,6 +352,7 @@ export default function BotPage() {
   const [tab, setTab] = useState<"bots" | "create" | "logs" | "backtest">(
     "bots"
   );
+  const [allSymbols, setAllSymbols] = useState<string[]>(POPULAR_SYMBOLS);
   const [strategy, setStrategy] = useState<BotStrategy>("grid");
   const [symbol, setSymbol] = useState("PERP_BTC_USDC");
   const [investment, setInvestment] = useState("500");
@@ -375,6 +380,27 @@ export default function BotPage() {
   const saveLogs = useCallback((updated: TradeLog[]) => {
     setLogs(updated);
     localStorage.setItem(LOGS_KEY, JSON.stringify(updated));
+  }, []);
+
+  // Fetch all available Orderly perp markets
+  useEffect(() => {
+    fetch("https://api.orderly.org/v1/public/futures")
+      .then((r) => r.json())
+      .then((data) => {
+        const syms: string[] = (data?.data?.rows ?? [])
+          .map((r: any) => r.symbol as string)
+          .filter(Boolean)
+          .sort((a: string, b: string) => {
+            const priority = ["PERP_BTC_USDC","PERP_ETH_USDC","PERP_SOL_USDC","PERP_ARB_USDC","PERP_BNB_USDC"];
+            const ai = priority.indexOf(a), bi = priority.indexOf(b);
+            if (ai !== -1 && bi !== -1) return ai - bi;
+            if (ai !== -1) return -1;
+            if (bi !== -1) return 1;
+            return a.localeCompare(b);
+          });
+        if (syms.length > 0) setAllSymbols(syms);
+      })
+      .catch(() => {});
   }, []);
 
   // Simulate PnL for non-live running bots
@@ -1235,7 +1261,7 @@ export default function BotPage() {
                 onChange={(e) => setSymbol(e.target.value)}
                 style={inputStyle}
               >
-                {POPULAR_SYMBOLS.map((s) => (
+                {allSymbols.map((s) => (
                   <option key={s} value={s}>
                     {symbolDisplay(s)}
                   </option>

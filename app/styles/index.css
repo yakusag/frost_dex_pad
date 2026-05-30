@@ -1089,16 +1089,37 @@ select,
 .liq-title { font-size: 13px; font-weight: 700; color: #e8ecf1; }
 .liq-sub { font-size: 10px; color: rgba(180,190,210,0.45); margin-top: 1px; }
 .liq-mark { text-align: right; }
-.liq-symbols {
-  display: flex; gap: 2px; padding: 6px 10px;
+.liq-sym-picker {
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
+.liq-sym-search-wrap {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 10px 4px;
+}
+.liq-sym-search {
+  flex: 1; padding: 5px 9px; font-size: 11px; font-family: 'Manrope', sans-serif;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 7px; color: #e8ecf1; outline: none;
+  transition: border-color 0.15s;
+}
+.liq-sym-search::placeholder { color: rgba(180,190,210,0.35); }
+.liq-sym-search:focus { border-color: rgba(56,224,248,0.35); }
+.liq-sym-clear {
+  background: none; border: none; cursor: pointer; font-size: 11px;
+  color: rgba(180,190,210,0.4); padding: 2px 4px; line-height: 1;
+}
+.liq-sym-clear:hover { color: #e8ecf1; }
+.liq-symbols {
+  display: flex; flex-wrap: wrap; gap: 3px; padding: 4px 10px 8px;
+  max-height: 78px; overflow-y: auto;
+}
 .liq-sym-btn {
-  flex: 1; padding: 4px 2px; font-size: 10px; font-weight: 700;
+  padding: 3px 7px; font-size: 10px; font-weight: 700;
   font-family: 'Manrope', sans-serif;
   background: none; border: 1px solid rgba(255,255,255,0.07);
   border-radius: 6px; color: rgba(180,190,210,0.5); cursor: pointer;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
 }
 .liq-sym-btn:hover { color: #e8ecf1; border-color: rgba(255,255,255,0.2); }
 .liq-sym-btn--active { color: #38e0f8; border-color: rgba(56,224,248,0.4); background: rgba(56,224,248,0.05); }

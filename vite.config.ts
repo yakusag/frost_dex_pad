@@ -49,6 +49,9 @@ export default defineConfig(() => {
       port: 5000,
       allowedHosts: true,
     },
+    define: {
+      "import.meta.env.GROQ_API_KEY": JSON.stringify(process.env.GROQ_API_KEY || ""),
+    },
     base: basePath,
     plugins: [
       react(),
