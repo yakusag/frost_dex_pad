@@ -63,3 +63,11 @@ externalPort = 3000
 deploymentTarget = "static"
 build = ["bash", "-c", "yarn install && yarn build"]
 publicDir = "build/client"
+
+[userenv]
+
+[userenv.shared]
+
+[userenv.development]
+
+[userenv.production]
