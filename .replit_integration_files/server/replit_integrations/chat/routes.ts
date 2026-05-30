@@ -1,10 +1,10 @@
 import type { Express, Request, Response } from "express";
-import OpenAI from "openai";
+import OpenAI from "groq";
 import { chatStorage } from "./storage";
 
 const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: process.env.AI_INTEGRATIONS_GROQ_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_GROQ_BASE_URL,
 });
 
 export function registerChatRoutes(app: Express): void {
@@ -82,7 +82,7 @@ export function registerChatRoutes(app: Express): void {
 
       // Stream response from OpenAI
       const stream = await openai.chat.completions.create({
-        model: "gpt-5.4",
+        model: "llama-3.3,3.1,mixtral",
         messages: chatMessages,
         stream: true,
         max_completion_tokens: 8192,
