@@ -37,6 +37,8 @@ const PointsLayout = lazy(() => import('./pages/points/Layout'));
 const PointsIndex = lazy(() => import('./pages/points/Index'));
 const BotLayout = lazy(() => import('./pages/bot/Layout'));
 const BotIndex = lazy(() => import('./pages/bot/Index'));
+const CreateTokenLayout = lazy(() => import('./pages/create-token/Layout'));
+const CreateTokenIndex = lazy(() => import('./pages/create-token/Index'));
 
 
 async function loadRuntimeConfig() {
@@ -160,6 +162,13 @@ const router = createBrowserRouter([
           { index: true, element: <BotIndex /> },
         ],
       },
+      {
+        path: 'create-token',
+        element: <CreateTokenLayout />,
+        children: [
+          { index: true, element: <CreateTokenIndex /> },
+        ],
+      },
     ],
   },
 ], { basename: basePath });
@@ -182,6 +191,8 @@ function prefetchRoutes() {
     import('./pages/rewards/Index');
     import('./pages/vaults/Layout');
     import('./pages/vaults/Index');
+    import('./pages/create-token/Layout');
+    import('./pages/create-token/Index');
   };
 
   if ('requestIdleCallback' in window) {
