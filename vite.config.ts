@@ -48,9 +48,22 @@ export default defineConfig(() => {
       host: "0.0.0.0",
       port: 5000,
       allowedHosts: true,
+      proxy: {
+        "/api/groq": {
+          target: "https://api.groq.com",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/groq/, "/openai/v1/chat/completions"),
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              const apiKey = process.env.GROQ_API_KEY || "";
+              proxyReq.setHeader("Authorization", `Bearer ${apiKey}`);
+            });
+          },
+        },
+      },
     },
     define: {
-      __GROQ_KEY__: JSON.stringify(process.env.GROQ_API_KEY || ""),
+      __GROQ_KEY__: JSON.stringify(""),
     },
     base: basePath,
     plugins: [

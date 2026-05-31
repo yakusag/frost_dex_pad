@@ -19,10 +19,10 @@ const GROQ_MODELS = [
   { id: "mixtral-8x7b-32768",      label: "Mixtral 8x7B" },
 ];
 
-async function askGroq(messages: Message[], apiKey: string, model: string): Promise<string> {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+async function askGroq(messages: Message[], _apiKey: string, model: string): Promise<string> {
+  const res = await fetch("/api/groq", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
       messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
@@ -57,11 +57,7 @@ export default function AIAssistant({ onHide }: Props) {
   const [hovered, setHovered] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const apiKey = (
-    (window as any).__RUNTIME_CONFIG__?.GROQ_API_KEY ||
-    (typeof __GROQ_KEY__ !== "undefined" ? __GROQ_KEY__ : "")
-  ) || "";
-  const needsKey = !apiKey;
+  const needsKey = false;
 
   const [model, setModel] = useState(() => localStorage.getItem("frost_groq_model") || GROQ_MODELS[0].id);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
