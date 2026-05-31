@@ -14,14 +14,8 @@ interface MACSignal {
   oi: number;
 }
 
-const LIQUID_SYMBOLS = [
-  "PERP_BTC_USDC","PERP_ETH_USDC","PERP_SOL_USDC","PERP_ARB_USDC",
-  "PERP_BNB_USDC","PERP_AVAX_USDC","PERP_DOGE_USDC","PERP_SUI_USDC",
-  "PERP_LINK_USDC","PERP_OP_USDC","PERP_XAU_USDC","PERP_PEPE_USDC",
-];
-
-const OI_MIN = 500_000;
-const VOL_MIN = 1_000_000;
+const OI_MIN = 100_000;
+const VOL_MIN = 200_000;
 const TIMEFRAMES = ["1h", "4h", "1d"] as const;
 type TF = typeof TIMEFRAMES[number];
 
@@ -73,44 +67,54 @@ async function fetchMarkets(): Promise<Record<string, { oi: number; volume: numb
   } catch { return {}; }
 }
 
+async function pLimit<T>(fns: (() => Promise<T>)[], concurrency: number): Promise<T[]> {
+  const results: T[] = [];
+  let i = 0;
+  async function next(): Promise<void> {
+    const idx = i++;
+    if (idx >= fns.length) return;
+    results[idx] = await fns[idx]();
+    await next();
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, fns.length) }, next));
+  return results;
+}
+
 async function computeSignals(tf: TF): Promise<MACSignal[]> {
   const markets = await fetchMarkets();
-  const candidates = LIQUID_SYMBOLS.filter(sym => {
+  const candidates = Object.keys(markets).filter(sym => {
     const m = markets[sym];
-    return m && m.oi >= OI_MIN && m.volume >= VOL_MIN;
+    return m && m.oi >= OI_MIN && m.volume >= VOL_MIN && sym.startsWith("PERP_");
+  }).sort((a, b) => markets[b].oi - markets[a].oi);
+
+  const fns = candidates.map(sym => async () => {
+    await new Promise(r => setTimeout(r, Math.random() * 200));
+    const klines = await fetchKlines(sym, tf);
+    if (klines.length < 22) return null;
+    const closes = klines.map(k => k.close);
+    const ema9arr = calcEMA(closes, 9);
+    const ema21arr = calcEMA(closes, 21);
+    const ema9 = ema9arr[ema9arr.length - 1];
+    const ema21 = ema21arr[ema21arr.length - 1];
+    const prevEma9 = ema9arr[ema9arr.length - 2] ?? ema9;
+    const prevEma21 = ema21arr[ema21arr.length - 2] ?? ema21;
+
+    const crossedUp   = prevEma9 <= prevEma21 && ema9 > ema21;
+    const crossedDown = prevEma9 >= prevEma21 && ema9 < ema21;
+    const crossover   = crossedUp || crossedDown;
+
+    const signal: MACSignal["signal"] = crossedUp ? "golden"
+      : crossedDown ? "death"
+      : ema9 > ema21 ? "bull"
+      : "bear";
+
+    const m = markets[sym];
+    const pricePct = m.open > 0 ? ((m.close - m.open) / m.open) * 100 : 0;
+    const base = sym.split("_")[1];
+    return { symbol: sym, base, ema9, ema21, signal, crossover, pricePct, volume24h: m.volume, oi: m.oi } as MACSignal;
   });
 
-  const results = await Promise.all(
-    candidates.map(async (sym) => {
-      const klines = await fetchKlines(sym, tf);
-      if (klines.length < 22) return null;
-      const closes = klines.map(k => k.close);
-      const ema9arr = calcEMA(closes, 9);
-      const ema21arr = calcEMA(closes, 21);
-      const ema9 = ema9arr[ema9arr.length - 1];
-      const ema21 = ema21arr[ema21arr.length - 1];
-      const prevEma9 = ema9arr[ema9arr.length - 2] ?? ema9;
-      const prevEma21 = ema21arr[ema21arr.length - 2] ?? ema21;
-
-      const crossedUp = prevEma9 <= prevEma21 && ema9 > ema21;
-      const crossedDown = prevEma9 >= prevEma21 && ema9 < ema21;
-      const crossover = crossedUp || crossedDown;
-
-      const signal: MACSignal["signal"] = crossedUp
-        ? "golden"
-        : crossedDown
-        ? "death"
-        : ema9 > ema21
-        ? "bull"
-        : "bear";
-
-      const m = markets[sym];
-      const pricePct = m.open > 0 ? ((m.close - m.open) / m.open) * 100 : 0;
-      const base = sym.split("_")[1];
-
-      return { symbol: sym, base, ema9, ema21, signal, crossover, pricePct, volume24h: m.volume, oi: m.oi } as MACSignal;
-    })
-  );
+  const results = await pLimit(fns, 5);
 
   return (results.filter(Boolean) as MACSignal[]).sort((a, b) => {
     const rank = (s: MACSignal) => (s.crossover ? 2 : 0) + (s.signal === "golden" || s.signal === "bull" ? 1 : 0);
