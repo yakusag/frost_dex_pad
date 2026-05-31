@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 interface Props {
-  visibility: { ai: boolean; whale: boolean; sentiment: boolean; frost: boolean; smartmoney: boolean; liq: boolean; mac: boolean };
+  visibility: { ai: boolean; whale: boolean; sentiment: boolean; frost: boolean; smartmoney: boolean; liq: boolean; mac: boolean; palert: boolean };
   anyHidden: boolean;
-  onToggle: (key: "ai" | "whale" | "sentiment" | "frost" | "smartmoney" | "liq" | "mac") => void;
+  onToggle: (key: "ai" | "whale" | "sentiment" | "frost" | "smartmoney" | "liq" | "mac" | "palert") => void;
   onShowAll: () => void;
 }
 
@@ -14,6 +14,7 @@ const WIDGETS = [
   { key: "smartmoney" as const, label: "Smart Money",         icon: "🧠" },
   { key: "liq"        as const, label: "Liq Heatmap",         icon: "🔥" },
   { key: "mac"        as const, label: "MAC + Liquidity",     icon: "📈" },
+  { key: "palert"     as const, label: "Price Alerts",        icon: "🔔" },
   { key: "sentiment"  as const, label: "Market Mood",         icon: "📊" },
 ];
 

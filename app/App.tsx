@@ -17,6 +17,7 @@ import FrostTradeWidget from "@/components/FrostTradeWidget";
 import SmartMoney from "@/components/SmartMoney";
 import LiqHeatmap from "@/components/LiqHeatmap";
 import MACWidget from "@/components/MACWidget";
+import PriceAlert from "@/components/PriceAlert";
 import WidgetManager from "@/components/WidgetManager";
 import { useWidgetVisibility } from "@/hooks/useWidgetVisibility";
 import { withBasePath } from "./utils/base-path";
@@ -58,6 +59,7 @@ export default function App() {
       {visibility.smartmoney && <SmartMoney          onHide={() => toggle("smartmoney")} />}
       {visibility.liq        && <LiqHeatmap          onHide={() => toggle("liq")} />}
       {visibility.mac        && <MACWidget            onHide={() => toggle("mac")} />}
+      {visibility.palert     && <PriceAlert           onHide={() => toggle("palert")} />}
       {visibility.sentiment  && <SentimentDashboard  onHide={() => toggle("sentiment")} />}
       <WidgetManager
         visibility={visibility}

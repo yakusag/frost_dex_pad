@@ -10,14 +10,15 @@ interface Visibility {
   smartmoney: boolean;
   liq: boolean;
   mac: boolean;
+  palert: boolean;
 }
 
 function load(): Visibility {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return { ai: true, whale: true, sentiment: true, frost: true, smartmoney: true, liq: true, mac: true, ...JSON.parse(saved) };
+    if (saved) return { ai: true, whale: true, sentiment: true, frost: true, smartmoney: true, liq: true, mac: true, palert: true, ...JSON.parse(saved) };
   } catch {}
-  return { ai: true, whale: true, sentiment: true, frost: true, smartmoney: true, liq: true, mac: true };
+  return { ai: true, whale: true, sentiment: true, frost: true, smartmoney: true, liq: true, mac: true, palert: true };
 }
 
 export function useWidgetVisibility() {
@@ -32,7 +33,7 @@ export function useWidgetVisibility() {
   }, []);
 
   const showAll = useCallback(() => {
-    const next = { ai: true, whale: true, sentiment: true, frost: true, smartmoney: true, liq: true, mac: true };
+    const next = { ai: true, whale: true, sentiment: true, frost: true, smartmoney: true, liq: true, mac: true, palert: true };
     setVisibility(next);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
   }, []);
