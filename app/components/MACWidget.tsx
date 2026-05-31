@@ -15,8 +15,8 @@ interface MACSignal {
   oi: number;
 }
 
-const OI_MIN = 100_000;
-const VOL_MIN = 200_000;
+const OI_USD_MIN = 500_000;   // open_interest (contracts) × close ≥ $500K
+const VOL_USD_MIN = 500_000;  // 24h_volume is already in USDC
 const TIMEFRAMES = ["1h", "4h", "1d"] as const;
 type TF = typeof TIMEFRAMES[number];
 
@@ -36,7 +36,7 @@ function calcEMA(closes: number[], period: number): number[] {
 async function fetchKlines(symbol: string, type: TF): Promise<KlineRow[]> {
   try {
     const res = await fetch(
-      `https://api.orderly.org/v1/kline?symbol=${symbol}&type=${type}&limit=50`,
+      `https://api.orderly.org/v1/public/kline?symbol=${symbol}&type=${type}&limit=50`,
       { cache: "no-store" }
     );
     if (!res.ok) return [];
@@ -85,8 +85,14 @@ async function computeSignals(tf: TF): Promise<MACSignal[]> {
   const markets = await fetchMarkets();
   const candidates = Object.keys(markets).filter(sym => {
     const m = markets[sym];
-    return m && m.oi >= OI_MIN && m.volume >= VOL_MIN && sym.startsWith("PERP_");
-  }).sort((a, b) => markets[b].oi - markets[a].oi);
+    if (!m || !sym.startsWith("PERP_")) return false;
+    const oiUsd = m.oi * (m.close || 1);   // open_interest is in base contracts
+    return oiUsd >= OI_USD_MIN || m.volume >= VOL_USD_MIN;
+  }).sort((a, b) => {
+    const oiA = markets[a].oi * (markets[a].close || 1);
+    const oiB = markets[b].oi * (markets[b].close || 1);
+    return oiB - oiA;
+  });
 
   const fns = candidates.map(sym => async () => {
     await new Promise(r => setTimeout(r, Math.random() * 200));
