@@ -28,7 +28,7 @@ window.__RUNTIME_CONFIG__ = {
   "VITE_TWITTER_URL": "",
   "VITE_SEO_SITE_NAME": "FrostDex",
   "VITE_SEO_SITE_DESCRIPTION": "FrostDex — Decentralized Exchange",
-  "VITE_SEO_SITE_URL": "https://frostdex1.vercel.app",
+  "VITE_SEO_SITE_URL": "https://frostdex.pw",
   "VITE_SEO_SITE_LANGUAGE": "en",
   "VITE_SEO_SITE_LOCALE": "en_US",
   "VITE_SEO_TWITTER_HANDLE": "",
