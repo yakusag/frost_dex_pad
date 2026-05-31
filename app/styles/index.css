@@ -1535,6 +1535,7 @@ select,
 }
 .mac-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .mac-row-stats { display: flex; align-items: center; gap: 3px; }
+.mac-row--clickable:hover { background: rgba(56,224,248,0.04) !important; }
 .mac-footer {
   padding: 6px 14px; font-size: 9px; color: rgba(180,190,210,0.3);
   border-top: 1px solid rgba(255,255,255,0.04); text-align: right;

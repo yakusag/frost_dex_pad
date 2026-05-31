@@ -31,7 +31,7 @@ function fmtVol(n: number): string {
 function getDefaultPos() {
   if (typeof window === "undefined") return { x: 200, y: 400 };
   return {
-    x: window.innerWidth - 164,
+    x: window.innerWidth > 500 ? window.innerWidth - 164 : 12,
     y: window.innerHeight - 260,
   };
 }

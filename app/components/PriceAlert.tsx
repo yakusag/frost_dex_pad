@@ -79,10 +79,7 @@ export default function PriceAlert({ onHide }: Props) {
   const notifTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-  const defaultPos = {
-    x: typeof window !== "undefined" ? window.innerWidth - 164 : 1116,
-    y: typeof window !== "undefined" ? window.innerHeight - 280 : 400,
-  };
+  const defaultPos = { x: 12, y: 278 };
   const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } =
     useDraggable("price-alert-widget", defaultPos);
 

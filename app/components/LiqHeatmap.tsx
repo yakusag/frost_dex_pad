@@ -98,7 +98,7 @@ export default function LiqHeatmap({ onHide }: Props) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-  const defaultPos = { x: typeof window !== "undefined" ? window.innerWidth - 120 : 1160, y: 60 };
+  const defaultPos = { x: 12, y: 70 };
   const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } =
     useDraggable("liq-heatmap", defaultPos);
 

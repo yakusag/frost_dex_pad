@@ -50,8 +50,7 @@ export default defineConfig(() => {
       allowedHosts: true,
     },
     define: {
-      "import.meta.env.GROQ_API_KEY": JSON.stringify(process.env.GROQ_API_KEY || ""),
-      "import.meta.env.VITE_GROQ_API_KEY": JSON.stringify(process.env.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY || ""),
+      __GROQ_KEY__: JSON.stringify(process.env.GROQ_API_KEY || ""),
     },
     base: basePath,
     plugins: [

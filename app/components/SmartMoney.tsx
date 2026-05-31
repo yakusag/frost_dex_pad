@@ -96,8 +96,8 @@ export default function SmartMoney({ onHide }: Props) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   const defaultPos = {
-    x: typeof window !== "undefined" ? window.innerWidth - 66 : 1200,
-    y: typeof window !== "undefined" ? window.innerHeight - 280 : 380,
+    x: 12,
+    y: typeof window !== "undefined" ? window.innerHeight - 500 : 260,
   };
   const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } =
     useDraggable("smart-money", defaultPos);

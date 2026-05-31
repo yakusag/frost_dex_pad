@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDraggable } from "@/hooks/useDraggable";
 
 interface KlineRow { close: number; volume: number; start_timestamp: number; }
@@ -145,13 +146,11 @@ export default function MACWidget({ onHide }: Props) {
   const [hovered, setHovered]   = useState(false);
   const [tf, setTf]             = useState<TF>("1h");
   const [filter, setFilter]     = useState<"all" | "crossover" | "bull" | "bear">("all");
+  const navigate = useNavigate();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
-  const defaultPos = {
-    x: typeof window !== "undefined" ? window.innerWidth - 120 : 1160,
-    y: typeof window !== "undefined" ? window.innerHeight - 340 : 240,
-  };
+  const defaultPos = { x: 12, y: 226 };
   const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } =
     useDraggable("mac-widget", defaultPos);
 
@@ -249,7 +248,13 @@ export default function MACWidget({ onHide }: Props) {
               const cfg = SIG_CFG[s.signal];
               const spread = s.ema9 !== 0 ? ((s.ema9 - s.ema21) / s.ema21 * 100) : 0;
               return (
-                <div key={s.symbol} className="mac-row" style={{ borderLeft: `2px solid ${cfg.color}40` }}>
+                <div
+                  key={s.symbol}
+                  className="mac-row mac-row--clickable"
+                  style={{ borderLeft: `2px solid ${cfg.color}40`, cursor: "pointer" }}
+                  onClick={() => { navigate(`/perp/${s.symbol}`); setOpen(false); }}
+                  title={`Trade ${s.base}`}
+                >
                   <div className="mac-row-left">
                     <span className="mac-base">{s.base}</span>
                     <span className="mac-sig-badge" style={{ color: cfg.color, background: cfg.bg }}>
@@ -267,7 +272,7 @@ export default function MACWidget({ onHide }: Props) {
                       </span>
                     </div>
                     <div style={{ fontSize: 9, color: "rgba(180,190,210,0.4)" }}>
-                      Vol {fmtVol(s.volume24h)}
+                      Vol {fmtVol(s.volume24h)} · tap to trade →
                     </div>
                   </div>
                 </div>

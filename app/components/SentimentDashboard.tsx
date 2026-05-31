@@ -47,7 +47,7 @@ export default function SentimentDashboard({ onHide }: Props) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const defaultPos = { x: 12, y: typeof window !== "undefined" ? window.innerHeight - 224 : 450 };
+  const defaultPos = { x: 12, y: 122 };
   const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } = useDraggable("sentiment-dashboard", defaultPos);
 
   const load = async () => {

@@ -34,6 +34,15 @@ export default function App() {
       (window as any).__hideSplash();
     }
     startFaviconAnimation(withBasePath("/favicon.webp"));
+
+    // One-time reset of widget positions to new left-side layout
+    const LAYOUT_VER = "left-v1";
+    if (localStorage.getItem("frost-layout-ver") !== LAYOUT_VER) {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith("widget-pos-"))
+        .forEach(k => localStorage.removeItem(k));
+      localStorage.setItem("frost-layout-ver", LAYOUT_VER);
+    }
   }, []);
 
   return (

@@ -33,7 +33,15 @@ export function useDraggable(id: string, defaultPos: Position) {
   const getInitialPos = (): Position => {
     try {
       const saved = localStorage.getItem(`widget-pos-${id}`);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const p = JSON.parse(saved) as Position;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        return {
+          x: clamp(p.x, 0, Math.max(0, vw - 50)),
+          y: clamp(p.y, 0, Math.max(0, vh - 50)),
+        };
+      }
     } catch {}
     return defaultPos;
   };

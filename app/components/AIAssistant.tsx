@@ -57,7 +57,7 @@ export default function AIAssistant({ onHide }: Props) {
   const [hovered, setHovered] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const apiKey = (import.meta.env.VITE_GROQ_API_KEY as string) || (import.meta.env.GROQ_API_KEY as string) || "";
+  const apiKey = (typeof __GROQ_KEY__ !== "undefined" ? __GROQ_KEY__ : "") || "";
   const needsKey = !apiKey;
 
   const [model, setModel] = useState(() => localStorage.getItem("frost_groq_model") || GROQ_MODELS[0].id);
