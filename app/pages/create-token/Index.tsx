@@ -190,14 +190,14 @@ function TradeModal({ token, onClose, onUpdate }: { token: TokenData; onClose: (
         t.tradeHistory = [{ type: "buy", solAmount: val, tokenAmount: q.tokensOut, price: q.price, ts: Date.now(), wallet: shortWallet("Demo") }, ...t.tradeHistory].slice(0, 50);
         if (t.virtualSol >= GRADUATION_TARGET) t.graduated = true;
         t.marketCap = getMarketCap(t.virtualSol, t.virtualTokens);
-        setResult(`✅ Bought ~${q.tokensOut.toFixed(2)} ${t.symbol} for ${val} SOL (fee: ${q.fee.toFixed(4)} SOL)`);
+        setResult(`✅ Bought ~${q.tokensOut.toFixed(2)} ${t.symbol}`);
       } else {
         const q = getSellQuote(t.virtualSol, t.virtualTokens, val, PLATFORM_FEE_BPS);
         t.virtualSol -= (q.solOut + q.fee);
         t.virtualTokens += val;
         t.tradeHistory = [{ type: "sell", solAmount: q.solOut, tokenAmount: val, price: q.solOut / val, ts: Date.now(), wallet: shortWallet("Demo") }, ...t.tradeHistory].slice(0, 50);
         t.marketCap = getMarketCap(t.virtualSol, t.virtualTokens);
-        setResult(`✅ Sold ${val} ${t.symbol} for ~${q.solOut.toFixed(4)} SOL (fee: ${q.fee.toFixed(4)} SOL)`);
+        setResult(`✅ Sold ${val} ${t.symbol} → ${q.solOut.toFixed(4)} SOL received`);
       }
 
       tokens[idx] = t;
@@ -266,12 +266,12 @@ function TradeModal({ token, onClose, onUpdate }: { token: TokenData; onClose: (
         {/* Quote preview */}
         {buyQuote && buyQuote.tokensOut > 0 && (
           <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(14,203,129,0.08)", border: "1px solid rgba(14,203,129,0.2)", borderRadius: 8, fontSize: 12, color: "rgba(180,190,210,0.8)" }}>
-            You get: <b style={{ color: "#0ecb81" }}>{buyQuote.tokensOut.toFixed(2)} {token.symbol}</b> — Fee: <b>{buyQuote.fee.toFixed(4)} SOL</b> (15%)
+            You receive: <b style={{ color: "#0ecb81" }}>{buyQuote.tokensOut.toFixed(2)} {token.symbol}</b>
           </div>
         )}
         {sellQuote && sellQuote.solOut > 0 && (
           <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(246,70,93,0.08)", border: "1px solid rgba(246,70,93,0.2)", borderRadius: 8, fontSize: 12, color: "rgba(180,190,210,0.8)" }}>
-            You get: <b style={{ color: "#f6465d" }}>{sellQuote.solOut.toFixed(4)} SOL</b> — Fee: <b>{sellQuote.fee.toFixed(4)} SOL</b> (15%)
+            You receive: <b style={{ color: "#f6465d" }}>{sellQuote.solOut.toFixed(4)} SOL</b>
           </div>
         )}
 
@@ -288,7 +288,7 @@ function TradeModal({ token, onClose, onUpdate }: { token: TokenData; onClose: (
         </button>
 
         <div style={{ marginTop: 10, textAlign: "center", fontSize: 11, color: "rgba(180,190,210,0.35)" }}>
-          15% platform fee goes to admin wallet · 85 SOL graduation target
+          85 SOL graduation target · Powered by FrostDex ❄
         </div>
 
         {/* Trade History */}
@@ -530,7 +530,7 @@ export default function CreateTokenPage() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14, color: "#eaecef" }}>Initial Buy</div>
-                  <div style={{ fontSize: 12, color: "rgba(180,190,210,0.5)", marginTop: 2 }}>Be the first buyer — 20% fee applies</div>
+                  <div style={{ fontSize: 12, color: "rgba(180,190,210,0.5)", marginTop: 2 }}>Be the first buyer of your own token</div>
                 </div>
                 <button onClick={() => setInitialBuyEnabled(v => !v)} style={{ width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", background: initialBuyEnabled ? "#38e0f8" : "rgba(255,255,255,0.1)", transition: "all 0.2s", position: "relative" }}>
                   <div style={{ position: "absolute", top: 2, left: initialBuyEnabled ? 22 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
@@ -540,11 +540,15 @@ export default function CreateTokenPage() {
                 <div style={{ marginTop: 12 }}>
                   <label style={labelStyle}>Buy amount (SOL)</label>
                   <input type="number" value={initialBuyAmount} onChange={e => setInitialBuyAmount(e.target.value)} placeholder="0.5" style={inputStyle} />
-                  {parseFloat(initialBuyAmount) > 0 && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: "rgba(180,190,210,0.6)" }}>
-                      Fee: <b style={{ color: "#f0b90b" }}>{initialBuyFee.toFixed(4)} SOL</b> (20%) → Admin wallet
-                    </div>
-                  )}
+                  {parseFloat(initialBuyAmount) > 0 && (() => {
+                    const buyAmt = parseFloat(initialBuyAmount) || 0;
+                    const q = getBuyQuote(VIRTUAL_SOL, VIRTUAL_TOKENS, buyAmt, INITIAL_BUY_FEE_BPS);
+                    return (
+                      <div style={{ marginTop: 8, fontSize: 12, color: "rgba(180,190,210,0.6)" }}>
+                        You will receive: <b style={{ color: "#0ecb81" }}>{q.tokensOut.toFixed(2)} tokens</b>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -553,7 +557,6 @@ export default function CreateTokenPage() {
             <div style={{ marginBottom: 20 }}>
               <button onClick={() => setAdvancedOpen(v => !v)} style={{ background: "none", border: "1px solid rgba(56,224,248,0.15)", borderRadius: 8, padding: "8px 16px", color: "rgba(180,190,210,0.7)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
                 <span>{advancedOpen ? "▲" : "▼"}</span> Advanced Options
-                {totalAdvancedFee > 0 && <span style={{ marginLeft: 6, color: "#f0b90b", fontSize: 11 }}>({totalAdvancedFee.toFixed(2)} SOL)</span>}
               </button>
               {advancedOpen && (
                 <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -563,7 +566,6 @@ export default function CreateTokenPage() {
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: "#eaecef" }}>{info.label}</span>
-                          <span style={{ fontSize: 11, color: "#f0b90b", background: "rgba(240,185,11,0.1)", borderRadius: 4, padding: "1px 6px" }}>{info.fee} SOL</span>
                         </div>
                         <div style={{ fontSize: 12, color: "rgba(180,190,210,0.5)", marginTop: 2 }}>{info.desc}</div>
                       </div>
@@ -573,13 +575,13 @@ export default function CreateTokenPage() {
               )}
             </div>
 
-            {/* Fee summary */}
+            {/* Total to pay */}
             {totalFeeEstimate > 0 && (
-              <div style={{ background: "rgba(240,185,11,0.06)", border: "1px solid rgba(240,185,11,0.2)", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 13 }}>
-                <div style={{ fontWeight: 600, color: "#f0b90b", marginBottom: 6 }}>💰 Fee Summary</div>
-                {totalAdvancedFee > 0 && <div style={{ color: "rgba(180,190,210,0.7)" }}>Advanced options: <b style={{ color: "#eaecef" }}>{totalAdvancedFee.toFixed(2)} SOL</b></div>}
-                {initialBuyFee > 0 && <div style={{ color: "rgba(180,190,210,0.7)" }}>Initial buy fee (20%): <b style={{ color: "#eaecef" }}>{initialBuyFee.toFixed(4)} SOL</b></div>}
-                <div style={{ marginTop: 6, color: "rgba(180,190,210,0.5)", fontSize: 11 }}>→ All fees go to: {shortWallet(ADMIN_WALLET)}</div>
+              <div style={{ background: "rgba(56,224,248,0.04)", border: "1px solid rgba(56,224,248,0.15)", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 13 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "rgba(180,190,210,0.7)" }}>Total from wallet</span>
+                  <b style={{ color: "#eaecef", fontSize: 15 }}>{totalFeeEstimate.toFixed(4)} SOL</b>
+                </div>
               </div>
             )}
 
@@ -608,7 +610,7 @@ export default function CreateTokenPage() {
                 { icon: "🪙", title: "Free Launch", desc: "Create your token for free — just fill in the details and deploy instantly." },
                 { icon: "📈", title: "Bonding Curve", desc: "Price rises automatically as more people buy. Starts at 30 SOL virtual reserves." },
                 { icon: "🎓", title: "Graduation", desc: "Once 85 SOL in reserves is reached, your token graduates to Raydium automatically." },
-                { icon: "💸", title: "15% Fee", desc: "Every trade carries a 15% platform fee that goes to the admin wallet." },
+                { icon: "💸", title: "Free to Launch", desc: "Creating your token is completely free. Optional premium features are available." },
               ].map(s => (
                 <div key={s.title} style={{ padding: "14px 16px", background: "rgba(255,255,255,0.02)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" }}>
                   <div style={{ fontSize: 20, marginBottom: 8 }}>{s.icon}</div>
