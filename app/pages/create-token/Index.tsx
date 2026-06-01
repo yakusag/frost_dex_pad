@@ -61,10 +61,26 @@ const fmtNum = (n: number) => n>=1e6?`${(n/1e6).toFixed(2)}M`:n>=1e3?`${(n/1e3).
 // ─── Phantom wallet helpers ───────────────────────────────────────────────────
 function getPhantom(): any { return (window as any).solana ?? null; }
 function isPhantomInstalled(): boolean { return !!(window as any).solana?.isPhantom; }
+function isMobile(): boolean {
+  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+}
+// Opens the current page inside Phantom's in-app browser (where window.solana exists)
+function openInPhantomApp(): void {
+  const url = window.location.href;
+  const ref = window.location.origin;
+  window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
+}
 
 async function connectPhantom(): Promise<string> {
   const p = getPhantom();
-  if (!p) throw new Error("Phantom wallet not installed. Please install it from phantom.app");
+  if (!p) {
+    // On mobile without the in-app browser → deep-link into the Phantom app
+    if (isMobile()) {
+      openInPhantomApp();
+      throw new Error("Opening Phantom app… If nothing happens, install Phantom from your app store.");
+    }
+    throw new Error("Phantom wallet not installed. Please install it from phantom.app");
+  }
   const resp = await p.connect();
   return resp.publicKey.toString();
 }
