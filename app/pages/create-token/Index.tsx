@@ -168,6 +168,7 @@ function TradeModal({ token, onClose, onUpdate }: { token: TokenData; onClose: (
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const { adminWallet, isVerified } = useAdminWallet();
 
   const price = getTokenPrice(token.virtualSol, token.virtualTokens);
   const mc = getMarketCap(token.virtualSol, token.virtualTokens);
@@ -277,6 +278,22 @@ function TradeModal({ token, onClose, onUpdate }: { token: TokenData; onClose: (
           </div>
         )}
 
+        {/* Fee breakdown */}
+        {amount && parseFloat(amount) > 0 && (buyQuote || sellQuote) && (
+          <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(56,224,248,0.04)", border: "1px solid rgba(56,224,248,0.12)", borderRadius: 8, fontSize: 11 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ color: "rgba(180,190,210,0.5)" }}>Platform fee (15%)</span>
+              <span style={{ color: "#38e0f8", fontWeight: 600 }}>
+                {tab === "buy" ? buyQuote?.fee.toFixed(4) : sellQuote?.fee.toFixed(4)} SOL → 
+                {adminWallet
+                  ? <span style={{ fontFamily: "monospace", marginLeft: 4 }}>{adminWallet.slice(0,5)}…{adminWallet.slice(-4)} {isVerified ? "✓" : ""}</span>
+                  : <span style={{ color: "#f6465d", marginLeft: 4 }}>No fee wallet set</span>
+                }
+              </span>
+            </div>
+          </div>
+        )}
+
         {result && (
           <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(56,224,248,0.08)", border: "1px solid rgba(56,224,248,0.2)", borderRadius: 8, fontSize: 12, color: "#38e0f8" }}>{result}</div>
         )}
@@ -290,7 +307,10 @@ function TradeModal({ token, onClose, onUpdate }: { token: TokenData; onClose: (
         </button>
 
         <div style={{ marginTop: 10, textAlign: "center", fontSize: 11, color: "rgba(180,190,210,0.35)" }}>
-          85 SOL graduation target · Powered by FrostDex ❄
+          {adminWallet && isVerified
+            ? <>Fees → <span style={{ fontFamily: "monospace", color: "rgba(14,203,129,0.6)" }}>{adminWallet.slice(0,6)}…{adminWallet.slice(-4)}</span> · FrostDex ❄</>
+            : <>85 SOL graduation target · Powered by FrostDex ❄</>
+          }
         </div>
 
         {/* Trade History */}
@@ -412,7 +432,8 @@ export default function CreateTokenPage() {
       saveTokens(updated);
       setTokens(updated);
 
-      setCreateSuccess(`🎉 ${name} ($${symbol.toUpperCase()}) created! Mint: ${mintAddress}`);
+      const feeNote = adminWallet && isVerified ? ` · Fees → ${adminWallet.slice(0,6)}…${adminWallet.slice(-4)}` : "";
+      setCreateSuccess(`🎉 ${name} ($${symbol.toUpperCase()}) created! Mint: ${mintAddress}${feeNote}`);
       setName(""); setSymbol(""); setDescription(""); setWebsite(""); setTelegram(""); setTwitter("");
       setImageFile(null); setImagePreview("");
       setAdvancedOptions({ revoke_mint: false, revoke_freeze: false, immutable_metadata: false });
