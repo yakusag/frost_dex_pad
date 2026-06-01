@@ -1,0 +1,2 @@
+- [Solana on-chain integration](solana-onchain.md) — gotchas wiring the Anchor bonding-curve program into the FrostDex frontend (spl-token web3.js clash, hand-written IDL, accountsPartial).
+- [Stale duplicate dir](frost-dex-pad-duplicate.md) — `frost_dex_pad/` is an old copy of `app/`; tsconfig globs it so it emits pre-existing tsc errors. Don't chase them.

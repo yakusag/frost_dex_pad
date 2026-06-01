@@ -1,6 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { uploadImageToIPFS, uploadJSONToIPFS, isPinataConfigured } from "@/services/ipfs";
+import {
+  isProgramConfigured,
+  createTokenOnChain,
+  buyOnChain,
+  sellOnChain,
+  fetchCurveState,
+} from "@/services/bondingCurveProgram";
 
 // ─── Platform constants (from solana-bonding-curve/programs/bonding-curve/src/lib.rs) ──
 const PLATFORM_FEE_WALLET = "EPAZFYgj87LuUBP8JaAs3EiJvsTQnh2EoMtmSvC7iEzZ";
@@ -180,23 +187,46 @@ function TradeModal({ token, onClose, onUpdate, walletAddress }: {
   const buyQ  = getBuyQuote(token.virtualSol, token.virtualTokens, solAmount, PLATFORM_FEE_BPS);
   const sellQ = getSellQuote(token.virtualSol, token.virtualTokens, solAmount * 1000, PLATFORM_FEE_BPS);
 
+  const onChain = isProgramConfigured() && !!token.mint && token.mint.length >= 32;
+
   const handleTrade = async () => {
     if (!walletAddress) { setError("Connect wallet first"); return; }
     setLoading(true); setError(""); setStatus("");
     try {
-      const feeLamports = Math.round((side === "buy" ? buyQ.fee : sellQ.fee) * LAMPORTS_PER_SOL);
-      if (feeLamports > 0) {
-        const sig = await sendFeeTransaction(walletAddress, feeLamports, setStatus);
-        setStatus(`✓ Fee sent (${sig.slice(0,8)}…)`);
-      }
       const tokens = loadTokens();
       const idx = tokens.findIndex(t => t.id === token.id);
-      if (idx < 0) return;
+      if (idx < 0) { setError("Token not found"); return; }
       const t = { ...tokens[idx] };
+      let txSig = "";
+
+      if (onChain) {
+        // Real on-chain trade against the deployed bonding-curve program.
+        if (side === "buy") {
+          txSig = await buyOnChain(token.mint, solAmount, walletAddress, setStatus);
+        } else {
+          txSig = await sellOnChain(token.mint, solAmount, walletAddress, setStatus);
+        }
+        setStatus(`✓ Confirmed (${txSig.slice(0, 8)}…)`);
+        // Read the authoritative reserves back from chain.
+        const state = await fetchCurveState(token.mint, walletAddress);
+        if (state) {
+          t.virtualSol = state.virtualSol;
+          t.virtualTokens = state.virtualTokens;
+          t.graduated = state.complete || state.virtualSol >= GRADUATION_TARGET;
+        }
+      } else {
+        // Simulation fallback (no program configured): only the fee is real.
+        const feeLamports = Math.round((side === "buy" ? buyQ.fee : sellQ.fee) * LAMPORTS_PER_SOL);
+        if (feeLamports > 0) {
+          txSig = await sendFeeTransaction(walletAddress, feeLamports, setStatus);
+          setStatus(`✓ Fee sent (${txSig.slice(0, 8)}…)`);
+        }
+        if (side === "buy") { t.virtualSol += solAmount - buyQ.fee; t.virtualTokens -= buyQ.tokensOut; }
+        else { t.virtualSol -= sellQ.solOut + sellQ.fee; t.virtualTokens += solAmount * 1000; }
+        t.graduated = t.virtualSol >= GRADUATION_TARGET;
+      }
+
       const trade: Trade = { type: side as "buy" | "sell", solAmount, tokenAmount: side === "buy" ? buyQ.tokensOut : solAmount * 1000, price: buyQ.price, ts: Date.now(), wallet: shortAddr(walletAddress) };
-      if (side === "buy") { t.virtualSol += solAmount - buyQ.fee; t.virtualTokens -= buyQ.tokensOut; }
-      else { t.virtualSol -= sellQ.solOut + sellQ.fee; t.virtualTokens += solAmount * 1000; }
-      t.graduated = t.virtualSol >= GRADUATION_TARGET;
       t.marketCap = getMcap(t.virtualSol, t.virtualTokens);
       t.tradeHistory = [trade, ...t.tradeHistory];
       tokens[idx] = t;
@@ -375,6 +405,8 @@ export default function CreateTokenPage() {
 
     setCreating(true);
     try {
+      const useChain = isProgramConfigured();
+
       // 1. Upload image to IPFS
       setCreateStatus(isPinataConfigured() ? "Uploading image to IPFS…" : "Processing image…");
       let imageData = imagePreview;
@@ -382,25 +414,7 @@ export default function CreateTokenPage() {
         imageData = await uploadImageToIPFS(imageFile, (pct) => setUploadPct(pct));
       }
 
-      // 2. Collect advanced option fees on-chain
-      if (advLamports > 0) {
-        setCreateStatus(`Sending ${advFee.toFixed(3)} SOL fee to platform…`);
-        const sig = await sendFeeTransaction(walletAddress, advLamports, setCreateStatus);
-        setCreateStatus(`✓ Fee confirmed (${sig.slice(0,8)}…)`);
-      }
-
-      // 3. Initial buy fee on-chain (20%)
-      let initBuyTxSig = "";
-      if (initialBuy && initBuyAmt > 0) {
-        const initFeeLamports = Math.round(initBuyFee * LAMPORTS_PER_SOL);
-        const totalLamports   = Math.round(initBuyAmt * LAMPORTS_PER_SOL);
-        setCreateStatus(`Sending initial buy (${initBuyAmt} SOL)…`);
-        initBuyTxSig = await sendFeeTransaction(walletAddress, initFeeLamports, setCreateStatus);
-        // remaining goes to bonding curve (simulated locally)
-        setCreateStatus("✓ Initial buy confirmed");
-      }
-
-      // 4. Upload metadata JSON to IPFS
+      // 2. Upload metadata JSON to IPFS (before minting so the URI is available)
       let metadataUri = "";
       if (isPinataConfigured()) {
         setCreateStatus("Uploading metadata to IPFS…");
@@ -413,18 +427,58 @@ export default function CreateTokenPage() {
         } catch { /* non-fatal */ }
       }
 
-      // 5. Apply initial buy to bonding curve
+      let mint = "";
+      let initBuyTxSig = "";
       let vSol = VIRTUAL_SOL, vTokens = VIRTUAL_TOKENS;
       const history: Trade[] = [];
-      if (initialBuy && initBuyAmt > 0) {
-        const q = getBuyQuote(vSol, vTokens, initBuyAmt, INITIAL_BUY_FEE_BPS);
-        vSol    += initBuyAmt - q.fee;
-        vTokens -= q.tokensOut;
-        history.push({ type: "buy" as const, solAmount: initBuyAmt, tokenAmount: q.tokensOut, price: q.price, ts: Date.now(), wallet: shortAddr(walletAddress) });
-      }
 
-      // 6. Mint address (simulate — real mint needs deployed program)
-      const mint = `${walletAddress.slice(0,6)}${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+      if (useChain) {
+        // ── REAL on-chain path: mint SPL token + initialize bonding curve ──
+        const res = await createTokenOnChain(
+          {
+            walletAddress,
+            revokeMint: advOpts.revoke_mint,
+            revokeFreeze: advOpts.revoke_freeze,
+            immutableMetadata: advOpts.immutable_metadata,
+            initialBuySol: initialBuy ? initBuyAmt : 0,
+          },
+          setCreateStatus,
+        );
+        mint = res.mint;
+        initBuyTxSig = res.initialBuySignature || res.initSignature;
+
+        // Pull authoritative reserves back from chain.
+        setCreateStatus("Reading on-chain curve state…");
+        const state = await fetchCurveState(mint, walletAddress);
+        if (state) {
+          vSol = state.virtualSol;
+          vTokens = state.virtualTokens;
+          if (initialBuy && initBuyAmt > 0) {
+            const q = getBuyQuote(VIRTUAL_SOL, VIRTUAL_TOKENS, initBuyAmt, INITIAL_BUY_FEE_BPS);
+            history.push({ type: "buy" as const, solAmount: initBuyAmt, tokenAmount: q.tokensOut, price: q.price, ts: Date.now(), wallet: shortAddr(walletAddress) });
+          }
+        }
+        setCreateStatus("✓ Token created on-chain");
+      } else {
+        // ── Simulation fallback (no program configured): only fees are real ──
+        if (advLamports > 0) {
+          setCreateStatus(`Sending ${advFee.toFixed(3)} SOL fee to platform…`);
+          const sig = await sendFeeTransaction(walletAddress, advLamports, setCreateStatus);
+          setCreateStatus(`✓ Fee confirmed (${sig.slice(0,8)}…)`);
+        }
+        if (initialBuy && initBuyAmt > 0) {
+          const initFeeLamports = Math.round(initBuyFee * LAMPORTS_PER_SOL);
+          setCreateStatus(`Sending initial buy (${initBuyAmt} SOL)…`);
+          initBuyTxSig = await sendFeeTransaction(walletAddress, initFeeLamports, setCreateStatus);
+          setCreateStatus("✓ Initial buy confirmed");
+          const q = getBuyQuote(vSol, vTokens, initBuyAmt, INITIAL_BUY_FEE_BPS);
+          vSol    += initBuyAmt - q.fee;
+          vTokens -= q.tokensOut;
+          history.push({ type: "buy" as const, solAmount: initBuyAmt, tokenAmount: q.tokensOut, price: q.price, ts: Date.now(), wallet: shortAddr(walletAddress) });
+        }
+        // Simulated mint address (real mint requires a deployed program)
+        mint = `${walletAddress.slice(0,6)}${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+      }
 
       const token: TokenData = {
         id: crypto.randomUUID(), mint,
