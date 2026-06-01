@@ -1,2 +1,2 @@
-- [Solana on-chain integration](solana-onchain.md) — gotchas wiring the Anchor bonding-curve program into the FrostDex frontend (spl-token web3.js clash, hand-written IDL, accountsPartial).
-- [Stale duplicate dir](frost-dex-pad-duplicate.md) — `frost_dex_pad/` is an old copy of `app/`; tsconfig globs it so it emits pre-existing tsc errors. Don't chase them.
+- [Phantom wallet detection](wallet-provider-detection.md) — connect to Phantom specifically, never bare window.solana (Brave injects its own and errors).
+- [GitHub push from Replit](github-push-from-replit.md) — main-agent `git push origin main` works despite a harmless stale tracking-ref .lock error; verify with ls-remote.

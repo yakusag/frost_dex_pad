@@ -71,8 +71,26 @@ const fmtAge = (ts: number) => { const s = (Date.now()-ts)/1000|0; return s<60?`
 const fmtNum = (n: number) => n>=1e6?`${(n/1e6).toFixed(2)}M`:n>=1e3?`${(n/1e3).toFixed(1)}K`:`${n.toFixed(2)}`;
 
 // ─── Phantom wallet helpers ───────────────────────────────────────────────────
-function getPhantom(): any { return (window as any).solana ?? null; }
-function isPhantomInstalled(): boolean { return !!(window as any).solana?.isPhantom; }
+// Resolve the *Phantom* provider specifically. Other wallets (Brave, Coinbase,
+// etc.) also inject window.solana, so we must not connect to whatever is there —
+// only to a provider that identifies itself as Phantom.
+function getPhantom(): any {
+  const w = window as any;
+  if (w.phantom?.solana?.isPhantom) return w.phantom.solana;       // Phantom's dedicated namespace
+  if (w.solana?.isPhantom) return w.solana;                        // legacy single-provider injection
+  if (Array.isArray(w.solana?.providers)) {                        // multiple providers on one object
+    const ph = w.solana.providers.find((pr: any) => pr?.isPhantom);
+    if (ph) return ph;
+  }
+  return null;
+}
+// True only when a real Phantom provider exists (Brave Wallet does NOT count).
+function isPhantomInstalled(): boolean { return !!getPhantom(); }
+// Another (non-Phantom) Solana wallet is injected — e.g. Brave Wallet.
+function hasNonPhantomWallet(): boolean {
+  const w = window as any;
+  return !!w.solana && !getPhantom();
+}
 function isMobile(): boolean {
   return /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
 }
@@ -86,15 +104,24 @@ function openInPhantomApp(): void {
 async function connectPhantom(): Promise<string> {
   const p = getPhantom();
   if (!p) {
-    // On mobile without the in-app browser → deep-link into the Phantom app
+    // On mobile (incl. Brave) → open this page inside Phantom's in-app browser.
     if (isMobile()) {
       openInPhantomApp();
       throw new Error("Opening Phantom app… If nothing happens, install Phantom from your app store.");
     }
+    // Desktop: another wallet (e.g. Brave) is present but Phantom is not.
+    if (hasNonPhantomWallet()) {
+      throw new Error("Another wallet (e.g. Brave) is active. Please install/enable Phantom and disable other Solana wallets, then retry.");
+    }
     throw new Error("Phantom wallet not installed. Please install it from phantom.app");
   }
-  const resp = await p.connect();
-  return resp.publicKey.toString();
+  try {
+    const resp = await p.connect();
+    return resp.publicKey.toString();
+  } catch (e: any) {
+    if (e?.code === 4001) throw new Error("Connection request rejected in Phantom.");
+    throw new Error(e?.message || "Could not connect to Phantom.");
+  }
 }
 
 async function sendFeeTransaction(
