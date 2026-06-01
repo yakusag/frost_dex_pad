@@ -174,12 +174,16 @@ function BondingBar({ virtualSol }: { virtualSol: number }) {
 }
 
 // ─── TokenCard ────────────────────────────────────────────────────────────────
-function TokenCard({ token, onClick }: { token: TokenData; onClick: () => void }) {
+function TokenCard({ token, onClick, onDelete }: { token: TokenData; onClick: () => void; onDelete?: () => void }) {
   const price = getPrice(token.virtualSol, token.virtualTokens);
   return (
-    <div onClick={onClick} style={{ display: "flex", gap: 14, padding: "14px 16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, cursor: "pointer", transition: "all 0.15s" }}
+    <div onClick={onClick} style={{ position: "relative", display: "flex", gap: 14, padding: "14px 16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, cursor: "pointer", transition: "all 0.15s" }}
       onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(56,224,248,0.2)")}
       onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")}>
+      {onDelete && (
+        <button onClick={e => { e.stopPropagation(); onDelete(); }} title="Remove token"
+          style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, borderRadius: 8, border: "1px solid rgba(246,70,93,0.25)", background: "rgba(246,70,93,0.08)", color: "#f6465d", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>🗑</button>
+      )}
       <img src={token.image} alt={token.name} style={{ width: 56, height: 56, borderRadius: 12, objectFit: "cover", flexShrink: 0, background: "#1a1d26" }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -195,6 +199,49 @@ function TokenCard({ token, onClick }: { token: TokenData; onClick: () => void }
         </div>
         <BondingBar virtualSol={token.virtualSol} />
       </div>
+    </div>
+  );
+}
+
+// ─── PriceChart (pump.fun-style area chart built from trade history) ───────────
+function PriceChart({ token }: { token: TokenData }) {
+  const current = getPrice(token.virtualSol, token.virtualTokens);
+  const safeCurrent = Number.isFinite(current) && current > 0 ? current : 1;
+  const chrono = [...token.tradeHistory].reverse();         // oldest → newest
+  const prices = chrono.map(t => t.price).filter(p => p > 0 && isFinite(p));
+  let series = [...prices, safeCurrent];                     // all entries are finite & > 0
+  if (series.length < 2) series = [safeCurrent, safeCurrent];
+  const W = 320, H = 130, PAD = 8;
+  const min = Math.min(...series), max = Math.max(...series);
+  const range = (max - min) || max || 1;
+  const stepX = (W - PAD * 2) / (series.length - 1);
+  const pts = series.map((p, i) => {
+    const x = PAD + i * stepX;
+    const y = PAD + (H - PAD * 2) * (1 - (p - min) / range);
+    return [x, y] as const;
+  });
+  const line = pts.map((c, i) => `${i ? "L" : "M"}${c[0].toFixed(1)},${c[1].toFixed(1)}`).join(" ");
+  const last = pts[pts.length - 1];
+  const area = `${line} L${last[0].toFixed(1)},${H - PAD} L${pts[0][0].toFixed(1)},${H - PAD} Z`;
+  const up = series[series.length - 1] >= series[0];
+  const color = up ? "#0ecb81" : "#f6465d";
+  const gid = "pc" + token.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10);
+  return (
+    <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 10, marginBottom: 12 }}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", height: 150, display: "block" }}>
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75].map(g => (
+          <line key={g} x1={PAD} x2={W - PAD} y1={PAD + (H - PAD * 2) * g} y2={PAD + (H - PAD * 2) * g} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+        ))}
+        <path d={area} fill={`url(#${gid})`} />
+        <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <circle cx={last[0]} cy={last[1]} r="3.5" fill={color} />
+      </svg>
     </div>
   );
 }
@@ -253,7 +300,9 @@ function TradeModal({ token, onClose, onUpdate, walletAddress }: {
         t.graduated = t.virtualSol >= GRADUATION_TARGET;
       }
 
-      const trade: Trade = { type: side as "buy" | "sell", solAmount, tokenAmount: side === "buy" ? buyQ.tokensOut : solAmount * 1000, price: buyQ.price, ts: Date.now(), wallet: shortAddr(walletAddress) };
+      const tokenAmount = side === "buy" ? buyQ.tokensOut : solAmount * 1000;
+      const effPrice = side === "buy" ? buyQ.price : sellQ.solOut / Math.max(solAmount * 1000, 1e-9);
+      const trade: Trade = { type: side as "buy" | "sell", solAmount, tokenAmount, price: effPrice, ts: Date.now(), wallet: shortAddr(walletAddress) };
       t.marketCap = getMcap(t.virtualSol, t.virtualTokens);
       t.tradeHistory = [trade, ...t.tradeHistory];
       tokens[idx] = t;
@@ -274,6 +323,48 @@ function TradeModal({ token, onClose, onUpdate, walletAddress }: {
             <div style={{ fontSize: 13, color: "rgba(56,224,248,0.7)" }}>${token.symbol} · {shortAddr(token.creatorAddress || "")}</div>
           </div>
           <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: "rgba(180,190,210,0.5)", fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+
+        {/* Price / Market cap */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+          <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px" }}>
+            <div style={{ fontSize: 10, color: "rgba(180,190,210,0.45)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Price</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#0ecb81" }}>{getPrice(token.virtualSol, token.virtualTokens).toFixed(9)} SOL</div>
+          </div>
+          <div style={{ flex: 1, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px" }}>
+            <div style={{ fontSize: 10, color: "rgba(180,190,210,0.45)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Market cap</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#eaecef" }}>{fmtNum(getMcap(token.virtualSol, token.virtualTokens))} SOL</div>
+          </div>
+        </div>
+
+        {/* Price chart (pump.fun style) */}
+        <PriceChart token={token} />
+
+        {/* Bonding curve progress */}
+        <div style={{ margin: "4px 0 18px" }}>
+          <BondingBar virtualSol={token.virtualSol} />
+        </div>
+
+        {/* Trades — shown right under the chart (pump.fun style) */}
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ fontSize: 11, color: "rgba(180,190,210,0.55)", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Trades</div>
+          {token.tradeHistory.length === 0 ? (
+            <div style={{ fontSize: 12, color: "rgba(180,190,210,0.35)", padding: "14px 0", textAlign: "center" }}>No trades yet — be the first to buy.</div>
+          ) : (
+            <div style={{ maxHeight: 190, overflowY: "auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.3fr 0.7fr 1fr 0.7fr", fontSize: 10, color: "rgba(180,190,210,0.4)", padding: "0 0 6px", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                <span>Account</span><span>Type</span><span style={{ textAlign: "right" }}>SOL</span><span style={{ textAlign: "right" }}>Age</span>
+              </div>
+              {token.tradeHistory.slice(0, 50).map((tr, i) => (
+                <div key={`${tr.ts}-${tr.wallet}-${i}`} style={{ display: "grid", gridTemplateColumns: "1.3fr 0.7fr 1fr 0.7fr", fontSize: 12, padding: "6px 0", borderTop: "1px solid rgba(255,255,255,0.04)", alignItems: "center" }}>
+                  <span style={{ color: "rgba(180,190,210,0.7)", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tr.wallet}</span>
+                  <span style={{ color: tr.type === "buy" ? "#0ecb81" : "#f6465d", fontWeight: 700 }}>{tr.type.toUpperCase()}</span>
+                  <span style={{ textAlign: "right", color: "rgba(180,190,210,0.75)" }}>{tr.solAmount.toFixed(3)}</span>
+                  <span style={{ textAlign: "right", color: "rgba(180,190,210,0.4)" }}>{fmtAge(tr.ts)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -325,18 +416,6 @@ function TradeModal({ token, onClose, onUpdate, walletAddress }: {
           {loading ? status || "Processing…" : !walletAddress ? "Connect Wallet to Trade" : side === "buy" ? "Buy Tokens" : "Sell Tokens"}
         </button>
 
-        {token.tradeHistory.length > 0 && (
-          <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 12, color: "rgba(180,190,210,0.5)", marginBottom: 10, fontWeight: 600 }}>Recent Trades</div>
-            {token.tradeHistory.slice(0, 8).map((tr, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                <span style={{ color: tr.type === "buy" ? "#0ecb81" : "#f6465d", fontWeight: 600 }}>{tr.type.toUpperCase()}</span>
-                <span style={{ color: "rgba(180,190,210,0.6)" }}>{tr.solAmount.toFixed(3)} SOL</span>
-                <span style={{ color: "rgba(180,190,210,0.4)" }}>{fmtAge(tr.ts)}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -410,6 +489,14 @@ export default function CreateTokenPage() {
     } catch (e: any) {
       setCreateError(e.message);
     } finally { setWalletLoading(false); }
+  };
+
+  const handleDeleteToken = (t: TokenData) => {
+    if (!window.confirm(`Remove ${t.name} ($${t.symbol}) from the list?\n\nThis only removes it from this device — it does not affect any on-chain token.`)) return;
+    const updated = loadTokens().filter(x => x.id !== t.id);
+    saveTokens(updated);
+    setTokens(updated);
+    if (selectedToken?.id === t.id) setSelectedToken(null);
   };
 
   const handleImageSelect = useCallback((file: File) => {
@@ -780,7 +867,7 @@ export default function CreateTokenPage() {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {filteredTokens.map(t => <TokenCard key={t.id} token={t} onClick={() => setSelectedToken(t)} />)}
+                {filteredTokens.map(t => <TokenCard key={t.id} token={t} onClick={() => setSelectedToken(t)} onDelete={() => handleDeleteToken(t)} />)}
               </div>
             )}
           </div>
