@@ -1,9 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useWalletConnector } from "@orderly.network/hooks";
+import { getRuntimeConfig } from "@/utils/runtime-config";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "frostdex_tokens_v1";
-const ADMIN_WALLET = import.meta.env.VITE_ADMIN_WALLET_ADDRESS || "AdminWalletNotSet";
+declare const __ADMIN_WALLET__: string;
+const FALLBACK_ADMIN_WALLET: string = (typeof __ADMIN_WALLET__ !== "undefined" ? __ADMIN_WALLET__ : "") || getRuntimeConfig("VITE_ADMIN_WALLET_ADDRESS") || "";
 const PLATFORM_FEE_BPS = 1500;
 const INITIAL_BUY_FEE_BPS = 2000;
 const VIRTUAL_SOL = 30;
@@ -315,6 +318,8 @@ function TradeModal({ token, onClose, onUpdate }: { token: TokenData; onClose: (
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CreateTokenPage() {
   const navigate = useNavigate();
+  const { wallet } = useWalletConnector();
+  const adminWallet = wallet?.address || FALLBACK_ADMIN_WALLET;
   const [tab, setTab] = useState<"create" | "trade">("create");
   const [tokens, setTokens] = useState<TokenData[]>(loadTokens);
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
@@ -573,6 +578,24 @@ export default function CreateTokenPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Fee recipient */}
+            <div style={{ background: "rgba(14,203,129,0.05)", border: "1px solid rgba(14,203,129,0.2)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 16 }}>💰</span>
+                <div>
+                  <div style={{ color: "rgba(180,190,210,0.6)", marginBottom: 2 }}>Platform fees recipient</div>
+                  {adminWallet ? (
+                    <div style={{ color: "#0ecb81", fontWeight: 600, fontFamily: "monospace", fontSize: 11 }}>
+                      {adminWallet.slice(0, 8)}…{adminWallet.slice(-6)}
+                      {wallet?.address === adminWallet && <span style={{ marginLeft: 8, color: "rgba(14,203,129,0.6)", fontWeight: 400, fontFamily: "sans-serif" }}>(your connected wallet)</span>}
+                    </div>
+                  ) : (
+                    <div style={{ color: "rgba(246,70,93,0.7)", fontSize: 11 }}>Connect your wallet — it will automatically receive all platform fees</div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Total to pay */}

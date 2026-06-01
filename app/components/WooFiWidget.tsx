@@ -8,7 +8,7 @@ import "../styles/woofi-widget.css";
 
 export default function WooFiWidget() {
   const { wallet, setChain, connectedChain, connect } = useWalletConnector();
-  const brokerAddress = getRuntimeConfig("VITE_BROKER_EOA_ADDRESS") || "";
+  const brokerAddress = wallet?.address || getRuntimeConfig("VITE_BROKER_EOA_ADDRESS") || "";
 
   const handleConnectWallet = useCallback(() => {
     connect();
