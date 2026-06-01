@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.anchor
     pkgs.nano
     pkgs.solana-cli
     pkgs.libusb1

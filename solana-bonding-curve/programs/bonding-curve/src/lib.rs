@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use anchor_spl::associated_token::AssociatedToken;
 
-declare_id!("8pwEParUTtoh5GDpxs5RmspaSHpPuHmKQaEQSCxx2KGp");
+declare_id!("CqzUoSdSQPpcTJXhiTgAdupoaJ9yRTjbVXVfC41Aqckm");
 
 // ─── Fee constants ────────────────────────────────────────────────────────────
 const PLATFORM_FEE_BPS: u64 = 1500;       // 15% platform fee on buy/sell
