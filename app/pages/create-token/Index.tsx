@@ -450,7 +450,14 @@ export default function CreateTokenPage() {
     <div style={{ minHeight: "100vh", background: "#0b0e11", color: "#eaecef" }}>
 
       {/* ── Top wallet bar ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)", gap: 12, flexWrap: "wrap" }}>
+        {/* Platform fee wallet (owner — receives all fees) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "rgba(180,190,210,0.5)" }}>
+          <span style={{ fontSize: 14 }}>🏦</span>
+          <span>Platform fees →</span>
+          <span style={{ fontFamily: "monospace", color: "rgba(56,224,248,0.8)", background: "rgba(56,224,248,0.08)", borderRadius: 6, padding: "3px 8px" }}>{shortAddr(PLATFORM_FEE_WALLET)}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {walletAddress ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#0ecb81" }} />
@@ -462,6 +469,7 @@ export default function CreateTokenPage() {
             {walletLoading ? "Connecting…" : "Connect Phantom"}
           </button>
         )}
+        </div>
       </div>
 
       {/* ── Main content ── */}
