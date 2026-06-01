@@ -88,7 +88,7 @@ export default function AIAssistant({ onHide }: Props) {
     setLoading(true);
     setError("");
     try {
-      const reply = await askGroq(newMessages, apiKey, model);
+      const reply = await askGroq(newMessages, "", model);
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
     } catch (e: any) {
       setError(e.message || "Error. Check API key.");
