@@ -27,6 +27,7 @@ interface TokenData {
   symbol: string;
   description: string;
   image: string;
+  metadataUri?: string;
   creator: string;
   createdAt: number;
   website: string;
@@ -359,6 +360,8 @@ export default function CreateTokenPage() {
   const [initialBuyEnabled, setInitialBuyEnabled] = useState(false);
   const [initialBuyAmount, setInitialBuyAmount] = useState("0.5");
   const [creating, setCreating] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [createError, setCreateError] = useState("");
   const [createSuccess, setCreateSuccess] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -389,9 +392,31 @@ export default function CreateTokenPage() {
     if (!imageFile && !imagePreview) return setCreateError("Token image is required.");
 
     setCreating(true);
+    setUploadProgress(0);
+    setUploadStatus("");
     try {
-      // Store image as base64 (IPFS upload requires backend; use base64 for now)
-      const imageData = imagePreview || "";
+      let imageData = imagePreview || "";
+      if (imageFile) {
+        setUploadStatus(isPinataConfigured() ? "Uploading image to IPFS…" : "Processing image…");
+        imageData = await uploadImageToIPFS(imageFile, (pct) => setUploadProgress(pct));
+        setUploadStatus(isPinataConfigured() ? "Image uploaded to IPFS ✓" : "Image ready ✓");
+      }
+
+      let metadataUri = "";
+      if (isPinataConfigured()) {
+        setUploadStatus("Uploading metadata to IPFS…");
+        try {
+          metadataUri = await uploadJSONToIPFS({
+            name: name.trim(),
+            symbol: symbol.trim().toUpperCase(),
+            description: description.trim(),
+            image: imageData,
+            external_url: website.trim(),
+            attributes: [],
+          });
+          setUploadStatus("Metadata uploaded ✓");
+        } catch { /* non-fatal */ }
+      }
 
       const mintAddress = `${Math.random().toString(36).slice(2, 8).toUpperCase()}${Date.now().toString(36).toUpperCase()}`;
 
@@ -416,6 +441,7 @@ export default function CreateTokenPage() {
         symbol: symbol.trim().toUpperCase(),
         description: description.trim(),
         image: imageData,
+        metadataUri: metadataUri || undefined,
         creator: "You",
         createdAt: Date.now(),
         website: website.trim(),
@@ -638,6 +664,19 @@ export default function CreateTokenPage() {
             {/* Errors / Success */}
             {createError && <div style={{ marginBottom: 16, padding: "10px 14px", background: "rgba(246,70,93,0.1)", border: "1px solid rgba(246,70,93,0.3)", borderRadius: 8, color: "#f6465d", fontSize: 13 }}>{createError}</div>}
             {createSuccess && <div style={{ marginBottom: 16, padding: "10px 14px", background: "rgba(14,203,129,0.1)", border: "1px solid rgba(14,203,129,0.3)", borderRadius: 8, color: "#0ecb81", fontSize: 13 }}>{createSuccess}</div>}
+
+            {/* IPFS Upload Progress */}
+            {creating && uploadStatus && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(56,224,248,0.8)", marginBottom: 6 }}>
+                  <span>{uploadStatus}</span>
+                  {uploadProgress > 0 && <span>{uploadProgress}%</span>}
+                </div>
+                <div style={{ height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${uploadProgress}%`, background: "linear-gradient(90deg,#38e0f8,#0ecb81)", borderRadius: 4, transition: "width 0.2s" }} />
+                </div>
+              </div>
+            )}
 
             <button
               onClick={handleCreate}
