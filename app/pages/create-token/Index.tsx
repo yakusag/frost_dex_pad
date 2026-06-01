@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useWalletConnector } from "@orderly.network/hooks";
 import { useAdminWallet } from "@/hooks/useAdminWallet";
 import AdminWalletSetup from "@/components/AdminWalletSetup";
+import { uploadImageToIPFS, uploadJSONToIPFS, isPinataConfigured } from "@/services/ipfs";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "frostdex_tokens_v1";
