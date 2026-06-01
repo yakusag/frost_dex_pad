@@ -10,7 +10,11 @@ const VIRTUAL_SOL         = 30;
 const VIRTUAL_TOKENS      = 1_000_000_000_000;
 const GRADUATION_TARGET   = 85;
 const STORAGE_KEY         = "frostdex_tokens_v1";
-const SOLANA_RPC          = "https://api.mainnet-beta.solana.com";
+// RPC endpoint — set VITE_SOLANA_RPC to a dedicated provider (Helius/QuickNode/Alchemy)
+// to avoid the rate limits / "internal error" on the public mainnet endpoint.
+const SOLANA_RPC          = (import.meta as any).env?.VITE_SOLANA_RPC || "https://api.mainnet-beta.solana.com";
+// Deployed bonding-curve program ID. Paste yours via VITE_PROGRAM_ID after `anchor deploy`.
+const PROGRAM_ID          = (import.meta as any).env?.VITE_PROGRAM_ID || "";
 
 const ADVANCED_FEES: Record<string, { label: string; fee: number; lamports: number; desc: string; icon: string }> = {
   revoke_mint:        { label: "Revoke Mint Authority",    fee: 0.05, lamports: 50_000_000, desc: "No new tokens can ever be minted",          icon: "🔒" },
@@ -468,10 +472,13 @@ export default function CreateTokenPage() {
       {/* ── Top wallet bar ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)", gap: 12, flexWrap: "wrap" }}>
         {/* Platform fee wallet (owner — receives all fees) */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "rgba(180,190,210,0.5)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "rgba(180,190,210,0.5)", flexWrap: "wrap" }}>
           <span style={{ fontSize: 14 }}>🏦</span>
           <span>Platform fees →</span>
           <span style={{ fontFamily: "monospace", color: "rgba(56,224,248,0.8)", background: "rgba(56,224,248,0.08)", borderRadius: 6, padding: "3px 8px" }}>{shortAddr(PLATFORM_FEE_WALLET)}</span>
+          <span title={PROGRAM_ID ? `Program: ${PROGRAM_ID}` : "On-chain program not configured (VITE_PROGRAM_ID)"} style={{ fontSize: 11, borderRadius: 6, padding: "3px 8px", background: PROGRAM_ID ? "rgba(14,203,129,0.1)" : "rgba(246,70,93,0.1)", color: PROGRAM_ID ? "#0ecb81" : "rgba(246,70,93,0.85)" }}>
+            {PROGRAM_ID ? `⛓ Program ${shortAddr(PROGRAM_ID)}` : "⛓ Program not set"}
+          </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {walletAddress ? (
