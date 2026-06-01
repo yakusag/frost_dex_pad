@@ -8,6 +8,16 @@ import {
   sellOnChain,
   fetchCurveState,
 } from "@/services/bondingCurveProgram";
+import {
+  type DetectedWallet,
+  detectWallets,
+  detectInstalledWallets,
+  connectWalletById,
+  getActiveProvider,
+  setActiveWallet,
+  isMobile,
+  openInWalletApp,
+} from "@/services/solanaWallet";
 
 // ─── Platform constants (from solana-bonding-curve/programs/bonding-curve/src/lib.rs) ──
 const PLATFORM_FEE_WALLET = "EPAZFYgj87LuUBP8JaAs3EiJvsTQnh2EoMtmSvC7iEzZ";
@@ -70,67 +80,16 @@ const shortAddr = (a: string) => a ? `${a.slice(0,4)}…${a.slice(-4)}` : "";
 const fmtAge = (ts: number) => { const s = (Date.now()-ts)/1000|0; return s<60?`${s}s`:s<3600?`${s/60|0}m`:s<86400?`${s/3600|0}h`:`${s/86400|0}d`; };
 const fmtNum = (n: number) => n>=1e6?`${(n/1e6).toFixed(2)}M`:n>=1e3?`${(n/1e3).toFixed(1)}K`:`${n.toFixed(2)}`;
 
-// ─── Phantom wallet helpers ───────────────────────────────────────────────────
-// Resolve the *Phantom* provider specifically. Other wallets (Brave, Coinbase,
-// etc.) also inject window.solana, so we must not connect to whatever is there —
-// only to a provider that identifies itself as Phantom.
-function getPhantom(): any {
-  const w = window as any;
-  if (w.phantom?.solana?.isPhantom) return w.phantom.solana;       // Phantom's dedicated namespace
-  if (w.solana?.isPhantom) return w.solana;                        // legacy single-provider injection
-  if (Array.isArray(w.solana?.providers)) {                        // multiple providers on one object
-    const ph = w.solana.providers.find((pr: any) => pr?.isPhantom);
-    if (ph) return ph;
-  }
-  return null;
-}
-// True only when a real Phantom provider exists (Brave Wallet does NOT count).
-function isPhantomInstalled(): boolean { return !!getPhantom(); }
-// Another (non-Phantom) Solana wallet is injected — e.g. Brave Wallet.
-function hasNonPhantomWallet(): boolean {
-  const w = window as any;
-  return !!w.solana && !getPhantom();
-}
-function isMobile(): boolean {
-  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent);
-}
-// Opens the current page inside Phantom's in-app browser (where window.solana exists)
-function openInPhantomApp(): void {
-  const url = window.location.href;
-  const ref = window.location.origin;
-  window.location.href = `https://phantom.app/ul/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`;
-}
-
-async function connectPhantom(): Promise<string> {
-  const p = getPhantom();
-  if (!p) {
-    // On mobile (incl. Brave) → open this page inside Phantom's in-app browser.
-    if (isMobile()) {
-      openInPhantomApp();
-      throw new Error("Opening Phantom app… If nothing happens, install Phantom from your app store.");
-    }
-    // Desktop: another wallet (e.g. Brave) is present but Phantom is not.
-    if (hasNonPhantomWallet()) {
-      throw new Error("Another wallet (e.g. Brave) is active. Please install/enable Phantom and disable other Solana wallets, then retry.");
-    }
-    throw new Error("Phantom wallet not installed. Please install it from phantom.app");
-  }
-  try {
-    const resp = await p.connect();
-    return resp.publicKey.toString();
-  } catch (e: any) {
-    if (e?.code === 4001) throw new Error("Connection request rejected in Phantom.");
-    throw new Error(e?.message || "Could not connect to Phantom.");
-  }
-}
-
+// ─── Wallet helpers ───────────────────────────────────────────────────────────
+// Connect / sign / send all route through the currently selected provider
+// (Phantom, Solflare, Backpack, Coinbase, Brave). See services/solanaWallet.ts.
 async function sendFeeTransaction(
   fromAddress: string,
   lamports: number,
   onStatus: (s: string) => void
 ): Promise<string> {
-  const p = getPhantom();
-  if (!p) throw new Error("Phantom not found");
+  const p = getActiveProvider();
+  if (!p) throw new Error("No wallet connected");
   onStatus("Building transaction…");
   const connection = new Connection(SOLANA_RPC, "confirmed");
   const from = new PublicKey(fromAddress);
@@ -421,12 +380,70 @@ function TradeModal({ token, onClose, onUpdate, walletAddress }: {
   );
 }
 
+// ─── WalletPickerModal ──────────────────────────────────────────────────────
+// Lets the user choose among detected Solana wallets. Installed wallets connect
+// directly; non-installed ones show an install link (or, on mobile, a deep link
+// that re-opens this page inside the wallet's in-app browser).
+function WalletPickerModal({ onClose, onSelect }: {
+  onClose: () => void;
+  onSelect: (id: string) => void;
+}) {
+  const mobile = isMobile();
+  const wallets: DetectedWallet[] = detectWallets();
+  const anyInstalled = wallets.some(w => w.provider);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: "#0f1117", border: "1px solid rgba(56,224,248,0.2)", borderRadius: 20, padding: 24, width: "100%", maxWidth: 380 }}>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 18 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, color: "#eaecef" }}>Connect a wallet</div>
+          <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: "rgba(180,190,210,0.5)", fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+
+        {!anyInstalled && (
+          <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(56,224,248,0.06)", border: "1px solid rgba(56,224,248,0.18)", borderRadius: 8, color: "rgba(180,190,210,0.7)", fontSize: 12 }}>
+            {mobile
+              ? "No wallet detected. Tap a wallet to open this page inside its app."
+              : "No Solana wallet detected. Install one of these browser extensions, then reload."}
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {wallets.map(w => {
+            const installed = !!w.provider;
+            const canDeepLink = mobile && !!w.deepLink;
+            return (
+              <button
+                key={w.id}
+                onClick={() => {
+                  if (installed) { onSelect(w.id); return; }
+                  if (canDeepLink) { openInWalletApp(w.id); return; }
+                  window.open(w.install, "_blank", "noopener");
+                }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: installed ? "rgba(56,224,248,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${installed ? "rgba(56,224,248,0.25)" : "rgba(255,255,255,0.06)"}`, borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
+              >
+                <span style={{ fontSize: 22 }}>{w.icon}</span>
+                <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{w.name}</span>
+                <span style={{ fontSize: 11, color: installed ? "#0ecb81" : "rgba(180,190,210,0.45)" }}>
+                  {installed ? "Detected" : canDeepLink ? "Open app" : "Install"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CreateTokenPage() {
   // Wallet state
   const [walletAddress, setWalletAddress]   = useState("");
   const [walletBalance, setWalletBalance]   = useState(0);
   const [walletLoading, setWalletLoading]   = useState(false);
+  const [walletName, setWalletName]         = useState("");
+  const [pickerOpen, setPickerOpen]         = useState(false);
 
   // Tab & token list
   const [tab, setTab]                     = useState<"create" | "trade">("create");
@@ -469,21 +486,38 @@ export default function CreateTokenPage() {
   const initBuyFee   = initBuyAmt * INITIAL_BUY_FEE_BPS / 10000;
   const totalSol     = advFee + initBuyAmt;
 
-  // Auto-detect Phantom on load
+  // Auto-detect an already-connected wallet on load (any supported provider).
   useEffect(() => {
-    const p = getPhantom();
-    if (p?.publicKey) {
-      const addr = p.publicKey.toString();
+    const already = detectInstalledWallets().find(w => w.provider?.publicKey);
+    if (already) {
+      const addr = already.provider.publicKey.toString();
+      setActiveWallet(already.id, already.provider);
       setWalletAddress(addr);
+      setWalletName(already.name);
       getWalletBalance(addr).then(setWalletBalance);
     }
   }, []);
 
-  const handleConnectWallet = async () => {
+  // Open the wallet picker (or jump straight in if only one is installed).
+  const handleConnectWallet = () => {
+    setCreateError("");
+    const installed = detectInstalledWallets();
+    if (installed.length === 1) {
+      handleSelectWallet(installed[0].id);
+      return;
+    }
+    setPickerOpen(true);
+  };
+
+  const handleSelectWallet = async (id: string) => {
+    setPickerOpen(false);
     setWalletLoading(true);
+    setCreateError("");
     try {
-      const addr = await connectPhantom();
+      const addr = await connectWalletById(id);
+      const meta = detectWallets().find(w => w.id === id);
       setWalletAddress(addr);
+      setWalletName(meta?.name ?? "");
       const bal = await getWalletBalance(addr);
       setWalletBalance(bal);
     } catch (e: any) {
@@ -513,8 +547,8 @@ export default function CreateTokenPage() {
     if (!symbol.trim()) return setCreateError("Token ticker is required.");
     if (!imageFile && !imagePreview) return setCreateError("Token image is required.");
     if (!walletAddress) {
-      try { await handleConnectWallet(); } catch {}
-      if (!walletAddress) return setCreateError("Please connect your Phantom wallet first.");
+      handleConnectWallet();
+      return setCreateError("Please connect your wallet first.");
     }
 
     setCreating(true);
@@ -653,12 +687,13 @@ export default function CreateTokenPage() {
         {walletAddress ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#0ecb81" }} />
+            {walletName && <span style={{ fontSize: 12, color: "rgba(180,190,210,0.5)" }}>{walletName}</span>}
             <span style={{ fontSize: 13, color: "rgba(180,190,210,0.7)", fontFamily: "monospace" }}>{shortAddr(walletAddress)}</span>
             <span style={{ fontSize: 12, color: "rgba(56,224,248,0.7)", background: "rgba(56,224,248,0.08)", borderRadius: 6, padding: "3px 8px" }}>{walletBalance.toFixed(3)} SOL</span>
           </div>
         ) : (
           <button onClick={handleConnectWallet} disabled={walletLoading} style={{ padding: "8px 18px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 13, cursor: walletLoading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#38e0f8,#0ecb81)", color: "#0b0e11" }}>
-            {walletLoading ? "Connecting…" : "Connect Phantom"}
+            {walletLoading ? "Connecting…" : "Connect Wallet"}
           </button>
         )}
         </div>
@@ -835,7 +870,7 @@ export default function CreateTokenPage() {
             {/* Create button */}
             {!walletAddress ? (
               <button onClick={handleConnectWallet} disabled={walletLoading} style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "none", fontWeight: 900, fontSize: 16, cursor: walletLoading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#38e0f8,#0ecb81)", color: "#0b0e11", boxShadow: "0 0 30px rgba(56,224,248,0.2)" }}>
-                {walletLoading ? "Connecting…" : "🔗 Connect Phantom Wallet"}
+                {walletLoading ? "Connecting…" : "🔗 Connect Wallet"}
               </button>
             ) : (
               <button onClick={handleCreate} disabled={creating} style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "none", fontWeight: 900, fontSize: 16, cursor: creating ? "not-allowed" : "pointer", background: creating ? "rgba(56,224,248,0.15)" : "linear-gradient(135deg,#38e0f8 0%,#0ecb81 100%)", color: "#0b0e11", boxShadow: "0 0 30px rgba(56,224,248,0.2)", opacity: creating ? 0.8 : 1 }}>
@@ -881,6 +916,14 @@ export default function CreateTokenPage() {
           walletAddress={walletAddress}
           onClose={() => setSelectedToken(null)}
           onUpdate={updated => { setTokens(loadTokens()); setSelectedToken(updated); }}
+        />
+      )}
+
+      {/* Wallet Picker */}
+      {pickerOpen && (
+        <WalletPickerModal
+          onClose={() => setPickerOpen(false)}
+          onSelect={handleSelectWallet}
         />
       )}
     </div>

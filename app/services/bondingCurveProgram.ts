@@ -29,6 +29,7 @@ import {
   getAssociatedTokenAddressSync,
   getMinimumBalanceForRentExemptMint,
 } from "@solana/spl-token";
+import { getActiveProvider } from "./solanaWallet";
 
 // ─── Config (mirrors lib.rs + create-token page) ──────────────────────────────
 const PLATFORM_FEE_WALLET = "EPAZFYgj87LuUBP8JaAs3EiJvsTQnh2EoMtmSvC7iEzZ";
@@ -186,20 +187,16 @@ export function getConnection(): Connection {
   return new Connection(SOLANA_RPC, "confirmed");
 }
 
-function getPhantom(): any {
-  return (window as any).solana ?? null;
-}
-
 function getProgram(walletAddress: string): { program: Program; connection: Connection } {
-  const phantom = getPhantom();
-  if (!phantom) throw new Error("Phantom wallet not found");
+  const wallet_ = getActiveProvider();
+  if (!wallet_) throw new Error("No wallet connected");
   if (!isProgramConfigured()) throw new Error("On-chain program not configured (VITE_PROGRAM_ID)");
 
   const connection = getConnection();
   const wallet = {
     publicKey: new PublicKey(walletAddress),
-    signTransaction: (tx: Transaction) => phantom.signTransaction(tx),
-    signAllTransactions: (txs: Transaction[]) => phantom.signAllTransactions(txs),
+    signTransaction: (tx: Transaction) => wallet_.signTransaction(tx),
+    signAllTransactions: (txs: Transaction[]) => wallet_.signAllTransactions(txs),
   };
   const provider = new AnchorProvider(connection, wallet as any, {
     commitment: "confirmed",

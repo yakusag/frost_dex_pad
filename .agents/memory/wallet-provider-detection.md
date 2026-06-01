@@ -18,6 +18,11 @@ return null (do NOT fall back to a non-Phantom provider).
 **Why:** users reported the launch/connect button opening Brave Wallet and erroring on Brave
 mobile. The bare `window.solana` is whatever wallet won the injection race.
 
-**How to apply:** when adding any new Solana wallet interaction, reuse `getPhantom()` rather
-than `window.solana`. On mobile with no Phantom provider, deep-link into Phantom's in-app
-browser via `https://phantom.app/ul/browse/<url>` (Brave mobile has no Phantom extension).
+**How to apply:** the create-token page now supports multiple wallets via
+`app/services/solanaWallet.ts` (Phantom, Solflare, Backpack, Coinbase, Brave). Detect each
+wallet by its own namespace/flag (`isPhantom`/`isSolflare`/`isBackpack`/`isCoinbaseWallet`/
+`isBraveWallet`), never a bare `window.solana`. A single module-level "active provider"
+(`getActiveProvider`/`setActiveWallet`) is shared by both `Index.tsx` and
+`bondingCurveProgram.ts` for connect/sign/send. On mobile with no injected provider, deep-link
+into each wallet's in-app browser (Phantom/Solflare/Backpack/Coinbase have `ul/browse` schemes;
+Brave has none). When adding new wallet interactions, route through `getActiveProvider()`.
