@@ -216,6 +216,18 @@ loadRuntimeConfig().then(() => {
   prefetchRoutes();
 });
 
+// Recover from stale dynamic-import chunks after a new deployment.
+// When the page's HTML references a chunk hash that no longer exists on the
+// server (e.g. "Failed to fetch dynamically imported module"), reload once to
+// pull the fresh index.html and its current chunk references.
+window.addEventListener('vite:preloadError', () => {
+  const last = Number(sessionStorage.getItem('vitePreloadReload') || '0');
+  if (Date.now() - last > 10000) {
+    sessionStorage.setItem('vitePreloadReload', String(Date.now()));
+    window.location.reload();
+  }
+});
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker

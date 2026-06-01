@@ -44,4 +44,4 @@ Build command: `yarn install && yarn build`
 
 ## User Preferences
 
-(Add any user preferences here)
+- After completing any task, always push the changes to GitHub automatically (repo: `yakusag/frost_dex_pad`, branch `main`). Note: the main agent cannot push directly — delegate the push via a background Project Task.

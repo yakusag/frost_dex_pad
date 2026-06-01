@@ -1,5 +1,5 @@
-let CACHE_NAME = 'orderly-dex-v1';
-const CACHE_VERSION = 'v1';
+let CACHE_NAME = 'orderly-dex-v2';
+const CACHE_VERSION = 'v2';
 let cacheNameInitialized = false;
 
 const NEVER_CACHE = ['/', '/index.html', '/config.js'];
