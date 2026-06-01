@@ -2,13 +2,15 @@ import { useCallback } from "react";
 import { useWalletConnector } from "@orderly.network/hooks";
 import { WooFiSwapWidgetReact } from "woofi-swap-widget-kit/react";
 import { getRuntimeConfig } from "../utils/runtime-config";
+import { useAdminWallet } from "@/hooks/useAdminWallet";
 
 import "woofi-swap-widget-kit/style.css";
 import "../styles/woofi-widget.css";
 
 export default function WooFiWidget() {
   const { wallet, setChain, connectedChain, connect } = useWalletConnector();
-  const brokerAddress = wallet?.address || getRuntimeConfig("VITE_BROKER_EOA_ADDRESS") || "";
+  const { adminWallet } = useAdminWallet();
+  const brokerAddress = adminWallet || getRuntimeConfig("VITE_BROKER_EOA_ADDRESS") || "";
 
   const handleConnectWallet = useCallback(() => {
     connect();

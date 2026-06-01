@@ -1,12 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWalletConnector } from "@orderly.network/hooks";
-import { getRuntimeConfig } from "@/utils/runtime-config";
+import { useAdminWallet } from "@/hooks/useAdminWallet";
+import AdminWalletSetup from "@/components/AdminWalletSetup";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "frostdex_tokens_v1";
-declare const __ADMIN_WALLET__: string;
-const FALLBACK_ADMIN_WALLET: string = (typeof __ADMIN_WALLET__ !== "undefined" ? __ADMIN_WALLET__ : "") || getRuntimeConfig("VITE_ADMIN_WALLET_ADDRESS") || "";
 const PLATFORM_FEE_BPS = 1500;
 const INITIAL_BUY_FEE_BPS = 2000;
 const VIRTUAL_SOL = 30;
@@ -319,7 +318,7 @@ function TradeModal({ token, onClose, onUpdate }: { token: TokenData; onClose: (
 export default function CreateTokenPage() {
   const navigate = useNavigate();
   const { wallet } = useWalletConnector();
-  const adminWallet = wallet?.address || FALLBACK_ADMIN_WALLET;
+  const { adminWallet, isVerified } = useAdminWallet();
   const [tab, setTab] = useState<"create" | "trade">("create");
   const [tokens, setTokens] = useState<TokenData[]>(loadTokens);
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
@@ -471,6 +470,10 @@ export default function CreateTokenPage() {
       {/* ── CREATE TAB ── */}
       {tab === "create" && (
         <div style={{ padding: "0 16px" }}>
+
+          {/* Admin Wallet Setup */}
+          <AdminWalletSetup />
+
           <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(56,224,248,0.1)", borderRadius: 16, padding: "24px 24px 28px" }}>
 
             {/* Image Upload */}
@@ -581,18 +584,20 @@ export default function CreateTokenPage() {
             </div>
 
             {/* Fee recipient */}
-            <div style={{ background: "rgba(14,203,129,0.05)", border: "1px solid rgba(14,203,129,0.2)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 12 }}>
+            <div style={{ background: isVerified ? "rgba(14,203,129,0.06)" : "rgba(246,70,93,0.05)", border: `1px solid ${isVerified ? "rgba(14,203,129,0.25)" : "rgba(246,70,93,0.2)"}`, borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 16 }}>💰</span>
+                <span style={{ fontSize: 16 }}>{isVerified ? "✅" : "⚠️"}</span>
                 <div>
                   <div style={{ color: "rgba(180,190,210,0.6)", marginBottom: 2 }}>Platform fees recipient</div>
-                  {adminWallet ? (
+                  {adminWallet && isVerified ? (
                     <div style={{ color: "#0ecb81", fontWeight: 600, fontFamily: "monospace", fontSize: 11 }}>
                       {adminWallet.slice(0, 8)}…{adminWallet.slice(-6)}
-                      {wallet?.address === adminWallet && <span style={{ marginLeft: 8, color: "rgba(14,203,129,0.6)", fontWeight: 400, fontFamily: "sans-serif" }}>(your connected wallet)</span>}
+                      <span style={{ marginLeft: 8, color: "rgba(14,203,129,0.5)", fontWeight: 400, fontFamily: "sans-serif" }}>✓ signed & verified</span>
                     </div>
+                  ) : adminWallet ? (
+                    <div style={{ color: "#f6465d", fontSize: 11 }}>Program ID not verified — sign above to confirm</div>
                   ) : (
-                    <div style={{ color: "rgba(246,70,93,0.7)", fontSize: 11 }}>Connect your wallet — it will automatically receive all platform fees</div>
+                    <div style={{ color: "rgba(246,70,93,0.7)", fontSize: 11 }}>Setup your Program ID above to receive fees</div>
                   )}
                 </div>
               </div>
