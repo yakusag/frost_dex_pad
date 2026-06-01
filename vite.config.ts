@@ -64,7 +64,7 @@ export default defineConfig(() => {
     },
     define: {
       __GROQ_KEY__: JSON.stringify(""),
-      __ADMIN_WALLET__: JSON.stringify(process.env.FROST_TOKEN_ADDRESS || ""),
+      __ADMIN_WALLET__: JSON.stringify("EPAZFYgj87LuUBP8JaAs3EiJvsTQnh2EoMtmSvC7iEzZ"),
     },
     base: basePath,
     plugins: [
