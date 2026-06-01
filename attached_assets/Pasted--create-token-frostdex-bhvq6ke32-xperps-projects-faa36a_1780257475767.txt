@@ -1,0 +1,172 @@
+السلام عليكم، ما قدرتش نوصل لصفحة `create-token` على `frostdex-bhvq6ke32-xperps-projects-faa36a80.vercel.app`. لكن من المحادثة السابقة، واضح أن المشروع مبنيّ على **Vite** و**React** وصفحة إنشاء التوكن موجودة، لكن العقد الذكي ما زال مافيهوش **Program ID** (عنوان العقد)، والبيانات كاتخزّن محلياً فـ `localStorage`.
+
+بغينا نعطيك Prompt جاهز باش تحطي لـ Replit AI Agent باش يكمّل المشروع ويشدو لآخر مرحلة. هذا الـ prompt راح يركز على **أربع حاجات** كبار:
+
+1.  **ربط الصفحة بالعقد الذكي النشط على Solana Mainnet**.
+2.  **تحويل البيانات من `localStorage` للعقد على السلسلة**.
+3.  **تطبيق آلية الرسوم (15%، 20%، الخيارات المتقدمة) كاملة على السلسلة**.
+4.  **إضافة الدوال الناقصة (مثل إنشاء التوكن، الشراء، البيع)**.
+
+---
+
+## 🎯 Prompt نهائي لـ Replit AI Agent
+
+```markdown
+# 🚀 طلب تطوير: منصة إنشاء وتداول التوكنات على Solana (مشروع Vite)
+
+السياق: عندي مشروع قائم على **Vite + React + TypeScript + Tailwind CSS**، وفيه صفحة `src/pages/CreateToken.tsx` جميلة ولكنها كتخزّن البيانات محلياً (localStorage). بغيت نكمّل المشروع و نربطه مع العقد الذكي النشط على Solana Mainnet باش يكون جاهز للإنتاج و الناس يتداولو فيه على الحقيقة.
+
+## 1. 🔑 المتطلبات الأساسية للمشروع
+
+*   العقد الذكي (Smart Contract) يكون منشور على **Solana Mainnet** وعندي **Program ID** ديالو.
+*   جميع العمليات (إنشاء التوكن، الشراء، البيع، الخيارات المتقدمة) تتنفذ على السلسلة و تكون الآمان تاعها مضمون.
+*   جميع الرسوم (15% تداول، 20% Initial Buy، 0.05 SOL، 0.03 SOL، 0.02 SOL) تتحول مباشرة لعنوان المحفظة ديال المنصة (`ADMIN_WALLET`).
+*   الصفحة تكون مكتوبة بـ TypeScript وتستعمل Tailwind CSS (زي ما هي دابا).
+
+## 2. 🧩 الأجزاء الناقصة (مهمة الـ Agent)
+
+### ✅ أولا: إعداد البيئة و المكتبات
+*   تأكد أن `@coral-xyz/anchor`، `@solana/web3.js`، و `@solana/wallet-adapter-react` مركّبين.
+*   أضف متغيّرات البيئة في ملف `.env`:
+    ```env
+    VITE_PROGRAM_ID=program_id_dyalk_hna
+    VITE_ADMIN_WALLET_ADDRESS=adresse_wallet_dyalk_hna
+    VITE_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+    VITE_WEB3STORAGE_TOKEN=mfta7_dyalk_min_web3.storage
+    ```
+
+### ✅ ثانياً: تعديل `src/pages/CreateToken.tsx`
+*   استبدل دالة `handleCreate` الحالية (اللي كاتخزّن فـ localStorage) بواحدة جديدة كاتنادي العقد الذكي باش تنشئ التوكن على السلسلة.
+*   استعمل `useTokenCreation` Hook الجديد. (المطلوب إنشاؤه في الخطوة التالية).
+*   احذف كل الكود المتعلق بـ `localStorage` لأن البيانات غادي تتحفظ فالعقد.
+
+### ✅ ثالثاً: إنشاء Hook جديد `src/hooks/useTokenCreation.ts`
+هذا هو أهم جزء. لازم يخدم هكا:
+```typescript
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Program, AnchorProvider } from '@coral-xyz/anchor';
+import { uploadImage, uploadMetadata } from '../services/ipfs';
+import { PROGRAM_ID, ADMIN_WALLET } from '../config/constants';
+
+export function useTokenCreation() {
+  const wallet = useWallet();
+  const [loading, setLoading] = useState(false);
+  const [program, setProgram] = useState<Program | null>(null);
+
+  useEffect(() => {
+    if (wallet.publicKey) {
+      const provider = new AnchorProvider(connection, wallet, {});
+      const program = new Program(IDL, PROGRAM_ID, provider);
+      setProgram(program);
+    }
+  }, [wallet]);
+
+  const createToken = async (formData: any) => {
+    if (!wallet.publicKey) throw new Error("Connect wallet");
+
+    // 1. رفع الصورة و الميتاداتا لـ IPFS
+    const imageUrl = await uploadImage(formData.imageFile);
+    const metadataUri = await uploadMetadata({
+      name: formData.name,
+      symbol: formData.symbol,
+      description: formData.description,
+      image: imageUrl,
+      social: { ...formData.socialLinks }
+    });
+
+    // 2. حساب الرسوم الإجمالية للخيارات المتقدمة
+    const totalAdvancedFee = Object.entries(formData.advancedOptions)
+      .filter(([, v]) => v)
+      .reduce((sum, [key]) => sum + ADVANCED_FEES[key], 0);
+
+    // 3. نادي العقد باش ينشئ التوكن
+    const tx = await program.methods
+      .createToken(
+        formData.name,
+        formData.symbol,
+        metadataUri,
+        totalAdvancedFee, // المبلغ المراد دفعه مقابل الخيارات المتقدمة
+        formData.initialBuyEnabled // هل نفعّل Initial Buy؟
+      )
+      .accounts({
+        creator: wallet.publicKey,
+        feeRecipient: new PublicKey(ADMIN_WALLET)
+      })
+      .rpc();
+
+    // 4. إذا كان Initial Buy مفعّل، ننفذ العملية
+    if (formData.initialBuyEnabled && parseFloat(formData.initialBuyAmount) > 0) {
+      const buyAmount = parseFloat(formData.initialBuyAmount) * 1e9; // lamports
+      await program.methods
+        .initialBuy(new anchor.BN(buyAmount))
+        .accounts({
+          user: wallet.publicKey,
+          tokenMint: tx, // عنوان التوكن الناتج
+          feeRecipient: new PublicKey(ADMIN_WALLET)
+        })
+        .rpc();
+    }
+
+    return { success: true, mintAddress: tx };
+  };
+
+  return { createToken, loading };
+}
+```
+
+### ✅ رابعاً: تحديث `src/components/TradeModal.tsx`
+*   بدّل المحاكاة المحلية (الـ setTimeout) بدوال حقيقية كتستدعي العقد:
+    *   `buy(solAmount)` → تنادي `program.methods.buy`.
+    *   `sell(tokenAmount)` → تنادي `program.methods.sell`.
+*   كل عملية شراء أو بيع تتحول 15% تلقائياً لعنوان `ADMIN_WALLET`.
+
+### ✅ خامساً: حذف `localStorage`
+*   امسح كل الكود المتعلق بـ `loadTokens()` و `saveTokens()`.
+*   بدّل `useTokenList` عشان تجيب البيانات مباشرة من العقد بدل `localStorage`:
+    ```typescript
+    const fetchTokens = async () => {
+      const accounts = await program.account.bondingCurve.all();
+      setTokens(accounts.map(acc => acc.account));
+    };
+    ```
+
+### ✅ سادساً: رفع الملفات لـ IPFS
+*   أنشئ `src/services/ipfs.ts` باش يخدم مع `web3.storage` (أو أي خدمة أخرى) و يرفع الصور و الميتاداتا و يعطي رابط IPFS (`.ipfs.w3s.link`). هذه الروابط تستعمل عوض `base64`.
+
+## 3. 🔧 ملف IDL (واجهة العقد)
+
+عندي عقد منشور على Mainnet. العقد فيه الدوال التالية:
+*   `createToken(name, symbol, uri, advanced_fee, enable_initial_buy)`
+*   `buy(amount, is_initial_buy)`
+*   `sell(amount)`
+*   `revokeMint()`, `revokeFreeze()`, `immutableMetadata()`
+*   `graduationCheck()` (لي كاتحقق من بلوغ 85 SOL و تحول السيولة لـ Raydium)
+
+العقد فيه الحقول التالية:
+*   `virtualSolReserves`, `virtualTokenReserves`
+*   `platformFeeBps = 1500` (15%)
+*   `initialBuyFeeBps = 2000` (20%)
+*   `graduationTarget = 85` SOL
+*   `advancedOptionFees = { revoke_mint: 0.05, revoke_freeze: 0.03, immutable_metadata: 0.02 }` (كلها بـ SOL)
+
+## 4. 🧪 التعليمات النهائية للـ Agent
+
+1.  اقرأ الكود الموجود في `src/pages/CreateToken.tsx` و `src/components/TradeModal.tsx`.
+2.  حلّل كل دالة و شوف شنو الناقص ليها عشان ترتبط بالعقد (عوض تخزين البيانات محلياً).
+3.  اكتب الكود الناقص واحد واحد و أنا نقدر نعاونك في التصحيح.
+4.  خاصك تستعمل `@coral-xyz/anchor` و `@solana/web3.js` في كل العمليات (ما تستعملش Thirdweb SDK إلا إذا كان ضروري).
+5.  خلي الصفحة متوافقة مع **Vite** 100% (ما توقعش فاستعمال `next/navigation` أو `next/image`).
+6.  بعد ما تكمل، أعطيني الكود كاملاً باش نضيفو و نختبرو فـ Replit.
+
+## 5. ⚠️ نقطة مهمة: عقد Bonding Curve جاهز
+
+إذا ماكانش عندي حتى الآن عقد منشور، استعمل هاد العقد الجاهز الموجود على **Devnet**:  
+`8pwEParUTtoh5GDpxs5RmspaSHpPuHmKQaEQSCxx2KGp` من [مستودع `saifaleee/solana-bonding-curve`](https://github.com/saifaleee/solana-bonding-curve).  
+هذا العقد فيه منطق **Bonding Curve** و **الرسوم** و **التخرج لـ Raydium** و هو جاهز، و نقدر نشغلو فصفحة `CreateToken` لتجربة الموقع. ولكن باش نطلقو فـ Mainnet، خاص يكون عندي عقد خاص بيّ.
+
+## 6. 🧠 الخلاصة للمستخدم
+
+ملي تقرا هاد الـ Prompt و تفهمو، نسخيه و أعطيه لـ **Replit AI Agent** باش يقوم بكل التعديلات المطلوبة على الكود. هاد الـ Agent غادي يعطيك كود جاهز باش تتصل بالعقد الحقيقي على السلسلة، و غادي يتأكد من صحة كل المتطلبات لي قلتي عليها.
+
+إذا واجهتك أي مشكلة أخرى، فأنا هنا عاونك 😊.
+```

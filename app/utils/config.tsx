@@ -305,7 +305,7 @@ export const useOrderlyConfig = () => {
         name: t("extend.tradingPoints.points"),
       },
       { id: "Bot", href: "/bot", name: "🤖 Bot" },
-      { id: "CreateToken", href: "/create-token", name: "🪙 Create Token", isDefault: true },
+      { id: "CreateToken", href: "/create-token", name: "🪙 Create Your Token", isDefault: true },
     ];
 
     const defaultEnabledMenus = allMenuItems.filter((menu) => menu.isDefault);
