@@ -1,8 +1,15 @@
+import { PINATA_CONFIG } from "@/utils/wallet-config";
+
 const GATEWAY = "https://gateway.pinata.cloud/ipfs";
 const UPLOAD_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 const JSON_URL = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
 
 function getJwt(): string {
+  // Try to get from wallet config first (localStorage + env)
+  const jwt = PINATA_CONFIG.getJWT();
+  if (jwt && jwt.length > 10) return jwt;
+
+  // Fallback to environment variable
   return (import.meta as any).env?.VITE_PINATA_JWT ?? "";
 }
 
