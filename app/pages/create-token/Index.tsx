@@ -9,15 +9,13 @@ import {
   fetchCurveState,
 } from "@/services/bondingCurveProgram";
 import {
-  type DetectedWallet,
-  detectWallets,
   detectInstalledWallets,
-  connectWalletById,
   getActiveProvider,
   setActiveWallet,
-  isMobile,
-  openInWalletApp,
+  clearActiveWallet,
 } from "@/services/solanaWallet";
+import { useWalletConnector } from "@orderly.network/hooks";
+import { ChainNamespace } from "@orderly.network/types";
 
 // ─── Platform constants (from solana-bonding-curve/programs/bonding-curve/src/lib.rs) ──
 const PLATFORM_FEE_WALLET = "EPAZFYgj87LuUBP8JaAs3EiJvsTQnh2EoMtmSvC7iEzZ";
@@ -380,62 +378,6 @@ function TradeModal({ token, onClose, onUpdate, walletAddress }: {
   );
 }
 
-// ─── WalletPickerModal ──────────────────────────────────────────────────────
-// Lets the user choose among detected Solana wallets. Installed wallets connect
-// directly; non-installed ones show an install link (or, on mobile, a deep link
-// that re-opens this page inside the wallet's in-app browser).
-function WalletPickerModal({ onClose, onSelect }: {
-  onClose: () => void;
-  onSelect: (id: string) => void;
-}) {
-  const mobile = isMobile();
-  const wallets: DetectedWallet[] = detectWallets();
-  const anyInstalled = wallets.some(w => w.provider);
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "#0f1117", border: "1px solid rgba(56,224,248,0.2)", borderRadius: 20, padding: 24, width: "100%", maxWidth: 380 }}>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 18 }}>
-          <div style={{ fontWeight: 800, fontSize: 18, color: "#eaecef" }}>Connect a wallet</div>
-          <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: "rgba(180,190,210,0.5)", fontSize: 22, cursor: "pointer" }}>×</button>
-        </div>
-
-        {!anyInstalled && (
-          <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(56,224,248,0.06)", border: "1px solid rgba(56,224,248,0.18)", borderRadius: 8, color: "rgba(180,190,210,0.7)", fontSize: 12 }}>
-            {mobile
-              ? "No wallet detected. Tap a wallet to open this page inside its app."
-              : "No Solana wallet detected. Install one of these browser extensions, then reload."}
-          </div>
-        )}
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {wallets.map(w => {
-            const installed = !!w.provider;
-            const canDeepLink = mobile && !!w.deepLink;
-            return (
-              <button
-                key={w.id}
-                onClick={() => {
-                  if (installed) { onSelect(w.id); return; }
-                  if (canDeepLink) { openInWalletApp(w.id); return; }
-                  window.open(w.install, "_blank", "noopener");
-                }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: installed ? "rgba(56,224,248,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${installed ? "rgba(56,224,248,0.25)" : "rgba(255,255,255,0.06)"}`, borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
-              >
-                <span style={{ fontSize: 22 }}>{w.icon}</span>
-                <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{w.name}</span>
-                <span style={{ fontSize: 11, color: installed ? "#0ecb81" : "rgba(180,190,210,0.45)" }}>
-                  {installed ? "Detected" : canDeepLink ? "Open app" : "Install"}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CreateTokenPage() {
   // Wallet state
@@ -443,7 +385,9 @@ export default function CreateTokenPage() {
   const [walletBalance, setWalletBalance]   = useState(0);
   const [walletLoading, setWalletLoading]   = useState(false);
   const [walletName, setWalletName]         = useState("");
-  const [pickerOpen, setPickerOpen]         = useState(false);
+
+  // Orderly wallet connector — the exact same connection the navbar "Connect" uses.
+  const { wallet: orderlyWallet, connect: orderlyConnect, namespace: orderlyNamespace } = useWalletConnector();
 
   // Tab & token list
   const [tab, setTab]                     = useState<"create" | "trade">("create");
@@ -486,42 +430,43 @@ export default function CreateTokenPage() {
   const initBuyFee   = initBuyAmt * INITIAL_BUY_FEE_BPS / 10000;
   const totalSol     = advFee + initBuyAmt;
 
-  // Auto-detect an already-connected wallet on load (any supported provider).
+  // Mirror the Orderly wallet (navbar "Connect") into the launchpad's Solana
+  // signing layer so Buy / Sell / Create all use the same connection.
   useEffect(() => {
-    const already = detectInstalledWallets().find(w => w.provider?.publicKey);
-    if (already) {
-      const addr = already.provider.publicKey.toString();
-      setActiveWallet(already.id, already.provider);
-      setWalletAddress(addr);
-      setWalletName(already.name);
-      getWalletBalance(addr).then(setWalletBalance);
-    }
-  }, []);
-
-  // Open the wallet picker (or jump straight in if only one is installed).
-  const handleConnectWallet = () => {
-    setCreateError("");
-    const installed = detectInstalledWallets();
-    if (installed.length === 1) {
-      handleSelectWallet(installed[0].id);
+    const addr = orderlyWallet?.accounts?.[0]?.address;
+    const isSolana = !!addr && orderlyNamespace === ChainNamespace.solana;
+    if (!isSolana) {
+      // Not a Solana wallet (disconnected, or EVM connected via navbar).
+      clearActiveWallet();
+      setWalletAddress(""); setWalletName(""); setWalletBalance(0);
       return;
     }
-    setPickerOpen(true);
-  };
+    // Bind ONLY the injected provider whose public key exactly matches the
+    // Orderly-selected Solana account, so signing always uses the right wallet.
+    const match = detectInstalledWallets().find(
+      w => w.provider?.publicKey?.toString() === addr &&
+           typeof w.provider?.signAndSendTransaction === "function"
+    );
+    if (match?.provider) {
+      setActiveWallet(match.id, match.provider);
+      setWalletName(match.name || orderlyWallet?.label || "");
+    } else {
+      // Connected via an adapter we can't sign with here (e.g. mobile adapter).
+      clearActiveWallet();
+      setWalletName(orderlyWallet?.label || "");
+    }
+    setWalletAddress(addr!);
+    getWalletBalance(addr!).then(setWalletBalance);
+  }, [orderlyWallet, orderlyNamespace]);
 
-  const handleSelectWallet = async (id: string) => {
-    setPickerOpen(false);
-    setWalletLoading(true);
+  // Connect using the same Orderly wallet modal as the navbar "Connect" button.
+  const handleConnectWallet = async () => {
     setCreateError("");
+    setWalletLoading(true);
     try {
-      const addr = await connectWalletById(id);
-      const meta = detectWallets().find(w => w.id === id);
-      setWalletAddress(addr);
-      setWalletName(meta?.name ?? "");
-      const bal = await getWalletBalance(addr);
-      setWalletBalance(bal);
+      await orderlyConnect();
     } catch (e: any) {
-      setCreateError(e.message);
+      setCreateError(e?.message || "Failed to connect wallet");
     } finally { setWalletLoading(false); }
   };
 
@@ -919,13 +864,6 @@ export default function CreateTokenPage() {
         />
       )}
 
-      {/* Wallet Picker */}
-      {pickerOpen && (
-        <WalletPickerModal
-          onClose={() => setPickerOpen(false)}
-          onSelect={handleSelectWallet}
-        />
-      )}
     </div>
   );
 }
