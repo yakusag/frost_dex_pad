@@ -1,28 +1,35 @@
 ---
-name: Phantom wallet detection on multi-wallet browsers
-description: Why connecting via window.solana grabs the wrong wallet (Brave) and how to target Phantom specifically
+name: Solana wallet provider detection (Phantom vs Brave)
+description: How to resolve the correct injected Solana wallet and avoid Brave hijacking Phantom; mobile deep-link behavior.
 ---
 
-# Targeting Phantom, not "whatever injected window.solana"
+# Solana wallet provider detection
 
-On the create-token page (`app/pages/create-token/Index.tsx`), the "Connect Phantom Wallet"
-flow must resolve the **Phantom** provider specifically. Multiple wallets inject
-`window.solana` — notably **Brave Wallet** on Brave browser (desktop & Android). Reading a
-bare `window.solana` connects to Brave Wallet, which surfaces a localized "Une erreur interne
-s'est produite" / "internal error" and shows a Brave Wallet consent popup instead of Phantom.
+The launchpad supports several injected Solana wallets (Phantom, Solflare, Backpack,
+Coinbase, Brave). Many of them inject `window.solana`, so resolving a wallet by the
+bare `window.solana` is unsafe.
 
-**Rule:** resolve Phantom in this order — `window.phantom.solana` (with `.isPhantom`), then
-`window.solana.isPhantom`, then a `window.solana.providers[]` entry with `isPhantom`. If none,
-return null (do NOT fall back to a non-Phantom provider).
+## Phantom-vs-Brave trap
+**Brave Wallet spoofs `isPhantom: true` on `window.solana`.** So selecting "Phantom"
+and reading `window.solana.isPhantom` connects **Brave** instead — this is exactly the
+"I tapped Phantom but Brave connected" bug.
 
-**Why:** users reported the launch/connect button opening Brave Wallet and erroring on Brave
-mobile. The bare `window.solana` is whatever wallet won the injection race.
+**Rule:** resolve Phantom via its own namespace `window.phantom.solana` first, and only
+fall back to `window.solana`/providers when `isPhantom && !isBraveWallet`. Brave never
+creates a `window.phantom` namespace, so that's the reliable signal.
 
-**How to apply:** the create-token page now supports multiple wallets via
-`app/services/solanaWallet.ts` (Phantom, Solflare, Backpack, Coinbase, Brave). Detect each
-wallet by its own namespace/flag (`isPhantom`/`isSolflare`/`isBackpack`/`isCoinbaseWallet`/
-`isBraveWallet`), never a bare `window.solana`. A single module-level "active provider"
-(`getActiveProvider`/`setActiveWallet`) is shared by both `Index.tsx` and
-`bondingCurveProgram.ts` for connect/sign/send. On mobile with no injected provider, deep-link
-into each wallet's in-app browser (Phantom/Solflare/Backpack/Coinbase have `ul/browse` schemes;
-Brave has none). When adding new wallet interactions, route through `getActiveProvider()`.
+**Why:** Brave deliberately mimics Phantom's flag for dapp compatibility; the dedicated
+namespace is the only trustworthy discriminator.
+
+## Mobile deep-link behavior
+On a normal mobile browser (e.g. Brave on Android) the real Phantom is NOT injected.
+After the fix, Phantom resolves to `null` there, so the picker shows it as "Open app"
+and taps call its deep link (`https://phantom.app/ul/browse/<url>`) to re-open the page
+**inside Phantom's in-app browser**, where the provider IS injected and the user can
+connect + sign. This is the intended mobile UX — do not try to connect a non-injected
+wallet directly.
+
+**How to apply:** keep `detectProvider("phantom")` strict; keep the launchpad's own
+wallet picker (it deep-links on mobile) rather than routing launchpad connect through
+the Orderly navbar modal, which does not deep-link Solana wallets on mobile and threw
+"Cannot read properties of undefined (reading 'chainId')".

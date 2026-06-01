@@ -78,9 +78,12 @@ export function detectProvider(id: string): any | null {
   const w = window as any;
   switch (id) {
     case "phantom":
+      // Brave Wallet spoofs `isPhantom` on the bare `window.solana`, so resolving
+      // Phantom there connects Brave by mistake. Prefer Phantom's own
+      // `window.phantom.solana` namespace and never accept a Brave provider.
       return w.phantom?.solana?.isPhantom ? w.phantom.solana
-        : w.solana?.isPhantom ? w.solana
-        : fromProviders((p) => p?.isPhantom);
+        : (w.solana?.isPhantom && !w.solana?.isBraveWallet) ? w.solana
+        : fromProviders((p) => p?.isPhantom && !p?.isBraveWallet);
     case "solflare":
       return w.solflare?.isSolflare ? w.solflare
         : w.solana?.isSolflare ? w.solana
