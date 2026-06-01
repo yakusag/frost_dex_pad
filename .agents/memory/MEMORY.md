@@ -1,2 +1,3 @@
 - [Phantom wallet detection](wallet-provider-detection.md) — connect to Phantom specifically, never bare window.solana (Brave injects its own and errors).
 - [GitHub push from Replit](github-push-from-replit.md) — main-agent `git push origin main` works despite a harmless stale tracking-ref .lock error; verify with ls-remote.
+- [Code-review validation scope](code-review-validation-scope.md) — mark_task_complete reviews the diff against the assigned project task; a "push-only, no code changes" task makes it reject the real feature diff.

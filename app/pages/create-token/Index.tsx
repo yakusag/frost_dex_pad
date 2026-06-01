@@ -204,9 +204,9 @@ function PriceChart({ token }: { token: TokenData }) {
 }
 
 // ─── TradeModal ───────────────────────────────────────────────────────────────
-function TradeModal({ token, onClose, onUpdate, walletAddress }: {
+function TradeModal({ token, onClose, onUpdate, walletAddress, walletCanSign }: {
   token: TokenData; onClose: () => void;
-  onUpdate: (t: TokenData) => void; walletAddress: string;
+  onUpdate: (t: TokenData) => void; walletAddress: string; walletCanSign: boolean;
 }) {
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [amount, setAmount] = useState("0.1");
@@ -222,6 +222,7 @@ function TradeModal({ token, onClose, onUpdate, walletAddress }: {
 
   const handleTrade = async () => {
     if (!walletAddress) { setError("Connect wallet first"); return; }
+    if (!walletCanSign) { setError("This wallet can't sign on the launchpad in this browser. Open the site inside your wallet app, or use a browser-extension wallet."); return; }
     setLoading(true); setError(""); setStatus("");
     try {
       const tokens = loadTokens();
@@ -385,6 +386,7 @@ export default function CreateTokenPage() {
   const [walletBalance, setWalletBalance]   = useState(0);
   const [walletLoading, setWalletLoading]   = useState(false);
   const [walletName, setWalletName]         = useState("");
+  const [walletCanSign, setWalletCanSign]   = useState(false);
 
   // Orderly wallet connector — the exact same connection the navbar "Connect" uses.
   const { wallet: orderlyWallet, connect: orderlyConnect, namespace: orderlyNamespace } = useWalletConnector();
@@ -438,6 +440,7 @@ export default function CreateTokenPage() {
     if (!isSolana) {
       // Not a Solana wallet (disconnected, or EVM connected via navbar).
       clearActiveWallet();
+      setWalletCanSign(false);
       setWalletAddress(""); setWalletName(""); setWalletBalance(0);
       return;
     }
@@ -449,10 +452,12 @@ export default function CreateTokenPage() {
     );
     if (match?.provider) {
       setActiveWallet(match.id, match.provider);
+      setWalletCanSign(true);
       setWalletName(match.name || orderlyWallet?.label || "");
     } else {
       // Connected via an adapter we can't sign with here (e.g. mobile adapter).
       clearActiveWallet();
+      setWalletCanSign(false);
       setWalletName(orderlyWallet?.label || "");
     }
     setWalletAddress(addr!);
@@ -494,6 +499,9 @@ export default function CreateTokenPage() {
     if (!walletAddress) {
       handleConnectWallet();
       return setCreateError("Please connect your wallet first.");
+    }
+    if (!walletCanSign) {
+      return setCreateError("This wallet can't sign on the launchpad in this browser. Open the site inside your wallet app, or connect a browser-extension wallet (Phantom, Solflare, Backpack).");
     }
 
     setCreating(true);
@@ -859,6 +867,7 @@ export default function CreateTokenPage() {
         <TradeModal
           token={selectedToken}
           walletAddress={walletAddress}
+          walletCanSign={walletCanSign}
           onClose={() => setSelectedToken(null)}
           onUpdate={updated => { setTokens(loadTokens()); setSelectedToken(updated); }}
         />
