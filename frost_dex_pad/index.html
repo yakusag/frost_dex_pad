@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/webp" href="/favicon.webp" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#04061400" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <link rel="apple-touch-icon" href="/favicon.webp" />
+
+    <title>FrostDex</title>
+
+    <!-- speed: preconnect critical origins -->
+    <link rel="preconnect" href="https://api.dexscreener.com" crossorigin />
+    <link rel="preconnect" href="https://api.orderly.org" crossorigin />
+    <link rel="preconnect" href="https://arb1.arbitrum.io" crossorigin />
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://arbiscan.io" />
+
+    <style>
+      /* ── base ── */
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: radial-gradient(ellipse at 50% 40%, #0d1219 0%, #0b0e11 70%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        transition: opacity 0.6s ease, visibility 0.6s ease;
+        overflow: hidden;
+      }
+      #splash.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      /* ── background glow ── */
+      #splash-aurora {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      #splash-aurora::before {
+        content: '';
+        position: absolute;
+        width: 400px; height: 400px;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: radial-gradient(ellipse, rgba(56,224,248,0.07) 0%, transparent 70%);
+      }
+
+      /* ── logo ── */
+      #splash-flake {
+        width: auto;
+        height: 300px;
+        max-width: 320px;
+        margin-bottom: 32px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 40px rgba(56,224,248,0.55))
+                drop-shadow(0 0 16px rgba(14,203,129,0.45));
+        animation: flake-appear 0.7s cubic-bezier(0.34,1.56,0.64,1) both,
+                   flake-pulse 3.5s ease-in-out 0.7s infinite;
+      }
+      @keyframes flake-appear {
+        from { opacity: 0; transform: scale(0.4) rotate(-15deg); }
+        to   { opacity: 1; transform: scale(1) rotate(0deg); }
+      }
+      @keyframes flake-pulse {
+        0%, 100% { filter: drop-shadow(0 0 32px rgba(56,224,248,0.5)) drop-shadow(0 0 12px rgba(14,203,129,0.4)); transform: scale(1); }
+        50%      { filter: drop-shadow(0 0 60px rgba(56,224,248,0.85)) drop-shadow(0 0 24px rgba(14,203,129,0.65)); transform: scale(1.05); }
+      }
+
+      /* ── brand name (hidden — logo image already has FROSTDEX text) ── */
+      #splash-name {
+        display: none;
+      }
+
+      /* ── candle signal bars ── */
+      #splash-candles {
+        display: flex;
+        align-items: flex-end;
+        gap: 7px;
+        height: 48px;
+      }
+      .splash-candle {
+        width: 12px;
+        border-radius: 3px 3px 0 0;
+        transform-origin: bottom;
+        animation: candle-rise 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+      }
+      .splash-candle:nth-child(1) { height: 12px; background: #e74c3c; box-shadow: 0 0 8px rgba(231,76,60,0.6);  animation-delay: 0.3s; }
+      .splash-candle:nth-child(2) { height: 24px; background: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.6); animation-delay: 0.55s; }
+      .splash-candle:nth-child(3) { height: 36px; background: #e74c3c; box-shadow: 0 0 8px rgba(231,76,60,0.6);  animation-delay: 0.8s; }
+      .splash-candle:nth-child(4) { height: 48px; background: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.6); animation-delay: 1.05s; }
+      @keyframes candle-rise {
+        from { transform: scaleY(0); opacity: 0; }
+        to   { transform: scaleY(1); opacity: 1; }
+      }
+
+      /* ── tagline ── */
+      #splash-tag {
+        margin-top: 18px;
+        font-family: 'Manrope', 'Segoe UI', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: rgba(60, 230, 255, 0.35);
+        animation: name-appear 0.6s ease 0.6s both;
+      }
+
+      /* ── falling snowflakes ── */
+      #splash-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+      .sp {
+        position: absolute;
+        color: rgba(60,230,255,0.55);
+        font-size: 14px;
+        user-select: none;
+        animation: sp-fall linear infinite;
+      }
+      @keyframes sp-fall {
+        0%   { transform: translateY(-40px) rotate(0deg);   opacity: 0; }
+        10%  { opacity: 1; }
+        90%  { opacity: 0.4; }
+        100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- splash screen -->
+    <div id="splash">
+      <div id="splash-aurora"></div>
+      <div id="splash-particles"></div>
+      <img id="splash-flake" src="/frostdex-logo.png" alt="FrostDex" />
+      <div id="splash-name">FROSTDEX</div>
+      <div id="splash-candles">
+        <div class="splash-candle"></div>
+        <div class="splash-candle"></div>
+        <div class="splash-candle"></div>
+        <div class="splash-candle"></div>
+      </div>
+      <div id="splash-tag">Decentralized Exchange</div>
+    </div>
+
+    <div id="root"></div>
+    <script type="module" src="/app/main.tsx"></script>
+
+    <script>
+      /* generate falling snowflakes */
+      (function () {
+        var container = document.getElementById('splash-particles');
+        var flakes = ['❄', '❅', '❆', '✦', '·'];
+        for (var i = 0; i < 22; i++) {
+          var p = document.createElement('div');
+          p.className = 'sp';
+          var size = Math.random() * 14 + 8;
+          p.textContent = flakes[Math.floor(Math.random() * flakes.length)];
+          p.style.cssText = [
+            'font-size:' + size + 'px',
+            'left:' + Math.random() * 100 + '%',
+            'animation-duration:' + (Math.random() * 8 + 6) + 's',
+            'animation-delay:' + (Math.random() * 6) + 's',
+            'opacity:' + (Math.random() * 0.4 + 0.2)
+          ].join(';');
+          container.appendChild(p);
+        }
+      })();
+
+      /* hide splash once React has mounted */
+      window.__hideSplash = function () {
+        var s = document.getElementById('splash');
+        if (s) {
+          s.classList.add('hidden');
+          setTimeout(function () { s.remove(); }, 600);
+        }
+      };
+    </script>
+  </body>
+</html>

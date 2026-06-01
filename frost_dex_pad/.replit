@@ -1,0 +1,80 @@
+modules = ["nodejs-20", "web", "nix"]
+[agent]
+expertMode = true
+stack = "BEST_EFFORT_FALLBACK"
+integrations = ["javascript_openai_ai_integrations:2.0.0"]
+
+[nix]
+channel = "stable-25_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = """
+bash -c '
+    if [ ! -d node_modules ] || [ ! -f node_modules/.yarn-integrity ]; then
+      echo \"Installing dependencies...\"
+      yarn install 2>&1
+    fi
+
+    mkdir -p node_modules/@rollup node_modules/@oxc-parser
+
+    if [ ! -f node_modules/@rollup/rollup-linux-x64-gnu/rollup.linux-x64-gnu.node ]; then
+      npm install --prefix /tmp/rollup-native @rollup/rollup-linux-x64-gnu 2>/dev/null
+      cp -r /tmp/rollup-native/node_modules/@rollup/rollup-linux-x64-gnu node_modules/@rollup/
+    fi
+
+    if [ ! -f node_modules/@oxc-parser/binding-linux-x64-gnu/parser.linux-x64-gnu.node ]; then
+      npm install --prefix /tmp/oxc @oxc-parser/binding-linux-x64-gnu@0.82.3 2>/dev/null
+      cp -r /tmp/oxc/node_modules/@oxc-parser/binding-linux-x64-gnu node_modules/@oxc-parser/
+    fi
+
+    if [ ! -d node_modules/@emnapi ]; then
+      npm install --prefix /tmp/emnapi @emnapi/core @emnapi/runtime 2>/dev/null
+      mkdir -p node_modules/@emnapi
+      cp -r /tmp/emnapi/node_modules/@emnapi/. node_modules/@emnapi/
+    fi
+
+    node_modules/.bin/tsx scripts/generate-manifest.ts 2>/dev/null || true
+    node_modules/.bin/vite --port 5000
+  '"""
+waitForPort = 5000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[deployment]
+deploymentTarget = "static"
+build = ["bash", "-c", "yarn install && yarn build"]
+publicDir = "build/client"
+
+[userenv]
+
+[userenv.shared]
+
+[userenv.development]
+
+[userenv.production]
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000

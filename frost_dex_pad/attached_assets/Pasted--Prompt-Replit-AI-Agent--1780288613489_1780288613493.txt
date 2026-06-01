@@ -1,0 +1,66 @@
+أهلاً، لنبدأ. هاد هو الـ Prompt النهائي اللي ستعطيه لـ Replit AI Agent. سيبدأ فوراً في استنساخ مشروع `solana-bonding-curve`، تعديله ليشمل رسوم 15% و 20% والخيارات المتقدمة، نشره على Mainnet، ثم ربطه بمشروع Vite الخاص بك.
+
+**انسخي هذا النص وأعطيه لـ Replit AI Agent:**
+
+```markdown
+أنا جاهز. قم بتنفيذ المخطط التالي بالكامل، خطوة بخطوة، دون أن تطلب مني أي شيء سوى توصيل محفظتي وتأكيد المعاملات عندما يحين الوقت.
+
+## المهمة: بناء منصة Bonding Curve متكاملة (مثل Pump.fun) على Solana Mainnet
+
+### 1. استنساخ المشروع الأساسي وتعديله
+- استنسخ المستودع: `git clone https://github.com/saifaleee/solana-bonding-curve.git`
+- انتقل إلى المجلد: `cd solana-bonding-curve`
+- افتح ملف `programs/bonding-curve/src/lib.rs` وقم بإجراء التعديلات التالية:
+  - غير `const PLATFORM_FEE_BPS: u64 = 80;` إلى `1500` (15%).
+  - أضف بعدها: `const INITIAL_BUY_FEE_BPS: u64 = 2000;` (20%).
+  - أضف ثوابت الخيارات المتقدمة (باللامبورت):
+    ```rust
+    const FEE_REVOKE_MINT: u64 = 0_050_000_000;
+    const FEE_REVOKE_FREEZE: u64 = 0_030_000_000;
+    const FEE_IMMUTABLE_METADATA: u64 = 0_020_000_000;
+    ```
+  - في دالة `initialize` (أو أنشئ دالة `create_token`)، أضف معاملات `revoke_mint`, `revoke_freeze`, `immutable_metadata` من نوع `bool`. عند تفعيل أي خيار، قم بتحويل المبلغ المقابل من حساب المنشئ إلى `fee_recipient`.
+  - في دالة `buy`، أضف منطقاً: إذا كان `initial_buy_active == true` ولم يتم تنفيذه بعد، فاستخدم `INITIAL_BUY_FEE_BPS` بدلاً من `PLATFORM_FEE_BPS`. أو أنشئ دالة منفصلة `initial_buy`.
+  - تأكد من أن جميع دوال `buy`, `sell`, `initial_buy`, والخيارات المتقدمة تحول الرسوم إلى `fee_recipient`.
+
+### 2. نشر العقد على Mainnet
+- قم بتشغيل الأوامر التالية:
+  ```bash
+  anchor build
+  anchor keys sync
+  anchor build  # مرة أخرى للتأكد
+  solana config set --url mainnet-beta
+  anchor deploy
+  ```
+- عند تنفيذ `anchor deploy`، سأقوم بتوصيل محفظتي (Phantom) وتأكيد المعاملة. انتظر مني ذلك.
+- بعد نجاح النشر، سيظهر `Program ID`. قم بحفظه في متغير باسم `PROGRAM_ID`.
+
+### 3. تحديث مشروع Vite (الموجود في Replit)
+- اقرأ ملف `.env` في جذر مشروع Vite. أضف أو عدل الأسطر التالية:
+  ```
+  VITE_PROGRAM_ID=PROGRAM_ID_الذي_حصلت_عليه
+  VITE_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+  VITE_WEB3STORAGE_TOKEN=your_token_here  (إذا كان متوفراً)
+  ```
+- قم بتثبيت المكتبات المطلوبة (إذا لم تكن موجودة): `npm install @coral-xyz/anchor @solana/web3.js web3.storage`.
+- قم بإنشاء أو تعديل الملفات التالية (إذا كانت موجودة، استبدلها):
+  - `src/services/solana.ts` للتفاعل مع العقد باستخدام Anchor.
+  - `src/hooks/useTokenCreation.ts` لاستدعاء `create_token` و `initial_buy`.
+  - `src/hooks/useTokenList.ts` لجلب التوكنات من العقد.
+  - `src/pages/CreateToken.tsx` و `src/components/TradeModal.tsx` لاستخدام الـ Hooks الجديدة.
+- تأكد من أن واجهة "Create your Token" تحتوي على جميع الخيارات التي طلبتها (الاسم، الرمز، رفع صورة IPFS، الخيارات المتقدمة، Initial Buy). استخدم نفس تصميم Tailwind الموجود.
+- تأكد من أن جميع المكونات متوافقة مع Vite (لا تستخدم `next/navigation` أو `next/image`).
+
+### 4. اختبار البناء والنشر على Vercel
+- شغل `npm run build` في مشروع Vite. يجب أن ينجح البناء.
+- ادفع التغييرات إلى GitHub (إذا كان المستودع متصلاً بـ Vercel).
+- أرسل لي رابط Vercel للتأكد من أن كل شيء يعمل.
+
+### 5. ملاحظة أخيرة
+- سأكون متصلاً بمحفظتي طوال الوقت. عندما تطلب مني تأكيد أي معاملة (أثناء نشر العقد أو أثناء العمليات التجريبية)، سأقوم بذلك فوراً.
+- لا تطلب مني كتابة أي أوامر يدوية في التيرمينال. قم أنت بتنفيذها عبر API الخاص بـ Replit.
+
+ابدأ الآن.
+```
+
+بعد إعطاء هذا الـ prompt، سيبدأ الـ Agent في العمل. ستحتاجين فقط إلى تأكيد معاملة نشر العقد عبر محفظة Phantom عندما يطلب منك. بعدها، سيكون كل شيء جاهزاً على Mainnet. 🔥

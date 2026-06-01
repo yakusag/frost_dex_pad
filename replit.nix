@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.rustup
     pkgs.anchor
     pkgs.nano
     pkgs.solana-cli
