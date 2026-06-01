@@ -2,7 +2,11 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use anchor_spl::associated_token::AssociatedToken;
 
-declare_id!("CqzUoSdSQPpcTJXhiTgAdupoaJ9yRTjbVXVfC41Aqckm");
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔐 CUSTOM PROGRAM ID FOR FROSTDEX BONDING CURVE
+// Admin Wallet: EPAZFYgj87LuUBP8JaAs3EiJvsTQnh2EoMtmSvC7iEzZ
+// ═══════════════════════════════════════════════════════════════════════════════
+declare_id!("FrDxBNvCWaUW5oGHCTL5eFLLSQVzakRB5TnYGFzJGwSn");
 
 // ─── Fee constants ────────────────────────────────────────────────────────────
 const PLATFORM_FEE_BPS: u64 = 1500;       // 15% platform fee on buy/sell

@@ -31,22 +31,49 @@ export const WALLET_CONFIG = {
 
 // Pinata/IPFS configuration
 export const PINATA_CONFIG = {
-    PINATA_API_URL: "https://api.pinata.cloud",
+    PINATA_API_URL: import.meta.env.VITE_PINATA_API || "https://api.pinata.cloud",
     GATEWAY_URL: import.meta.env.VITE_PINATA_GATEWAY || "https://gateway.pinata.cloud",
 
     // Get JWT from environment or localStorage
     getJWT: (): string => {
-        return import.meta.env.VITE_PINATA_JWT || localStorage.getItem(WALLET_CONFIG.STORAGE_KEY_JWT) || "";
+        // Priority: env var > localStorage > empty
+        const envJwt = import.meta.env.VITE_PINATA_JWT;
+        if (envJwt && envJwt.length > 50) {
+            return envJwt;
+        }
+
+        const storedJwt = localStorage.getItem(WALLET_CONFIG.STORAGE_KEY_JWT);
+        if (storedJwt && storedJwt.length > 50) {
+            return storedJwt;
+        }
+
+        return "";
     },
 
     // Set JWT in localStorage
     setJWT: (token: string): void => {
+        if (!token || token.length < 50) {
+            console.error("Invalid JWT token provided");
+            return;
+        }
         localStorage.setItem(WALLET_CONFIG.STORAGE_KEY_JWT, token);
     },
 
-    // Validate JWT is set
+    // Validate JWT is set and valid
     isConfigured: (): boolean => {
-        return !!PINATA_CONFIG.getJWT();
+        const jwt = PINATA_CONFIG.getJWT();
+        return jwt.length > 50;
+    },
+
+    // Get Pinata credentials info
+    getCredentialsInfo: (): { configured: boolean; hasEnvVar: boolean; hasLocalStorage: boolean } => {
+        const envJwt = import.meta.env.VITE_PINATA_JWT;
+        const storedJwt = localStorage.getItem(WALLET_CONFIG.STORAGE_KEY_JWT);
+        return {
+            configured: PINATA_CONFIG.isConfigured(),
+            hasEnvVar: (envJwt && envJwt.length > 50) ?? false,
+            hasLocalStorage: (storedJwt && storedJwt.length > 50) ?? false,
+        };
     },
 };
 
