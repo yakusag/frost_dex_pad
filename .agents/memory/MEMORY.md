@@ -3,3 +3,4 @@
 - [Solana SBF build on Replit/nix](solana-sbf-build-on-nix.md) — read-only nix SDK (copy + SBF_SDK_PATH), detached procs reaped (use workflow), CLI airdrop rate-limited (web faucet).
 - [Verify Anchor IDL without test SOL](verify-anchor-idl-without-sol.md) — faucet often dry & sandbox hides RPC secret; confirm a hand-written IDL via discriminator hashes + ix-build account metas + account coder round-trip instead.
 - [Shared token indexing](token-indexing.md) — token list = localStorage + Pinata registry (tag frostdexToken) + on-chain reserves; why not Metaplex.
+- [Solana token metadata](solana-token-metadata.md) — attach Metaplex CreateMetadataAccountV3 for name/logo in wallets; truncate name/symbol/uri by UTF-8 *bytes* (32/10/200), not chars, or Arabic/emoji breaks the create tx.

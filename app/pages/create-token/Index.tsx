@@ -12,6 +12,7 @@ import {
 import {
   isProgramConfigured,
   createTokenOnChain,
+  newMint,
   buyOnChain,
   sellOnChain,
   fetchCurveState,
@@ -780,12 +781,47 @@ export default function CreateTokenPage() {
       let initBuyTxSig = "";
       let vSol = VIRTUAL_SOL, vTokens = VIRTUAL_TOKENS;
       const history: Trade[] = [];
+      const createdAt = Date.now();
+
+      // On the real path we pre-generate the mint so its address can be pinned
+      // into the metadata JSON registry *and* referenced by the on-chain
+      // Metaplex metadata account (which carries the name + logo for wallets).
+      const chainMint = useChain ? newMint() : null;
+      mint = chainMint
+        ? chainMint.address
+        : `${walletAddress.slice(0,6)}${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+
+      // Pin metadata to IPFS with a registry tag (incl. the mint) so every
+      // visitor can discover this token — not just this browser. Done before the
+      // create tx so the on-chain metadata account can point at this URI. Non-fatal.
+      if (isPinataConfigured()) {
+        setCreateStatus("Saving token to the public registry…");
+        try {
+          metadataUri = await uploadJSONToIPFS(
+            {
+              name: name.trim(), symbol: symbol.trim().toUpperCase(),
+              description: description.trim(), image: imageData,
+              external_url: website.trim(),
+              extensions: { website: website.trim(), twitter: twitter.trim(), telegram: telegram.trim() },
+              attributes: [],
+            },
+            {
+              frostdexToken: "1", mint, creator: walletAddress, createdAt,
+              name: name.trim(), symbol: symbol.trim().toUpperCase(),
+            },
+          );
+        } catch { /* non-fatal */ }
+      }
 
       if (useChain) {
-        // ── REAL on-chain path: mint SPL token + initialize bonding curve ──
+        // ── REAL on-chain path: mint SPL token + metadata + bonding curve ──
         const res = await createTokenOnChain(
           {
             walletAddress,
+            mintKeypair: chainMint!.keypair,
+            name: name.trim(),
+            symbol: symbol.trim().toUpperCase(),
+            metadataUri,
             revokeMint: advOpts.revoke_mint,
             revokeFreeze: advOpts.revoke_freeze,
             immutableMetadata: advOpts.immutable_metadata,
@@ -825,30 +861,6 @@ export default function CreateTokenPage() {
           vTokens -= q.tokensOut;
           history.push({ type: "buy" as const, solAmount: initBuyAmt, tokenAmount: q.tokensOut, price: q.price, ts: Date.now(), wallet: shortAddr(walletAddress) });
         }
-        // Simulated mint address (real mint requires a deployed program)
-        mint = `${walletAddress.slice(0,6)}${Math.random().toString(36).slice(2,8).toUpperCase()}`;
-      }
-
-      // Pin metadata to IPFS with a registry tag (incl. the mint) so every
-      // visitor can discover this token — not just this browser. Non-fatal.
-      const createdAt = Date.now();
-      if (isPinataConfigured()) {
-        setCreateStatus("Saving token to the public registry…");
-        try {
-          metadataUri = await uploadJSONToIPFS(
-            {
-              name: name.trim(), symbol: symbol.trim().toUpperCase(),
-              description: description.trim(), image: imageData,
-              external_url: website.trim(),
-              extensions: { website: website.trim(), twitter: twitter.trim(), telegram: telegram.trim() },
-              attributes: [],
-            },
-            {
-              frostdexToken: "1", mint, creator: walletAddress, createdAt,
-              name: name.trim(), symbol: symbol.trim().toUpperCase(),
-            },
-          );
-        } catch { /* non-fatal */ }
       }
 
       const token: TokenData = {

@@ -19,6 +19,7 @@ import {
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
   Transaction,
+  TransactionInstruction,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import {
@@ -265,14 +266,99 @@ export async function fetchCurveState(mintAddress: string, walletAddress?: strin
   }
 }
 
-// ─── Create token: real SPL mint + initialize curve (+ fees + initial buy) ─────
+// ─── Metaplex Token Metadata (so name + logo show in Phantom / Solscan) ───────
+const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
+  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+);
+
+function metadataPDA(mint: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("metadata"), TOKEN_METADATA_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+    TOKEN_METADATA_PROGRAM_ID,
+  )[0];
+}
+
+function borshString(s: string): Buffer {
+  const data = Buffer.from(s, "utf8");
+  const len = Buffer.alloc(4);
+  len.writeUInt32LE(data.length, 0);
+  return Buffer.concat([len, data]);
+}
+
+// Token Metadata enforces *byte* limits, not character counts. Truncate on
+// UTF-8 byte length at code-point boundaries so multibyte names (Arabic, CJK,
+// emoji) can never overflow and make CreateMetadataAccountV3 fail on-chain.
+function truncateUtf8(s: string, maxBytes: number): string {
+  if (Buffer.byteLength(s, "utf8") <= maxBytes) return s;
+  let out = "";
+  for (const ch of s) {
+    if (Buffer.byteLength(out + ch, "utf8") > maxBytes) break;
+    out += ch;
+  }
+  return out;
+}
+
+// Hand-built CreateMetadataAccountV3 instruction (avoids pulling the whole
+// mpl-token-metadata package). Token Metadata enforces name ≤ 32, symbol ≤ 10,
+// uri ≤ 200 bytes — we truncate (byte-safe) to stay within those limits.
+function createMetadataV3Ix(args: {
+  mint: PublicKey;
+  authority: PublicKey; // mint authority + payer + update authority (the creator)
+  name: string;
+  symbol: string;
+  uri: string;
+  isMutable: boolean;
+}): TransactionInstruction {
+  const sellerFee = Buffer.alloc(2);
+  sellerFee.writeUInt16LE(0, 0);
+  const data = Buffer.concat([
+    Buffer.from([33]), // CreateMetadataAccountV3 discriminator
+    borshString(truncateUtf8(args.name, 32)),
+    borshString(truncateUtf8(args.symbol, 10)),
+    borshString(truncateUtf8(args.uri, 200)),
+    sellerFee,
+    Buffer.from([0]), // creators: None
+    Buffer.from([0]), // collection: None
+    Buffer.from([0]), // uses: None
+    Buffer.from([args.isMutable ? 1 : 0]),
+    Buffer.from([0]), // collectionDetails: None
+  ]);
+  return new TransactionInstruction({
+    programId: TOKEN_METADATA_PROGRAM_ID,
+    keys: [
+      { pubkey: metadataPDA(args.mint), isSigner: false, isWritable: true },
+      { pubkey: args.mint, isSigner: false, isWritable: false },
+      { pubkey: args.authority, isSigner: true, isWritable: false }, // mint authority
+      { pubkey: args.authority, isSigner: true, isWritable: true }, // payer
+      { pubkey: args.authority, isSigner: false, isWritable: false }, // update authority
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+}
+
 export interface CreateTokenOnChainParams {
   walletAddress: string;
   revokeMint?: boolean;
   revokeFreeze?: boolean;
   immutableMetadata?: boolean;
   initialBuySol?: number; // 0 = no initial buy
+  // Metaplex on-chain metadata (name + symbol show in wallets/explorers; uri
+  // points at the pinned JSON that carries the image). Optional so the template
+  // still works if a caller omits them.
+  mintKeypair?: Keypair;
+  name?: string;
+  symbol?: string;
+  metadataUri?: string;
 }
+// Pre-generate the mint so the caller can pin the metadata JSON (with the mint
+// in its registry keyvalues) *before* the create transaction references its URI.
+export function newMint(): { keypair: Keypair; address: string } {
+  const keypair = Keypair.generate();
+  return { keypair, address: keypair.publicKey.toBase58() };
+}
+
 export interface CreateTokenOnChainResult {
   mint: string;
   initSignature: string;
@@ -288,7 +374,7 @@ export async function createTokenOnChain(
   const authority = new PublicKey(params.walletAddress);
   const feeRecipient = new PublicKey(PLATFORM_FEE_WALLET);
 
-  const mintKeypair = Keypair.generate();
+  const mintKeypair = params.mintKeypair ?? Keypair.generate();
   const mint = mintKeypair.publicKey;
   const curvePda = bondingCurvePDA(mint, programId);
   const reservesPda = solReservesPDA(curvePda, programId);
@@ -303,6 +389,23 @@ export async function createTokenOnChain(
     programId: TOKEN_PROGRAM_ID,
   });
   const initMintIx = createInitializeMint2Instruction(mint, DECIMALS, authority, authority, TOKEN_PROGRAM_ID);
+
+  // Attach Metaplex metadata so the token shows its name + logo in Phantom and
+  // Solscan (built right after the mint is initialized, before the curve init).
+  const preIxs = [createMintIx, initMintIx];
+  if (params.name && params.symbol) {
+    onStatus("Attaching token metadata (name + logo)…");
+    preIxs.push(
+      createMetadataV3Ix({
+        mint,
+        authority,
+        name: params.name,
+        symbol: params.symbol,
+        uri: params.metadataUri || "",
+        isMutable: !params.immutableMetadata,
+      }),
+    );
+  }
 
   const hasAdvanced = !!(params.revokeMint || params.revokeFreeze || params.immutableMetadata);
 
@@ -319,7 +422,7 @@ export async function createTokenOnChain(
       tokenProgram: TOKEN_PROGRAM_ID,
       rent: SYSVAR_RENT_PUBKEY,
     })
-    .preInstructions([createMintIx, initMintIx])
+    .preInstructions(preIxs)
     .signers([mintKeypair]);
 
   if (hasAdvanced) {
