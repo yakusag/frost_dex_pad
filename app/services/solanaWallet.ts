@@ -102,8 +102,25 @@ export function detectProvider(id: string): any | null {
         : fromProviders((p) => p?.isBackpack);
     case "coinbase":
       return w.coinbaseSolana ?? (w.solana?.isCoinbaseWallet ? w.solana : fromProviders((p) => p?.isCoinbaseWallet));
-    case "trust":
-      return w.trustwallet?.solana ?? (w.solana?.isTrust ? w.solana : fromProviders((p) => p?.isTrust));
+    case "trust": {
+      // Extension (desktop): window.trustwallet.solana or window.trustWallet.solana
+      if (w.trustwallet?.solana) return w.trustwallet.solana;
+      if (w.trustWallet?.solana) return w.trustWallet.solana;
+      // Explicit flag on window.solana
+      if (w.solana?.isTrust) return w.solana;
+      if (w.solana?.isTrustWallet) return w.solana;
+      const trustProvider = fromProviders((p: any) => p?.isTrust || p?.isTrustWallet);
+      if (trustProvider) return trustProvider;
+      // Trust Wallet mobile in-app browser injects a generic window.solana without
+      // any isTrust flag. Detect via user agent so we don't accidentally claim
+      // window.solana when the user is in a different wallet browser.
+      if (
+        typeof navigator !== "undefined" &&
+        /TrustWallet|Trust%20Wallet/i.test(navigator.userAgent) &&
+        w.solana?.connect
+      ) return w.solana;
+      return null;
+    }
     case "brave":
       return w.braveSolana ?? (w.solana?.isBraveWallet ? w.solana : fromProviders((p) => p?.isBraveWallet));
     default:

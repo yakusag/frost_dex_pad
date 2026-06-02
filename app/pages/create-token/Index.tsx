@@ -223,14 +223,38 @@ function TokenCard({ token, onClick, onDelete }: { token: TokenData; onClick: ()
   );
 }
 
-// ─── PriceChart (pump.fun-style area chart built from trade history) ───────────
+// ─── PriceChart (real-time bonding curve area chart) ─────────────────────────
 function PriceChart({ token }: { token: TokenData }) {
+  const [tick, setTick] = useState(0);
+  // Pulse the live dot every second
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const current = getPrice(token.virtualSol, token.virtualTokens);
   const safeCurrent = Number.isFinite(current) && current > 0 ? current : 1;
-  const chrono = [...token.tradeHistory].reverse();         // oldest → newest
+  const chrono = [...token.tradeHistory].reverse(); // oldest → newest
   const prices = chrono.map(t => t.price).filter(p => p > 0 && isFinite(p));
-  let series = [...prices, safeCurrent];                     // all entries are finite & > 0
-  if (series.length < 2) series = [safeCurrent, safeCurrent];
+
+  // Build the actual trade series (with current price appended)
+  let series = [...prices, safeCurrent];
+
+  // When there are no trades yet, synthesise a bonding curve projection:
+  // show 20 evenly-spaced price points from VIRTUAL_SOL to GRADUATION_TARGET.
+  const isProjected = series.length < 2;
+  if (isProjected) {
+    const steps = 20;
+    series = [];
+    for (let i = 0; i <= steps; i++) {
+      const vSol = VIRTUAL_SOL + (GRADUATION_TARGET - VIRTUAL_SOL) * (i / steps);
+      // Constant-product: virtualTokens shrinks as vSol grows.
+      const k = VIRTUAL_SOL * VIRTUAL_TOKENS;
+      const vTok = k / vSol;
+      series.push(getPrice(vSol, vTok));
+    }
+  }
+
   const W = 320, H = 130, PAD = 8;
   const min = Math.min(...series), max = Math.max(...series);
   const range = (max - min) || max || 1;
@@ -244,11 +268,33 @@ function PriceChart({ token }: { token: TokenData }) {
   const last = pts[pts.length - 1];
   const area = `${line} L${last[0].toFixed(1)},${H - PAD} L${pts[0][0].toFixed(1)},${H - PAD} Z`;
   const up = series[series.length - 1] >= series[0];
-  const color = up ? "#0ecb81" : "#f6465d";
+  const color = isProjected ? "#38e0f8" : (up ? "#0ecb81" : "#f6465d");
   const gid = "pc" + token.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 10);
+  const dotOpacity = (tick % 2 === 0) ? 1 : 0.3; // blink live indicator
+  const priceDelta = prices.length >= 2 ? ((prices[prices.length - 1] - prices[0]) / prices[0] * 100) : null;
+
   return (
-    <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: 10, marginBottom: 12 }}>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", height: 150, display: "block" }}>
+    <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, padding: "10px 10px 6px", marginBottom: 12 }}>
+      {/* Chart header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, paddingLeft: 2, paddingRight: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#0ecb81", opacity: dotOpacity, transition: "opacity 0.3s" }} />
+          <span style={{ fontSize: 10, color: "rgba(180,190,210,0.5)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>
+            {isProjected ? "Curve Projection" : "Live Price"}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {priceDelta !== null && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: priceDelta >= 0 ? "#0ecb81" : "#f6465d" }}>
+              {priceDelta >= 0 ? "+" : ""}{priceDelta.toFixed(1)}%
+            </span>
+          )}
+          <span style={{ fontSize: 10, color: "rgba(56,224,248,0.7)", fontFamily: "monospace" }}>
+            {safeCurrent.toFixed(9)} SOL
+          </span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", height: 140, display: "block" }}>
         <defs>
           <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.35" />
@@ -259,9 +305,18 @@ function PriceChart({ token }: { token: TokenData }) {
           <line key={g} x1={PAD} x2={W - PAD} y1={PAD + (H - PAD * 2) * g} y2={PAD + (H - PAD * 2) * g} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
         ))}
         <path d={area} fill={`url(#${gid})`} />
-        <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <path d={line} fill="none" stroke={color} strokeWidth="2"
+          strokeDasharray={isProjected ? "5 3" : undefined}
+          strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        {/* Live pulse dot at current price */}
+        <circle cx={last[0]} cy={last[1]} r="5" fill={color} opacity="0.2" />
         <circle cx={last[0]} cy={last[1]} r="3.5" fill={color} />
       </svg>
+      {isProjected && (
+        <div style={{ fontSize: 9, color: "rgba(180,190,210,0.3)", textAlign: "center", paddingBottom: 2 }}>
+          Projected curve · chart fills with real trades
+        </div>
+      )}
     </div>
   );
 }
@@ -276,6 +331,27 @@ function TradeModal({ token, onClose, onUpdate, walletAddress, walletCanSign }: 
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+
+  // Poll chain state every 15 s to keep the chart and stats live.
+  useEffect(() => {
+    if (!token.mint || token.mint.length < 32) return;
+    const poll = async () => {
+      try {
+        const state = await fetchCurveState(token.mint);
+        if (!state) return;
+        onUpdate({
+          ...token,
+          virtualSol: state.virtualSol,
+          virtualTokens: state.virtualTokens,
+          graduated: state.complete || state.virtualSol >= GRADUATION_TARGET,
+          marketCap: getMcap(state.virtualSol, state.virtualTokens),
+        });
+      } catch { /* silent — poll again next cycle */ }
+    };
+    const id = setInterval(poll, 15_000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token.mint]);
 
   const solAmount = parseFloat(amount) || 0;
   const buyQ  = getBuyQuote(token.virtualSol, token.virtualTokens, solAmount, PLATFORM_FEE_BPS);
@@ -583,6 +659,8 @@ export default function CreateTokenPage() {
   const [createSuccess, setCreateSuccess] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const launchBtnRef = useRef<HTMLButtonElement>(null);
+  const [justConnected, setJustConnected] = useState(false);
 
   // Fee totals
   const advFee       = Object.entries(advOpts).filter(([,v])=>v).reduce((s,[k])=>s+ADVANCED_FEES[k].fee, 0);
@@ -624,6 +702,13 @@ export default function CreateTokenPage() {
       setWalletName(meta?.name ?? "");
       setWalletCanSign(true);
       getWalletBalance(addr).then(setWalletBalance);
+      // Scroll to launch button and pulse it so user knows they can sign immediately.
+      setJustConnected(true);
+      setTimeout(() => {
+        launchBtnRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        launchBtnRef.current?.focus();
+      }, 150);
+      setTimeout(() => setJustConnected(false), 2500);
     } catch (e: any) {
       setCreateError(e?.message || "Failed to connect wallet");
     } finally { setWalletLoading(false); }
@@ -1146,13 +1231,39 @@ export default function CreateTokenPage() {
 
             {/* Create button */}
             {!walletAddress ? (
-              <button onClick={handleConnectWallet} disabled={walletLoading} style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "none", fontWeight: 900, fontSize: 16, cursor: walletLoading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#38e0f8,#0ecb81)", color: "#0b0e11", boxShadow: "0 0 30px rgba(56,224,248,0.2)" }}>
+              <button
+                ref={launchBtnRef}
+                onClick={handleConnectWallet}
+                disabled={walletLoading}
+                style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "none", fontWeight: 900, fontSize: 16, cursor: walletLoading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#38e0f8,#0ecb81)", color: "#0b0e11", boxShadow: "0 0 30px rgba(56,224,248,0.2)" }}
+              >
                 {walletLoading ? "Connecting…" : "🚀 Launch Your Token Now"}
               </button>
             ) : (
-              <button onClick={handleCreate} disabled={creating} style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "none", fontWeight: 900, fontSize: 16, cursor: creating ? "not-allowed" : "pointer", background: creating ? "rgba(56,224,248,0.15)" : "linear-gradient(135deg,#38e0f8 0%,#0ecb81 100%)", color: "#0b0e11", boxShadow: "0 0 30px rgba(56,224,248,0.2)", opacity: creating ? 0.8 : 1 }}>
-                {creating ? "Launching…" : "🚀 Launch Token"}
-              </button>
+              <>
+                {justConnected && (
+                  <div style={{ marginBottom: 10, padding: "10px 14px", background: "rgba(14,203,129,0.1)", border: "1px solid rgba(14,203,129,0.35)", borderRadius: 10, color: "#0ecb81", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
+                    ✅ Wallet connected — click below to sign & launch
+                  </div>
+                )}
+                <button
+                  ref={launchBtnRef}
+                  onClick={handleCreate}
+                  disabled={creating}
+                  style={{
+                    width: "100%", padding: "16px 0", borderRadius: 14, border: justConnected ? "2px solid #0ecb81" : "none",
+                    fontWeight: 900, fontSize: 16, cursor: creating ? "not-allowed" : "pointer",
+                    background: creating ? "rgba(56,224,248,0.15)" : "linear-gradient(135deg,#38e0f8 0%,#0ecb81 100%)",
+                    color: "#0b0e11",
+                    boxShadow: justConnected ? "0 0 40px rgba(14,203,129,0.5)" : "0 0 30px rgba(56,224,248,0.2)",
+                    opacity: creating ? 0.8 : 1,
+                    transform: justConnected ? "scale(1.02)" : "scale(1)",
+                    transition: "all 0.3s",
+                  }}
+                >
+                  {creating ? "Launching…" : "🚀 Launch Token"}
+                </button>
+              </>
             )}
 
             <div style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: "rgba(180,190,210,0.25)" }}>
