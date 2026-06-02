@@ -35,12 +35,10 @@ const VIRTUAL_SOL         = 30;
 const VIRTUAL_TOKENS      = 1_000_000_000_000;
 const GRADUATION_TARGET   = 85;
 const STORAGE_KEY         = "frostdex_tokens_v1";
-// RPC endpoint — tries VITE_SOLANA_RPC first, then falls back through free public RPCs.
+// RPC endpoint — NowNodes primary, falls back to public RPCs only if needed.
 const SOLANA_RPC_LIST: string[] = [
   (import.meta as any).env?.VITE_SOLANA_RPC,
   "https://api.mainnet-beta.solana.com",
-  "https://rpc.ankr.com/solana",
-  "https://solana.public-rpc.com",
 ].filter(Boolean) as string[];
 
 function makeConn(rpc: string) {

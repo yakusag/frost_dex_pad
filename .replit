@@ -75,6 +75,7 @@ publicDir = "build/client"
 
 [userenv.shared]
 VITE_PROGRAM_ID = "CqzUoSdSQPpcTJXhiTgAdupoaJ9yRTjbVXVfC41Aqckm"
+VITE_SOLANA_RPC = "https://sol.nownodes.io/050b7243-6502-4f3c-8de3-4438f7ddf8a0"
 
 [userenv.development]
 
