@@ -74,6 +74,7 @@ publicDir = "build/client"
 [userenv]
 
 [userenv.shared]
+VITE_PROGRAM_ID = "CqzUoSdSQPpcTJXhiTgAdupoaJ9yRTjbVXVfC41Aqckm"
 
 [userenv.development]
 
