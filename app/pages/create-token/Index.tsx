@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import QRCode from "qrcode.react";
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { uploadImageToIPFS, uploadJSONToIPFS, isPinataConfigured } from "@/services/ipfs";
 import {
@@ -10,7 +11,6 @@ import {
 } from "@/services/bondingCurveProgram";
 import {
   connectWalletById,
-  detectInstalledWallets,
   detectWallets,
   getActiveProvider,
   isMobile,
@@ -392,46 +392,74 @@ function WalletPickerModal({ onClose, onSelect }: {
   const mobile = isMobile();
   const wallets: DetectedWallet[] = detectWallets();
   const anyInstalled = wallets.some(w => w.provider);
+  const [showQR, setShowQR] = useState(false);
+  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ background: "#0f1117", border: "1px solid rgba(56,224,248,0.2)", borderRadius: 20, padding: 24, width: "100%", maxWidth: 380 }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: 18 }}>
-          <div style={{ fontWeight: 800, fontSize: 18, color: "#eaecef" }}>Connect a wallet</div>
+          <div style={{ fontWeight: 800, fontSize: 18, color: "#eaecef" }}>{showQR ? "Scan to connect" : "Connect a wallet"}</div>
           <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: "rgba(180,190,210,0.5)", fontSize: 22, cursor: "pointer" }}>×</button>
         </div>
 
-        {!anyInstalled && (
-          <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(56,224,248,0.06)", border: "1px solid rgba(56,224,248,0.18)", borderRadius: 8, color: "rgba(180,190,210,0.7)", fontSize: 12 }}>
-            {mobile
-              ? "Tap your wallet to open this page inside its app, then connect there."
-              : "No Solana wallet detected. Install one of these browser extensions, then reload."}
+        {showQR ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+            <div style={{ background: "#fff", padding: 14, borderRadius: 14 }}>
+              <QRCode value={pageUrl} size={196} level="M" fgColor="#0b0e11" bgColor="#ffffff" />
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(180,190,210,0.7)", textAlign: "center", lineHeight: 1.5 }}>
+              Open your phone's camera or your mobile wallet's QR scanner and scan this code to open the launchpad on your phone, then connect there.
+            </div>
+            <button onClick={() => setShowQR(false)} style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: "1px solid rgba(56,224,248,0.25)", background: "rgba(56,224,248,0.06)", color: "#eaecef", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              ← Back to wallets
+            </button>
           </div>
-        )}
+        ) : (
+          <>
+            {!anyInstalled && (
+              <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(56,224,248,0.06)", border: "1px solid rgba(56,224,248,0.18)", borderRadius: 8, color: "rgba(180,190,210,0.7)", fontSize: 12 }}>
+                {mobile
+                  ? "Tap your wallet to open this page inside its app, then connect there."
+                  : "No Solana wallet detected. Install one of these browser extensions, or scan the QR code to connect from your phone."}
+              </div>
+            )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {wallets.map(w => {
-            const installed = !!w.provider;
-            const canDeepLink = mobile && !!w.deepLink;
-            return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {wallets.map(w => {
+                const installed = !!w.provider;
+                const canDeepLink = mobile && !!w.deepLink;
+                return (
+                  <button
+                    key={w.id}
+                    onClick={() => {
+                      if (installed) { onSelect(w.id); return; }
+                      if (canDeepLink) { openInWalletApp(w.id); return; }
+                      window.open(w.install, "_blank", "noopener");
+                    }}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: installed ? "rgba(56,224,248,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${installed ? "rgba(56,224,248,0.25)" : "rgba(255,255,255,0.06)"}`, borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
+                  >
+                    <span style={{ fontSize: 22 }}>{w.icon}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{w.name}</span>
+                    <span style={{ fontSize: 11, color: installed ? "#0ecb81" : "rgba(180,190,210,0.45)" }}>
+                      {installed ? "Detected" : canDeepLink ? "Open app" : "Install"}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {/* Connect a mobile wallet on another device by scanning a QR code. */}
               <button
-                key={w.id}
-                onClick={() => {
-                  if (installed) { onSelect(w.id); return; }
-                  if (canDeepLink) { openInWalletApp(w.id); return; }
-                  window.open(w.install, "_blank", "noopener");
-                }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: installed ? "rgba(56,224,248,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${installed ? "rgba(56,224,248,0.25)" : "rgba(255,255,255,0.06)"}`, borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
+                onClick={() => setShowQR(true)}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
               >
-                <span style={{ fontSize: 22 }}>{w.icon}</span>
-                <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{w.name}</span>
-                <span style={{ fontSize: 11, color: installed ? "#0ecb81" : "rgba(180,190,210,0.45)" }}>
-                  {installed ? "Detected" : canDeepLink ? "Open app" : "Install"}
-                </span>
+                <span style={{ fontSize: 22 }}>📱</span>
+                <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>Mobile wallet</span>
+                <span style={{ fontSize: 11, color: "rgba(180,190,210,0.45)" }}>Scan QR</span>
               </button>
-            );
-          })}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -445,6 +473,7 @@ export default function CreateTokenPage() {
   const [walletLoading, setWalletLoading]   = useState(false);
   const [walletName, setWalletName]         = useState("");
   const [walletCanSign, setWalletCanSign]   = useState(false);
+  const [addrCopied, setAddrCopied]         = useState(false);
 
   // Solana wallet picker — the launchpad connects directly so we can deep-link
   // straight into the user's wallet app on mobile (e.g. open Phantom and sign).
@@ -491,15 +520,25 @@ export default function CreateTokenPage() {
   const initBuyFee   = initBuyAmt * INITIAL_BUY_FEE_BPS / 10000;
   const totalSol     = advFee + initBuyAmt;
 
-  // Open the wallet picker (or connect straight away if only one is installed).
+  // Always open the picker so the user explicitly chooses their wallet. We never
+  // auto-connect a single detected wallet: in Brave that meant the bare
+  // `window.solana` (Brave Wallet) got connected automatically without the user
+  // ever asking for it. The user picks from the list every time.
   const handleConnectWallet = () => {
     setCreateError("");
-    const installed = detectInstalledWallets();
-    if (installed.length === 1) {
-      handleSelectWallet(installed[0].id);
-      return;
-    }
     setPickerOpen(true);
+  };
+
+  // Copy the connected wallet address to the clipboard, with brief "✓" feedback.
+  const handleCopyAddress = async () => {
+    if (!walletAddress) return;
+    try {
+      await navigator.clipboard.writeText(walletAddress);
+      setAddrCopied(true);
+      setTimeout(() => setAddrCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — ignore */
+    }
   };
 
   // Connect to the chosen wallet. An injected provider can always sign here.
@@ -685,7 +724,14 @@ export default function CreateTokenPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#0ecb81" }} />
             {walletName && <span style={{ fontSize: 12, color: "rgba(180,190,210,0.5)" }}>{walletName}</span>}
-            <span style={{ fontSize: 13, color: "rgba(180,190,210,0.7)", fontFamily: "monospace" }}>{shortAddr(walletAddress)}</span>
+            <button
+              onClick={handleCopyAddress}
+              title={addrCopied ? "Copied!" : "Copy address"}
+              style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: 13, color: "rgba(180,190,210,0.7)", fontFamily: "monospace" }}
+            >
+              <span>{shortAddr(walletAddress)}</span>
+              <span style={{ fontSize: 12, color: addrCopied ? "#0ecb81" : "rgba(180,190,210,0.5)" }}>{addrCopied ? "✓" : "⧉"}</span>
+            </button>
             <span style={{ fontSize: 12, color: "rgba(56,224,248,0.7)", background: "rgba(56,224,248,0.08)", borderRadius: 6, padding: "3px 8px" }}>{walletBalance.toFixed(3)} SOL</span>
           </div>
         ) : (

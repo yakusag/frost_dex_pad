@@ -1,0 +1,86 @@
+أهلاً، فهمت. أنت تستخدم **Vite**، و تريد حلاً لمشكلة "Connect Wallet" التي تظهر رسالة Brave عند النقر عليها، وتريد أن يدعم الموقع جميع محافظ Solana (Phantom, Solflare, Backpack...) على الهاتف والكمبيوتر، مع خيار المسح الضوئي (QR) للموبايل.
+
+إليك الـ **Prompt النهائي** الذي تنسخينه وتعطينه لـ AI Agent في Replit، وهو مخصص لـ **Vite** فقط.
+
+---
+
+## ✅ الـ Prompt النهائي لـ AI Agent (لـ Vite)
+
+```markdown
+مشروعي مبني بـ **Vite + React + TypeScript + Tailwind CSS** (ليس Next.js). عندي صفحة `/create-token` تحتوي على زر "Connect Wallet". حالياً، في متصفح Brave، يظهر طلب لاستخدام محفظة Brave المدمجة، وهذا غير مرغوب.
+
+أريد منك تعديل الكود بالكامل ليكون دعم المحافظ على النحو التالي:
+
+## المطلوب:
+
+1.  **دعم جميع محافظ Solana الشائعة**:
+    - Phantom (للكمبيوتر والهاتف)
+    - Solflare
+    - Backpack
+    - Coinbase Wallet
+    - (يمكن إضافة Brave Wallet كخيار منفصل في القائمة، لكن لا تجعلها تظهر تلقائياً)
+
+2.  **منع تدخل المتصفح**:
+    - استخدم `@solana/wallet-adapter-react` و `@solana/wallet-adapter-wallets` و `@solana/wallet-adapter-react-ui`.
+    - لا تدع متصفح Brave يفتح محفظته تلقائياً. المستخدم هو من يختار المحفظة من قائمة منسدلة.
+
+3.  **دعم الهاتف (Mobile)**:
+    - على الهاتف، يجب أن تعمل القائمة بشكل جيد (responsive).
+    - أضف خيار **"Scan QR Code"** باستخدام `WalletConnect` أو أي مكتبة تسمح للمستخدم بمسح كود QR من محفظته على جهاز آخر.
+
+4.  **تخصيص زر الاتصال**:
+    - بدلاً من استخدام `WalletMultiButton` الجاهز، قم بتخصيص زر بتصميم Tailwind CSS (أسود / أخضر / أزرق) يتناسب مع واجهة FrostDex.
+    - بعد الاتصال، يظهر عنوان المحفظة مختصراً (مثل `EPAZ...iEzZ`) مع إمكانية نسخه.
+    - يظهر إشعار "Platform fees → [عنوان المحفظة]" أسفل الزر أو في مكان مناسب.
+
+5.  **إعدادات Vite المطلوبة**:
+    - تأكد من تثبيت المكتبات: `npm install @solana/wallet-adapter-react @solana/wallet-adapter-wallets @solana/wallet-adapter-react-ui @solana/web3.js @solana/wallet-adapter-base`
+    - تأكد من أن ملف `vite.config.ts` يحتوي على `vite-plugin-node-polyfills` لتفادي أخطاء `Buffer`.
+    - في `src/main.tsx`، أضف `import { Buffer } from 'buffer'; window.Buffer = Buffer;`.
+
+6.  **التكامل مع الكود الموجود**:
+    - لا تغير في هيكلة الملفات الرئيسية، فقط قم بإنشاء أو تعديل مكونات ربط المحفظة.
+    - استخدم `useWallet` في الصفحات التي تحتاج إلى توقيع المعاملات (مثل صفحة إنشاء التوكن).
+
+## مثال مبسط لما أتوقعه منك:
+
+```tsx
+// src/components/WalletConnector.tsx
+import { useWallet, WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { PhantomWalletAdapter, SolflareWalletAdapter, BackpackWalletAdapter } from '@solana/wallet-adapter-wallets';
+
+const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter(), new BackpackWalletAdapter()];
+
+function App() {
+  return (
+    <WalletProvider wallets={wallets} autoConnect>
+      <WalletModalProvider>
+        <WalletMultiButton />
+      </WalletModalProvider>
+    </WalletProvider>
+  );
+}
+```
+
+لكن أريد **تخصيص الزر**، لذا يمكنك استخدام `useWalletModal` و `useWallet` لبناء زر مخصص.
+
+## مخرجاتك:
+- قم بإنشاء ملف `src/components/WalletConnector.tsx` يحتوي على زر اتصال مخصص مع القائمة المنسدلة.
+- قم بتعديل `src/pages/CreateToken.tsx` لاستخدام هذا المكون بدلاً من أي زر موجود.
+- تأكد من أن الكود يعمل بنجاح مع `npm run dev` بدون أخطاء.
+
+ابدأ فوراً.
+```
+
+---
+
+## 🧠 كيف تستخدمينه؟
+
+1. **انسخي الـ Prompt أعلاه**.
+2. **افتحي مشروع Vite في Replit** (أو في أي محرر تفضلينه).
+3. **أعطيه لـ AI Agent** (مثل Replit AI، أو أي مساعد برمجي).
+4. **سيبيه يعدل الكود** ويضيف المكونات اللازمة.
+5. **جربي بنفسك** (على هاتفك أو كمبيوترك) لتتأكدي من أن زر "Connect Wallet" يفتح قائمة المحافظ ولا يتدخل Brave.
+
+إذا بقي أي مشكلة، أرسلي لي الصورة الجديدة وسأعدل الـ Prompt. 🔥
