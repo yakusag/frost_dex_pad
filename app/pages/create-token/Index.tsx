@@ -587,12 +587,36 @@ export default function CreateTokenPage() {
     (async () => {
       setWalletLoading(true);
       setCreateError("");
-      const provider = await waitForProvider(id);
-      if (provider) {
-        await handleSelectWallet(id);
-      } else {
+      // Phantom's in-app browser can take several seconds to inject its provider
+      // after the deep link opens, so wait longer than the default.
+      const provider = await waitForProvider(id, 15000);
+      if (!provider) {
         setWalletLoading(false);
-        setCreateError("Couldn't detect your wallet in this in-app browser. Tap “Connect Wallet” to try again.");
+        setPickerOpen(true);
+        setCreateError("Couldn't detect your wallet yet. Tap your wallet below to finish connecting.");
+        return;
+      }
+      // Try to auto-connect, but mobile in-app browsers frequently require the
+      // connect prompt to be triggered by a real tap. If the silent attempt
+      // doesn't resolve quickly, open the picker so the user can tap their
+      // (now "Detected") wallet — that tap is the user gesture the wallet needs.
+      let settled = false;
+      const fallback = setTimeout(() => {
+        if (!settled) {
+          setWalletLoading(false);
+          setPickerOpen(true);
+          setCreateError("Tap your wallet below to finish connecting.");
+        }
+      }, 5000);
+      try {
+        await handleSelectWallet(id);
+        settled = true;
+      } catch {
+        settled = true;
+        setWalletLoading(false);
+        setPickerOpen(true);
+      } finally {
+        clearTimeout(fallback);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
