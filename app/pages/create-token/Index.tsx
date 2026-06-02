@@ -80,6 +80,27 @@ const shortAddr = (a: string) => a ? `${a.slice(0,4)}…${a.slice(-4)}` : "";
 const fmtAge = (ts: number) => { const s = (Date.now()-ts)/1000|0; return s<60?`${s}s`:s<3600?`${s/60|0}m`:s<86400?`${s/3600|0}h`:`${s/86400|0}d`; };
 const fmtNum = (n: number) => n>=1e6?`${(n/1e6).toFixed(2)}M`:n>=1e3?`${(n/1e3).toFixed(1)}K`:`${n.toFixed(2)}`;
 
+// Turn a raw wallet/RPC error into a clear, actionable message. Handles the most
+// common live-site failures: a rate-limited/forbidden public RPC (403), an
+// out-of-funds wallet, and an unreachable on-chain program (wrong network).
+function friendlyTxError(e: any): string {
+  let msg = "";
+  if (e?.message) msg = String(e.message);
+  else if (Array.isArray(e?.logs) && e.logs.length) msg = e.logs.join("\n");
+  else if (typeof e === "string") msg = e;
+  else { try { msg = JSON.stringify(e); } catch { /* ignore */ } }
+  if (/\b403\b|access forbidden|forbidden|failed to get recent blockhash/i.test(msg)) {
+    return "Solana RPC refused the request (403). The public endpoint is rate-limited. Set VITE_SOLANA_RPC to a dedicated Devnet RPC (e.g. Helius or QuickNode) in your deployment settings and redeploy.";
+  }
+  if (/insufficient|0x1\b|debit an account|prior credit/i.test(msg)) {
+    return "Not enough SOL in your wallet. On Devnet, get free SOL from https://faucet.solana.com (make sure your wallet is set to Devnet).";
+  }
+  if (/could not find|not found|account does not exist|invalid program/i.test(msg)) {
+    return "On-chain program not reachable. Make sure the site's RPC points to the same network where the program is deployed (Devnet).";
+  }
+  return msg || "Transaction failed. Open your browser console for details.";
+}
+
 // ─── Wallet helpers ───────────────────────────────────────────────────────────
 // Connect / sign / send all route through the currently selected provider
 // (Phantom, Solflare, Backpack, Coinbase, Brave). See services/solanaWallet.ts.
@@ -269,7 +290,7 @@ function TradeModal({ token, onClose, onUpdate, walletAddress, walletCanSign }: 
       saveTokens(tokens);
       onUpdate(t);
       setAmount("0.1");
-    } catch (e: any) { setError(e.message || "Trade failed"); }
+    } catch (e: any) { console.error("Trade failed:", e); setError(friendlyTxError(e)); }
     finally { setLoading(false); }
   };
 
@@ -756,17 +777,7 @@ export default function CreateTokenPage() {
       setTimeout(() => { setTab("trade"); setCreateSuccess(""); }, 2500);
     } catch (e: any) {
       console.error("Launch token failed:", e);
-      let msg = "";
-      if (e?.message) msg = String(e.message);
-      else if (Array.isArray(e?.logs) && e.logs.length) msg = e.logs.join("\n");
-      else if (typeof e === "string") msg = e;
-      else { try { msg = JSON.stringify(e); } catch { /* ignore */ } }
-      if (/insufficient|0x1\b|debit an account|prior credit/i.test(msg)) {
-        msg = "Not enough SOL in your wallet. On Devnet, get free SOL from https://faucet.solana.com (make sure Phantom is set to Devnet).";
-      } else if (/could not find|not found|account does not exist|invalid program/i.test(msg)) {
-        msg = "On-chain program not reachable. Check that the site's RPC points to the same network where the program is deployed (Devnet).";
-      }
-      setCreateError(msg || "Failed to launch token (unknown error). Open your browser console for details.");
+      setCreateError(friendlyTxError(e));
     } finally { setCreating(false); setCreateStatus(""); }
   };
 
