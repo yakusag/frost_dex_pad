@@ -1,4 +1,2 @@
-# Memory index
-
-- [Wallet provider detection](wallet-provider-detection.md) — Brave spoofs Phantom's `isPhantom`; resolve Phantom via `window.phantom.solana` and deep-link on mobile.
-- [Bonding curve program deploy](bonding-curve-deploy.md) — program in lib.rs is NOT deployed to mainnet; needs user's funded deployer; fee_recipient is passed at runtime (already the admin wallet).
+- [Vercel deploy env & API routes](vercel-deploy.md) — production-only failures usually mean a Vercel env var is missing (Replit secrets don't carry over); POST needs an `api/*` serverless function or the SPA catch-all returns 405.
+- [Solana wallet detection](wallet-detection.md) — only trust each wallet's dedicated namespace (e.g. `window.phantom.solana`), never bare `window.solana`, because Brave spoofs `isPhantom`.

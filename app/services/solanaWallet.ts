@@ -78,12 +78,13 @@ export function detectProvider(id: string): any | null {
   const w = window as any;
   switch (id) {
     case "phantom":
-      // Brave Wallet spoofs `isPhantom` on the bare `window.solana`, so resolving
-      // Phantom there connects Brave by mistake. Prefer Phantom's own
-      // `window.phantom.solana` namespace and never accept a Brave provider.
-      return w.phantom?.solana?.isPhantom ? w.phantom.solana
-        : (w.solana?.isPhantom && !w.solana?.isBraveWallet) ? w.solana
-        : fromProviders((p) => p?.isPhantom && !p?.isBraveWallet);
+      // Only trust Phantom's own `window.phantom.solana` namespace. Brave (and
+      // some other wallets) spoof `isPhantom` on the bare `window.solana`, so
+      // accepting that would connect the wrong wallet — on mobile Brave this
+      // hijacked the "Phantom" choice and connected Brave instead. When the real
+      // namespace is absent (e.g. Phantom not installed in this browser), return
+      // null so the picker offers the mobile "Open app" deep link into Phantom.
+      return w.phantom?.solana?.isPhantom ? w.phantom.solana : null;
     case "solflare":
       return w.solflare?.isSolflare ? w.solflare
         : w.solana?.isSolflare ? w.solana
