@@ -22,7 +22,7 @@ export async function uploadImageToIPFS(
     return new Promise((res, rej) => {
       const r = new FileReader();
       r.onload = () => res(r.result as string);
-      r.onerror = rej;
+      r.onerror = () => rej(new Error("Could not read the image file."));
       r.readAsDataURL(file);
     });
   }

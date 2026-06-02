@@ -731,7 +731,18 @@ export default function CreateTokenPage() {
 
       setTimeout(() => { setTab("trade"); setCreateSuccess(""); }, 2500);
     } catch (e: any) {
-      setCreateError(e.message || "Failed to launch token.");
+      console.error("Launch token failed:", e);
+      let msg = "";
+      if (e?.message) msg = String(e.message);
+      else if (Array.isArray(e?.logs) && e.logs.length) msg = e.logs.join("\n");
+      else if (typeof e === "string") msg = e;
+      else { try { msg = JSON.stringify(e); } catch { /* ignore */ } }
+      if (/insufficient|0x1\b|debit an account|prior credit/i.test(msg)) {
+        msg = "Not enough SOL in your wallet. On Devnet, get free SOL from https://faucet.solana.com (make sure Phantom is set to Devnet).";
+      } else if (/could not find|not found|account does not exist|invalid program/i.test(msg)) {
+        msg = "On-chain program not reachable. Check that the site's RPC points to the same network where the program is deployed (Devnet).";
+      }
+      setCreateError(msg || "Failed to launch token (unknown error). Open your browser console for details.");
     } finally { setCreating(false); setCreateStatus(""); }
   };
 
