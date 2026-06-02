@@ -35,9 +35,26 @@ const VIRTUAL_SOL         = 30;
 const VIRTUAL_TOKENS      = 1_000_000_000_000;
 const GRADUATION_TARGET   = 85;
 const STORAGE_KEY         = "frostdex_tokens_v1";
-// RPC endpoint — set VITE_SOLANA_RPC to a dedicated provider (Helius/QuickNode/Alchemy)
-// to avoid the rate limits / "internal error" on the public mainnet endpoint.
-const SOLANA_RPC          = (import.meta as any).env?.VITE_SOLANA_RPC || "https://api.mainnet-beta.solana.com";
+// RPC endpoint — tries VITE_SOLANA_RPC first, then falls back through free public RPCs.
+const SOLANA_RPC_LIST: string[] = [
+  (import.meta as any).env?.VITE_SOLANA_RPC,
+  "https://rpc.ankr.com/solana",
+  "https://solana.public-rpc.com",
+  "https://api.mainnet-beta.solana.com",
+].filter(Boolean) as string[];
+
+const SOLANA_RPC = SOLANA_RPC_LIST[0];
+
+async function getConnection(): Promise<Connection> {
+  for (const rpc of SOLANA_RPC_LIST) {
+    try {
+      const c = new Connection(rpc, "confirmed");
+      await c.getLatestBlockhash();
+      return c;
+    } catch { continue; }
+  }
+  return new Connection(SOLANA_RPC_LIST[SOLANA_RPC_LIST.length - 1], "confirmed");
+}
 // Deployed bonding-curve program ID. Paste yours via VITE_PROGRAM_ID after `anchor deploy`.
 const PROGRAM_ID          = (import.meta as any).env?.VITE_PROGRAM_ID || "";
 const PROGRAM_ID_VALID    = (() => { try { return !!PROGRAM_ID && !!new PublicKey(PROGRAM_ID); } catch { return false; } })();
@@ -120,7 +137,7 @@ async function sendFeeTransaction(
   const p = getActiveProvider();
   if (!p) throw new Error("No wallet connected");
   onStatus("Building transaction…");
-  const connection = new Connection(SOLANA_RPC, "confirmed");
+  const connection = await getConnection();
   const from = new PublicKey(fromAddress);
   const to   = new PublicKey(PLATFORM_FEE_WALLET);
   const tx = new Transaction().add(
@@ -138,7 +155,7 @@ async function sendFeeTransaction(
 
 async function getWalletBalance(address: string): Promise<number> {
   try {
-    const connection = new Connection(SOLANA_RPC, "confirmed");
+    const connection = await getConnection();
     const lamports = await connection.getBalance(new PublicKey(address));
     return lamports / LAMPORTS_PER_SOL;
   } catch { return 0; }
@@ -745,7 +762,6 @@ export default function CreateTokenPage() {
   useEffect(() => { if (tab === "trade") refreshTokenList(); }, [tab, refreshTokenList]);
 
   const handleImageSelect = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) return;
     setImageFile(file);
     const r = new FileReader();
     r.onload = () => setImagePreview(r.result as string);
@@ -986,8 +1002,8 @@ export default function CreateTokenPage() {
                   </div>
                 )}
               </div>
-              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageSelect(f); }} />
-              {imagePreview && <button onClick={() => { setImageFile(null); setImagePreview(""); }} style={{ marginTop: 8, fontSize: 11, color: "rgba(246,70,93,0.6)", background: "none", border: "none", cursor: "pointer" }}>Remove image</button>}
+              <input ref={fileInputRef} type="file" accept="*/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageSelect(f); }} />
+              {imagePreview && <button onClick={() => { setImageFile(null); setImagePreview(""); }} style={{ marginTop: 8, fontSize: 11, color: "rgba(180,190,210,0.5)", background: "none", border: "none", cursor: "pointer" }}>Remove image</button>}
             </div>
 
             {/* Name & Ticker */}
