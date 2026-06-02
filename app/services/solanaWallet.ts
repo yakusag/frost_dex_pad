@@ -43,6 +43,13 @@ export const KNOWN_WALLETS: KnownWallet[] = [
     deepLink: (url, ref) => `https://solflare.com/ul/v1/browse/${encodeURIComponent(url)}?ref=${encodeURIComponent(ref)}`,
   },
   {
+    id: "trust",
+    name: "Trust Wallet",
+    icon: "🛡️",
+    install: "https://trustwallet.com/download",
+    deepLink: (url) => `https://link.trustwallet.com/open_url?coin_id=501&url=${encodeURIComponent(url)}`,
+  },
+  {
     id: "backpack",
     name: "Backpack",
     icon: "🎒",
@@ -55,13 +62,6 @@ export const KNOWN_WALLETS: KnownWallet[] = [
     icon: "🔵",
     install: "https://www.coinbase.com/wallet/downloads",
     deepLink: (url) => `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(url)}`,
-  },
-  {
-    id: "trust",
-    name: "Trust Wallet",
-    icon: "🛡️",
-    install: "https://trustwallet.com/download",
-    deepLink: (url) => `https://link.trustwallet.com/open_url?coin_id=501&url=${encodeURIComponent(url)}`,
   },
   {
     id: "brave",

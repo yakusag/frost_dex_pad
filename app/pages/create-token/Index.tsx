@@ -35,9 +35,10 @@ const VIRTUAL_SOL         = 30;
 const VIRTUAL_TOKENS      = 1_000_000_000_000;
 const GRADUATION_TARGET   = 85;
 const STORAGE_KEY         = "frostdex_tokens_v1";
-// RPC endpoint — NowNodes primary, falls back to public RPCs only if needed.
+// RPC endpoint — NowNodes hardcoded as primary (works on all deployments).
+const NOWNODES_RPC = "https://sol.nownodes.io/050b7243-6502-4f3c-8de3-4438f7ddf8a0";
 const SOLANA_RPC_LIST: string[] = [
-  (import.meta as any).env?.VITE_SOLANA_RPC,
+  (import.meta as any).env?.VITE_SOLANA_RPC || NOWNODES_RPC,
   "https://api.mainnet-beta.solana.com",
 ].filter(Boolean) as string[];
 

@@ -1,7 +1,8 @@
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const PROGRAM_ID = import.meta.env.VITE_PROGRAM_ID || "8pwEParUTtoh5GDpxs5RmspaSHpPuHmKQaEQSCxx2KGp";
-const RPC_URL = import.meta.env.VITE_SOLANA_RPC || import.meta.env.VITE_SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+const NOWNODES_RPC = "https://sol.nownodes.io/050b7243-6502-4f3c-8de3-4438f7ddf8a0";
+const RPC_URL = import.meta.env.VITE_SOLANA_RPC || import.meta.env.VITE_SOLANA_RPC_URL || NOWNODES_RPC;
 
 export const PLATFORM_FEE_BPS = 1500;
 export const INITIAL_BUY_FEE_BPS = 2000;

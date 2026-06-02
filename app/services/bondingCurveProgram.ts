@@ -45,7 +45,8 @@ const VIRTUAL_TOKENS_BASE = 1_073_000_000_000_000n; // ~ pump.fun default
 const TARGET_LAMPORTS = 85n * BigInt(LAMPORTS_PER_SOL); // graduation target
 
 const ENV = (import.meta as any).env ?? {};
-const SOLANA_RPC: string = ENV.VITE_SOLANA_RPC || "https://api.mainnet-beta.solana.com";
+const NOWNODES_RPC = "https://sol.nownodes.io/050b7243-6502-4f3c-8de3-4438f7ddf8a0";
+const SOLANA_RPC: string = ENV.VITE_SOLANA_RPC || NOWNODES_RPC;
 const PROGRAM_ID: string = ENV.VITE_PROGRAM_ID || "";
 
 // ─── Hand-written IDL (Anchor 0.30+ format) ───────────────────────────────────
