@@ -1,7 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import QRCode from "qrcode.react";
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { uploadImageToIPFS, uploadJSONToIPFS, isPinataConfigured } from "@/services/ipfs";
+import {
+  uploadImageToIPFS,
+  uploadJSONToIPFS,
+  isPinataConfigured,
+  listFrostdexTokens,
+  fetchTokenJSON,
+  ipfsGateway,
+} from "@/services/ipfs";
 import {
   isProgramConfigured,
   createTokenOnChain,
@@ -249,8 +256,14 @@ function TradeModal({ token, onClose, onUpdate, walletAddress, walletCanSign }: 
     setLoading(true); setError(""); setStatus("");
     try {
       const tokens = loadTokens();
-      const idx = tokens.findIndex(t => t.id === token.id);
-      if (idx < 0) { setError("Token not found"); return; }
+      let idx = tokens.findIndex(t => t.id === token.id);
+      if (idx < 0) {
+        // Token came from the shared registry (created on another device) and
+        // isn't on this device yet — persist it so the trade and its history
+        // are recorded locally.
+        tokens.unshift({ ...token });
+        idx = 0;
+      }
       const t = { ...tokens[idx] };
       let txSig = "";
 
@@ -506,6 +519,9 @@ export default function CreateTokenPage() {
   const [tokens, setTokens]               = useState<TokenData[]>(loadTokens);
   const [selectedToken, setSelectedToken] = useState<TokenData | null>(null);
   const [search, setSearch]               = useState("");
+  const [listLoading, setListLoading]     = useState(false);
+  const [listError, setListError]         = useState("");
+  const refreshSeq = useRef(0);
 
   // Form fields
   const [name, setName]               = useState("");
@@ -645,11 +661,87 @@ export default function CreateTokenPage() {
 
   const handleDeleteToken = (t: TokenData) => {
     if (!window.confirm(`Remove ${t.name} ($${t.symbol}) from the list?\n\nThis only removes it from this device — it does not affect any on-chain token.`)) return;
-    const updated = loadTokens().filter(x => x.id !== t.id);
-    saveTokens(updated);
-    setTokens(updated);
+    // Drop from localStorage if present, and from the currently shown list —
+    // without reloading from localStorage, so registry-only tokens still show.
+    saveTokens(loadTokens().filter(x => x.id !== t.id));
+    setTokens(prev => prev.filter(x => x.id !== t.id));
     if (selectedToken?.id === t.id) setSelectedToken(null);
   };
+
+  // Build the shared, platform-wide token list: merge tokens stored locally
+  // (rich — image, socials, this device's trade history) with the global
+  // registry on Pinata (every token launched by anyone), and overlay live
+  // reserves read straight from the on-chain bonding curve. This is what lets
+  // every visitor see every token, not just the ones they created.
+  const refreshTokenList = useCallback(async () => {
+    const seq = ++refreshSeq.current;
+    setListLoading(true);
+    setListError("");
+    try {
+      const byMint = new Map<string, TokenData>();
+      for (const t of loadTokens()) byMint.set(t.mint, t);
+
+      const remote = await listFrostdexTokens();
+      await Promise.allSettled(
+        remote.map(async (r) => {
+          // Live reserves from chain (falls back to defaults if unreadable).
+          let vSol = VIRTUAL_SOL, vTokens = VIRTUAL_TOKENS, graduated = false;
+          const state = await fetchCurveState(r.mint).catch(() => null);
+          if (state) {
+            vSol = state.virtualSol; vTokens = state.virtualTokens;
+            graduated = state.complete || vSol >= GRADUATION_TARGET;
+          }
+
+          const existing = byMint.get(r.mint);
+          if (existing) {
+            existing.virtualSol = vSol;
+            existing.virtualTokens = vTokens;
+            existing.graduated = existing.graduated || graduated;
+            existing.marketCap = getMcap(vSol, vTokens);
+            return;
+          }
+
+          // Registry-only token (created by someone else / another device):
+          // pull its metadata JSON for image, description and socials.
+          const json = await fetchTokenJSON(r.cid).catch(() => null);
+          const ext = json?.extensions ?? {};
+          byMint.set(r.mint, {
+            id: r.mint, mint: r.mint,
+            name: r.name || json?.name || "Token",
+            symbol: r.symbol || json?.symbol || "",
+            description: json?.description || "",
+            image: json?.image || "",
+            metadataUri: ipfsGateway(r.cid),
+            creator: shortAddr(r.creator), creatorAddress: r.creator,
+            createdAt: r.createdAt || 0,
+            website: ext.website || json?.external_url || "",
+            telegram: ext.telegram || "", twitter: ext.twitter || "",
+            virtualSol: vSol, virtualTokens: vTokens, graduated,
+            advancedOptions: [], tradeHistory: [], marketCap: getMcap(vSol, vTokens),
+          });
+        }),
+      );
+
+      // Ignore stale responses: a newer refresh has already run.
+      if (seq !== refreshSeq.current) return;
+      const merged = [...byMint.values()].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setTokens(merged);
+    } catch (e: any) {
+      if (seq !== refreshSeq.current) return;
+      console.error("Token list refresh failed:", e);
+      setListError(
+        isPinataConfigured()
+          ? "Couldn't reach the token registry. Showing tokens stored on this device."
+          : "Global registry not configured — showing tokens from this device only.",
+      );
+    } finally {
+      if (seq === refreshSeq.current) setListLoading(false);
+    }
+  }, []);
+
+  // Load the shared list on mount and whenever the user opens the Trade tab.
+  useEffect(() => { refreshTokenList(); }, [refreshTokenList]);
+  useEffect(() => { if (tab === "trade") refreshTokenList(); }, [tab, refreshTokenList]);
 
   const handleImageSelect = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) return;
@@ -683,19 +775,7 @@ export default function CreateTokenPage() {
         imageData = await uploadImageToIPFS(imageFile, (pct) => setUploadPct(pct));
       }
 
-      // 2. Upload metadata JSON to IPFS (before minting so the URI is available)
       let metadataUri = "";
-      if (isPinataConfigured()) {
-        setCreateStatus("Uploading metadata to IPFS…");
-        try {
-          metadataUri = await uploadJSONToIPFS({
-            name: name.trim(), symbol: symbol.trim().toUpperCase(),
-            description: description.trim(), image: imageData,
-            external_url: website.trim(), attributes: [],
-          });
-        } catch { /* non-fatal */ }
-      }
-
       let mint = "";
       let initBuyTxSig = "";
       let vSol = VIRTUAL_SOL, vTokens = VIRTUAL_TOKENS;
@@ -749,12 +829,34 @@ export default function CreateTokenPage() {
         mint = `${walletAddress.slice(0,6)}${Math.random().toString(36).slice(2,8).toUpperCase()}`;
       }
 
+      // Pin metadata to IPFS with a registry tag (incl. the mint) so every
+      // visitor can discover this token — not just this browser. Non-fatal.
+      const createdAt = Date.now();
+      if (isPinataConfigured()) {
+        setCreateStatus("Saving token to the public registry…");
+        try {
+          metadataUri = await uploadJSONToIPFS(
+            {
+              name: name.trim(), symbol: symbol.trim().toUpperCase(),
+              description: description.trim(), image: imageData,
+              external_url: website.trim(),
+              extensions: { website: website.trim(), twitter: twitter.trim(), telegram: telegram.trim() },
+              attributes: [],
+            },
+            {
+              frostdexToken: "1", mint, creator: walletAddress, createdAt,
+              name: name.trim(), symbol: symbol.trim().toUpperCase(),
+            },
+          );
+        } catch { /* non-fatal */ }
+      }
+
       const token: TokenData = {
         id: crypto.randomUUID(), mint,
         name: name.trim(), symbol: symbol.trim().toUpperCase(),
         description: description.trim(), image: imageData, metadataUri,
         creator: shortAddr(walletAddress), creatorAddress: walletAddress,
-        createdAt: Date.now(), website: website.trim(),
+        createdAt, website: website.trim(),
         telegram: telegram.trim(), twitter: twitter.trim(),
         virtualSol: vSol, virtualTokens: vTokens,
         graduated: vSol >= GRADUATION_TARGET,
@@ -766,6 +868,9 @@ export default function CreateTokenPage() {
       const updated = [token, ...loadTokens()];
       saveTokens(updated);
       setTokens(updated);
+      // Re-sync with the shared registry so the new token shows up merged with
+      // live on-chain reserves (and for everyone else on their next load).
+      refreshTokenList();
 
       // Update balance
       getWalletBalance(walletAddress).then(setWalletBalance);
@@ -1018,16 +1123,24 @@ export default function CreateTokenPage() {
           <div>
             <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
               <input value={search} onChange={e => setSearch(e.target.value.toLowerCase())} placeholder="Search tokens…" style={{ ...inp, flex: 1 }} />
+              <button onClick={() => refreshTokenList()} disabled={listLoading} title="Refresh list from the blockchain" style={{ padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(56,224,248,0.2)", fontWeight: 700, fontSize: 13, cursor: listLoading ? "not-allowed" : "pointer", background: "rgba(56,224,248,0.06)", color: "rgba(56,224,248,0.85)", whiteSpace: "nowrap" }}>
+                {listLoading ? "…" : "↻"}
+              </button>
               <button onClick={() => setTab("create")} style={{ padding: "12px 18px", borderRadius: 10, border: "none", fontWeight: 700, fontSize: 13, cursor: "pointer", background: "linear-gradient(135deg,#38e0f8,#0ecb81)", color: "#0b0e11", whiteSpace: "nowrap" }}>
                 + Launch
               </button>
             </div>
+            {listError && (
+              <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(255,180,80,0.25)", background: "rgba(255,180,80,0.07)", color: "rgba(255,200,120,0.9)", fontSize: 12.5 }}>
+                {listError}
+              </div>
+            )}
             {filteredTokens.length === 0 ? (
               <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(180,190,210,0.3)" }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>❄️</div>
-                <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>No tokens yet</div>
-                <div style={{ fontSize: 13, marginBottom: 20 }}>Be the first to launch on FrostDex!</div>
-                <button onClick={() => setTab("create")} style={{ padding: "12px 28px", borderRadius: 12, border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer", background: "linear-gradient(135deg,#38e0f8,#0ecb81)", color: "#0b0e11" }}>Launch First Token</button>
+                <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>{listLoading ? "Loading tokens…" : "No tokens yet"}</div>
+                <div style={{ fontSize: 13, marginBottom: 20 }}>{listLoading ? "Fetching launches from the registry & blockchain." : "Be the first to launch on FrostDex!"}</div>
+                {!listLoading && <button onClick={() => setTab("create")} style={{ padding: "12px 28px", borderRadius: 12, border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer", background: "linear-gradient(135deg,#38e0f8,#0ecb81)", color: "#0b0e11" }}>Launch First Token</button>}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1045,7 +1158,7 @@ export default function CreateTokenPage() {
           walletAddress={walletAddress}
           walletCanSign={walletCanSign}
           onClose={() => setSelectedToken(null)}
-          onUpdate={updated => { setTokens(loadTokens()); setSelectedToken(updated); }}
+          onUpdate={updated => { setSelectedToken(updated); refreshTokenList(); }}
         />
       )}
 

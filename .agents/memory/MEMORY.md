@@ -2,3 +2,4 @@
 - [Solana wallet detection](wallet-detection.md) — only trust each wallet's dedicated namespace (e.g. `window.phantom.solana`), never bare `window.solana`, because Brave spoofs `isPhantom`.
 - [Solana SBF build on Replit/nix](solana-sbf-build-on-nix.md) — read-only nix SDK (copy + SBF_SDK_PATH), detached procs reaped (use workflow), CLI airdrop rate-limited (web faucet).
 - [Verify Anchor IDL without test SOL](verify-anchor-idl-without-sol.md) — faucet often dry & sandbox hides RPC secret; confirm a hand-written IDL via discriminator hashes + ix-build account metas + account coder round-trip instead.
+- [Shared token indexing](token-indexing.md) — token list = localStorage + Pinata registry (tag frostdexToken) + on-chain reserves; why not Metaplex.
