@@ -550,10 +550,11 @@ function WalletPickerModal({ onClose, onSelect }: {
         {showQR ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
             <div style={{ background: "#fff", padding: 14, borderRadius: 14 }}>
-              <QRCode value={pageUrl} size={196} level="M" fgColor="#0b0e11" bgColor="#ffffff" />
+              <QRCode value={pageUrl} size={200} level="M" fgColor="#0b0e11" bgColor="#ffffff" />
             </div>
-            <div style={{ fontSize: 12, color: "rgba(180,190,210,0.7)", textAlign: "center", lineHeight: 1.5 }}>
-              Open your phone's camera or your mobile wallet's QR scanner and scan this code to open the launchpad on your phone, then connect there.
+            <div style={{ fontSize: 12, color: "rgba(180,190,210,0.7)", textAlign: "center", lineHeight: 1.6 }}>
+              <b style={{ color: "#eaecef" }}>Open your wallet app</b> → tap <b style={{ color: "#38e0f8" }}>WalletConnect</b> or the QR scanner, then scan this code.<br />
+              You'll stay on this page — no redirects.
             </div>
             <button onClick={() => setShowQR(false)} style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: "1px solid rgba(56,224,248,0.25)", background: "rgba(56,224,248,0.06)", color: "#eaecef", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
               ← Back to wallets
@@ -563,30 +564,28 @@ function WalletPickerModal({ onClose, onSelect }: {
           <>
             {!anyInstalled && (
               <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(56,224,248,0.06)", border: "1px solid rgba(56,224,248,0.18)", borderRadius: 8, color: "rgba(180,190,210,0.7)", fontSize: 12 }}>
-                {mobile
-                  ? "Tap your wallet to open this page inside its app, then connect there."
-                  : "No Solana wallet detected. Install one of these browser extensions, or scan the QR code to connect from your phone."}
+                No Solana wallet detected. Install a browser extension below, or tap <b style={{ color: "#38e0f8" }}>Scan QR</b> to connect from your phone.
               </div>
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {wallets.map(w => {
                 const installed = !!w.provider;
-                const canDeepLink = mobile && !!w.deepLink;
                 return (
                   <button
                     key={w.id}
                     onClick={() => {
                       if (installed) { onSelect(w.id); return; }
-                      if (canDeepLink) { openInWalletApp(w.id); return; }
-                      window.open(w.install, "_blank", "noopener");
+                      // Never navigate away — show QR so user scans from their wallet app.
+                      // This keeps the user on the page (no wallet-browser redirect).
+                      setShowQR(true);
                     }}
                     style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: installed ? "rgba(56,224,248,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${installed ? "rgba(56,224,248,0.25)" : "rgba(255,255,255,0.06)"}`, borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
                   >
                     <span style={{ fontSize: 22 }}>{w.icon}</span>
                     <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{w.name}</span>
                     <span style={{ fontSize: 11, color: installed ? "#0ecb81" : "rgba(180,190,210,0.45)" }}>
-                      {installed ? "Detected" : canDeepLink ? "Open app" : "Install"}
+                      {installed ? "Detected" : "Scan QR"}
                     </span>
                   </button>
                 );
