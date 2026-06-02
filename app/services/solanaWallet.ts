@@ -166,9 +166,35 @@ export function isMobile(): boolean {
 
 // Open the current page inside a wallet's in-app browser (where the provider is
 // injected). Returns false when the wallet has no deep-link scheme.
+//
+// We stamp the returned URL with `frostConnect=<id>` so that once the page
+// reopens inside the wallet app, it can auto-fire the connect prompt for the
+// exact wallet the user just chose (see waitForProvider + the auto-connect
+// effect on the create-token page). Without this, the deep link reopened the
+// site but left the user staring at a "Connect" button that did nothing.
 export function openInWalletApp(id: string): boolean {
   const meta = KNOWN_WALLETS.find((w) => w.id === id);
   if (!meta?.deepLink) return false;
-  window.location.href = meta.deepLink(window.location.href, window.location.origin);
+  const u = new URL(window.location.href);
+  u.searchParams.set("frostConnect", id);
+  window.location.href = meta.deepLink(u.toString(), window.location.origin);
   return true;
+}
+
+// In-app browsers may inject the wallet provider a moment after the page loads,
+// so a single detectProvider() right at startup can miss it. Poll until the
+// provider appears or `timeoutMs` elapses. Resolves with the provider or null.
+export function waitForProvider(id: string, timeoutMs = 4000): Promise<any | null> {
+  const immediate = detectProvider(id);
+  if (immediate) return Promise.resolve(immediate);
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const iv = setInterval(() => {
+      const p = detectProvider(id);
+      if (p || Date.now() - start >= timeoutMs) {
+        clearInterval(iv);
+        resolve(p);
+      }
+    }, 150);
+  });
 }

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import QRCode from "qrcode.react";
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { uploadImageToIPFS, uploadJSONToIPFS, isPinataConfigured } from "@/services/ipfs";
@@ -15,6 +15,7 @@ import {
   getActiveProvider,
   isMobile,
   openInWalletApp,
+  waitForProvider,
   type DetectedWallet,
 } from "@/services/solanaWallet";
 
@@ -557,6 +558,45 @@ export default function CreateTokenPage() {
       setCreateError(e?.message || "Failed to connect wallet");
     } finally { setWalletLoading(false); }
   };
+
+  // Auto-connect after a mobile deep link. When the user picks a wallet on
+  // mobile we open this page inside that wallet's in-app browser with a
+  // `frostConnect=<id>` marker (see openInWalletApp). On arrival we wait for the
+  // wallet to inject its provider, then fire the connect prompt for that exact
+  // wallet — so the user lands already prompted to connect & sign instead of a
+  // dead "Connect" button. We strip the marker so a manual refresh won't
+  // reconnect, and we only ever connect the specific wallet the user chose.
+  //
+  // The ref guard makes this run exactly once. Without it, React 18 StrictMode's
+  // dev double-invoke (setup→cleanup→setup) would strip the marker on the first
+  // pass and the second pass would find nothing — suppressing the prompt. We
+  // also intentionally do NOT cancel the in-flight connect on cleanup, so the
+  // StrictMode teardown can't abort the one real attempt.
+  const autoConnectRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || autoConnectRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("frostConnect");
+    if (!id) return;
+    autoConnectRef.current = true;
+    params.delete("frostConnect");
+    const qs = params.toString();
+    const clean = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
+    window.history.replaceState(null, "", clean);
+
+    (async () => {
+      setWalletLoading(true);
+      setCreateError("");
+      const provider = await waitForProvider(id);
+      if (provider) {
+        await handleSelectWallet(id);
+      } else {
+        setWalletLoading(false);
+        setCreateError("Couldn't detect your wallet in this in-app browser. Tap “Connect Wallet” to try again.");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDeleteToken = (t: TokenData) => {
     if (!window.confirm(`Remove ${t.name} ($${t.symbol}) from the list?\n\nThis only removes it from this device — it does not affect any on-chain token.`)) return;
