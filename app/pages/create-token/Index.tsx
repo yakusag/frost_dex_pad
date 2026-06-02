@@ -45,15 +45,19 @@ const SOLANA_RPC_LIST: string[] = [
 
 const SOLANA_RPC = SOLANA_RPC_LIST[0];
 
+let _cachedRpc: string | null = null;
 async function getConnection(): Promise<Connection> {
+  if (_cachedRpc) return new Connection(_cachedRpc, "confirmed");
   for (const rpc of SOLANA_RPC_LIST) {
     try {
       const c = new Connection(rpc, "confirmed");
-      await c.getLatestBlockhash();
+      await Promise.race([c.getLatestBlockhash(), new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 3000))]);
+      _cachedRpc = rpc;
       return c;
     } catch { continue; }
   }
-  return new Connection(SOLANA_RPC_LIST[SOLANA_RPC_LIST.length - 1], "confirmed");
+  _cachedRpc = SOLANA_RPC_LIST[SOLANA_RPC_LIST.length - 1];
+  return new Connection(_cachedRpc, "confirmed");
 }
 // Deployed bonding-curve program ID. Paste yours via VITE_PROGRAM_ID after `anchor deploy`.
 const PROGRAM_ID          = (import.meta as any).env?.VITE_PROGRAM_ID || "";

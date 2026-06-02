@@ -30,8 +30,7 @@ export default function FrostPriceBanner() {
   const fetchPrice = async () => {
     try {
       const res = await fetch(
-        `https://api.dexscreener.com/latest/dex/pairs/arbitrum/${FROST_TOKEN.poolAddress}`,
-        { cache: "no-store" }
+        `https://api.dexscreener.com/latest/dex/pairs/arbitrum/${FROST_TOKEN.poolAddress}`
       );
       const json = await res.json();
       const pair = json?.pair ?? json?.pairs?.[0];

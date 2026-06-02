@@ -18,7 +18,7 @@ function isValidAddr(a: string) { return /^0x[0-9a-fA-F]{40}$/.test(a.trim()); }
 
 async function fetchRecentTrades(symbol: string): Promise<WhaleAlert[]> {
   try {
-    const res = await fetch(`https://api.orderly.org/v1/public/market_trades?symbol=${symbol}&limit=20`, { cache: "no-store" });
+    const res = await fetch(`https://api.orderly.org/v1/public/market_trades?symbol=${symbol}&limit=20`);
     if (!res.ok) return [];
     const json = await res.json();
     return (json?.data?.rows ?? [])
@@ -30,6 +30,17 @@ async function fetchRecentTrades(symbol: string): Promise<WhaleAlert[]> {
         value: Number(t.executed_price) * Number(t.executed_quantity), time: Number(t.ts),
       }));
   } catch { return []; }
+}
+
+async function fetchAllInBatches(symbols: string[]): Promise<WhaleAlert[]> {
+  const results: WhaleAlert[] = [];
+  for (let i = 0; i < symbols.length; i += 3) {
+    const batch = symbols.slice(i, i + 3);
+    const batchResults = await Promise.all(batch.map(fetchRecentTrades));
+    results.push(...batchResults.flat());
+    if (i + 3 < symbols.length) await new Promise(r => setTimeout(r, 400));
+  }
+  return results;
 }
 
 async function lookupWhaleAddress(address: string): Promise<{ accountId: string | null; found: boolean }> {
@@ -59,7 +70,7 @@ export default function WhaleAlerts({ onHide }: Props) {
   const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps, wasDragged } = useDraggable("whale-alerts", defaultPos);
 
   const fetchAll = async () => {
-    const all = (await Promise.all(SYMBOLS.map(fetchRecentTrades))).flat();
+    const all = await fetchAllInBatches(SYMBOLS);
     const newAlerts = all.filter(a => !seenIds.current.has(a.id));
     if (newAlerts.length > 0) {
       newAlerts.forEach(a => seenIds.current.add(a.id));
@@ -68,7 +79,7 @@ export default function WhaleAlerts({ onHide }: Props) {
     }
   };
 
-  useEffect(() => { fetchAll(); intervalRef.current = setInterval(fetchAll, 15_000); return () => { if (intervalRef.current) clearInterval(intervalRef.current); }; }, []);
+  useEffect(() => { fetchAll(); intervalRef.current = setInterval(fetchAll, 60_000); return () => { if (intervalRef.current) clearInterval(intervalRef.current); }; }, []);
 
   const handleSearch = async () => {
     const addr = searchInput.trim();
