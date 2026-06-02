@@ -18,3 +18,10 @@ Secrets/env vars configured in Replit only exist in the Replit (dev) environment
 A POST to a path like `/api/groq` on the static site hits the SPA catch-all and returns `index.html` for a POST → browser reports **405**. Dev works because `vite.config.ts` proxies `/api/groq`. Production needs a real Vercel serverless function at `api/groq.ts` (Vercel auto-detects the root `/api` dir regardless of framework preset; functions match before top-level `rewrites`).
 
 **How to apply:** Any client `fetch('/api/...')` that must work in production needs both a vite dev proxy entry AND a matching `api/*.ts` serverless function. `api/*.ts` is type-checked by `tsc` (tsconfig includes `**/*.ts`); type `req/res` as `any` to avoid needing `@vercel/node`. Keep paid-API proxies guarded (model allowlist, max_tokens cap, body-size cap) since they're public and unauthenticated.
+
+## Rule: the SPA catch-all rewrite MUST exclude `/api`
+A bare catch-all `{ "source": "/(.*)", "destination": "/index.html" }` in `vercel.json` DOES swallow `/api/*` POSTs in practice (despite the common claim that functions match before rewrites) → the serverless function never runs and the browser sees a 405 even when `GROQ_API_KEY` is set in Vercel. Fix: use a negative lookahead so `/api` is never rewritten: `{ "source": "/((?!api/).*)", "destination": "/index.html" }`.
+
+**Why:** FrostAI stayed broken (405) on prod after the user added `GROQ_API_KEY` to Vercel; the env var was fine — the catch-all was intercepting `/api/groq` before `api/groq.ts`.
+
+**How to apply:** Whenever this app has both an SPA catch-all and any `api/*` function, keep the `(?!api/)` exclusion in the rewrite. Re-deploy after editing `vercel.json` (push to GitHub `main`).

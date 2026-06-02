@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "dEEjV7HnEwEP5qXvJ50aS"
+uri = "file://solana-bonding-curve/target/deploy/bonding_curve-keypair.json"
+type = "unspecified"
+title = "bonding_curve-keypair.json (program deploy keypair)"
