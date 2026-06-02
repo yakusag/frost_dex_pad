@@ -41,27 +41,32 @@ const SOLANA_RPC_LIST: string[] = [
   "https://api.mainnet-beta.solana.com",
   "https://rpc.ankr.com/solana",
   "https://solana.public-rpc.com",
-  "https://mainnet.helius-rpc.com/?api-key=1d8a8bcd-3e95-4b12-9b5e-a80b7e6d8bb1",
 ].filter(Boolean) as string[];
 
-let _cachedRpc: string | null = null;
-export function clearRpcCache() { _cachedRpc = null; }
+function makeConn(rpc: string) {
+  return new Connection(rpc, { commitment: "confirmed", disableRetryOnRateLimit: true });
+}
 
-async function getConnection(): Promise<Connection> {
-  if (_cachedRpc) return new Connection(_cachedRpc, "confirmed");
+// Retries the given async fn with each RPC in order until one succeeds.
+// On HTTP 403 / rate-limit / timeout it tries the next endpoint automatically.
+async function withRpcFallback<T>(fn: (conn: Connection) => Promise<T>): Promise<T> {
+  let lastErr: any;
   for (const rpc of SOLANA_RPC_LIST) {
     try {
-      const c = new Connection(rpc, "confirmed");
-      await Promise.race([
-        c.getLatestBlockhash(),
-        new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 5000)),
+      return await Promise.race([
+        fn(makeConn(rpc)),
+        new Promise<never>((_, r) => setTimeout(() => r(new Error("RPC timeout")), 8000)),
       ]);
-      _cachedRpc = rpc;
-      return c;
-    } catch { continue; }
+    } catch (e: any) {
+      const msg = String(e?.message ?? e ?? "");
+      if (/403|rate.limit|rate limit|forbidden|too many|timeout/i.test(msg)) {
+        lastErr = e;
+        continue;
+      }
+      throw e;
+    }
   }
-  _cachedRpc = SOLANA_RPC_LIST[SOLANA_RPC_LIST.length - 1];
-  return new Connection(_cachedRpc, "confirmed");
+  throw lastErr ?? new Error("All Solana RPC endpoints failed");
 }
 // Deployed bonding-curve program ID. Paste yours via VITE_PROGRAM_ID after `anchor deploy`.
 const PROGRAM_ID          = (import.meta as any).env?.VITE_PROGRAM_ID || "";
@@ -122,9 +127,8 @@ function friendlyTxError(e: any): string {
   else if (Array.isArray(e?.logs) && e.logs.length) msg = e.logs.join("\n");
   else if (typeof e === "string") msg = e;
   else { try { msg = JSON.stringify(e); } catch { /* ignore */ } }
-  if (/\b403\b|access forbidden|forbidden|failed to get recent blockhash/i.test(msg)) {
-    clearRpcCache();
-    return "Solana RPC is rate-limited (403). Retrying with a different endpoint — please try again in a moment.";
+  if (/\b403\b|access forbidden|forbidden/i.test(msg)) {
+    return "All public Solana RPC endpoints are rate-limited right now. Please try again in a few seconds.";
   }
   if (/insufficient|0x1\b|debit an account|prior credit/i.test(msg)) {
     return "Not enough SOL in your wallet to cover this transaction.";
@@ -146,27 +150,30 @@ async function sendFeeTransaction(
   const p = getActiveProvider();
   if (!p) throw new Error("No wallet connected");
   onStatus("Building transaction…");
-  const connection = await getConnection();
   const from = new PublicKey(fromAddress);
   const to   = new PublicKey(PLATFORM_FEE_WALLET);
-  const tx = new Transaction().add(
-    SystemProgram.transfer({ fromPubkey: from, toPubkey: to, lamports })
-  );
-  tx.feePayer = from;
-  const { blockhash } = await connection.getLatestBlockhash();
-  tx.recentBlockhash = blockhash;
-  onStatus("Waiting for wallet approval…");
-  const { signature } = await p.signAndSendTransaction(tx);
-  onStatus("Confirming transaction…");
-  await connection.confirmTransaction(signature, "confirmed");
-  return signature;
+
+  return withRpcFallback(async (connection) => {
+    const tx = new Transaction().add(
+      SystemProgram.transfer({ fromPubkey: from, toPubkey: to, lamports })
+    );
+    tx.feePayer = from;
+    const { blockhash } = await connection.getLatestBlockhash();
+    tx.recentBlockhash = blockhash;
+    onStatus("Waiting for wallet approval…");
+    const { signature } = await p.signAndSendTransaction(tx);
+    onStatus("Confirming transaction…");
+    await connection.confirmTransaction(signature, "confirmed");
+    return signature;
+  });
 }
 
 async function getWalletBalance(address: string): Promise<number> {
   try {
-    const connection = await getConnection();
-    const lamports = await connection.getBalance(new PublicKey(address));
-    return lamports / LAMPORTS_PER_SOL;
+    return await withRpcFallback(async (connection) => {
+      const lamports = await connection.getBalance(new PublicKey(address));
+      return lamports / LAMPORTS_PER_SOL;
+    });
   } catch { return 0; }
 }
 
