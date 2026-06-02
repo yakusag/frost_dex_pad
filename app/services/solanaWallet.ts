@@ -57,6 +57,13 @@ export const KNOWN_WALLETS: KnownWallet[] = [
     deepLink: (url) => `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(url)}`,
   },
   {
+    id: "trust",
+    name: "Trust Wallet",
+    icon: "🛡️",
+    install: "https://trustwallet.com/download",
+    deepLink: (url) => `https://link.trustwallet.com/open_url?coin_id=501&url=${encodeURIComponent(url)}`,
+  },
+  {
     id: "brave",
     name: "Brave Wallet",
     icon: "🦁",
@@ -95,6 +102,8 @@ export function detectProvider(id: string): any | null {
         : fromProviders((p) => p?.isBackpack);
     case "coinbase":
       return w.coinbaseSolana ?? (w.solana?.isCoinbaseWallet ? w.solana : fromProviders((p) => p?.isCoinbaseWallet));
+    case "trust":
+      return w.trustwallet?.solana ?? (w.solana?.isTrust ? w.solana : fromProviders((p) => p?.isTrust));
     case "brave":
       return w.braveSolana ?? (w.solana?.isBraveWallet ? w.solana : fromProviders((p) => p?.isBraveWallet));
     default:
