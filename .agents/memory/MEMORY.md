@@ -1,2 +1,3 @@
 - [Vercel deploy env & API routes](vercel-deploy.md) — production-only failures usually mean a Vercel env var is missing (Replit secrets don't carry over); POST needs an `api/*` serverless function or the SPA catch-all returns 405.
 - [Solana wallet detection](wallet-detection.md) — only trust each wallet's dedicated namespace (e.g. `window.phantom.solana`), never bare `window.solana`, because Brave spoofs `isPhantom`.
+- [Solana SBF build on Replit/nix](solana-sbf-build-on-nix.md) — read-only nix SDK (copy + SBF_SDK_PATH), detached procs reaped (use workflow), CLI airdrop rate-limited (web faucet).
