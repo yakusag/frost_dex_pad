@@ -63,7 +63,7 @@ export default defineConfig(() => {
       },
     },
     define: {
-      __GROQ_KEY__: JSON.stringify(""),
+      __GROQ_KEY__: JSON.stringify(process.env.GROQ_API_KEY || ""),
       __ADMIN_WALLET__: JSON.stringify("EPAZFYgj87LuUBP8JaAs3EiJvsTQnh2EoMtmSvC7iEzZ"),
     },
     base: basePath,

@@ -38,20 +38,24 @@ const STORAGE_KEY         = "frostdex_tokens_v1";
 // RPC endpoint — tries VITE_SOLANA_RPC first, then falls back through free public RPCs.
 const SOLANA_RPC_LIST: string[] = [
   (import.meta as any).env?.VITE_SOLANA_RPC,
+  "https://api.mainnet-beta.solana.com",
   "https://rpc.ankr.com/solana",
   "https://solana.public-rpc.com",
-  "https://api.mainnet-beta.solana.com",
+  "https://mainnet.helius-rpc.com/?api-key=1d8a8bcd-3e95-4b12-9b5e-a80b7e6d8bb1",
 ].filter(Boolean) as string[];
 
-const SOLANA_RPC = SOLANA_RPC_LIST[0];
-
 let _cachedRpc: string | null = null;
+export function clearRpcCache() { _cachedRpc = null; }
+
 async function getConnection(): Promise<Connection> {
   if (_cachedRpc) return new Connection(_cachedRpc, "confirmed");
   for (const rpc of SOLANA_RPC_LIST) {
     try {
       const c = new Connection(rpc, "confirmed");
-      await Promise.race([c.getLatestBlockhash(), new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 3000))]);
+      await Promise.race([
+        c.getLatestBlockhash(),
+        new Promise((_, r) => setTimeout(() => r(new Error("timeout")), 5000)),
+      ]);
       _cachedRpc = rpc;
       return c;
     } catch { continue; }
@@ -119,13 +123,14 @@ function friendlyTxError(e: any): string {
   else if (typeof e === "string") msg = e;
   else { try { msg = JSON.stringify(e); } catch { /* ignore */ } }
   if (/\b403\b|access forbidden|forbidden|failed to get recent blockhash/i.test(msg)) {
-    return "Solana RPC refused the request (403). The public endpoint is rate-limited. Set VITE_SOLANA_RPC to a dedicated Devnet RPC (e.g. Helius or QuickNode) in your deployment settings and redeploy.";
+    clearRpcCache();
+    return "Solana RPC is rate-limited (403). Retrying with a different endpoint — please try again in a moment.";
   }
   if (/insufficient|0x1\b|debit an account|prior credit/i.test(msg)) {
-    return "Not enough SOL in your wallet. On Devnet, get free SOL from https://faucet.solana.com (make sure your wallet is set to Devnet).";
+    return "Not enough SOL in your wallet to cover this transaction.";
   }
   if (/could not find|not found|account does not exist|invalid program/i.test(msg)) {
-    return "On-chain program not reachable. Make sure the site's RPC points to the same network where the program is deployed (Devnet).";
+    return "On-chain program not reachable. Make sure VITE_PROGRAM_ID is set correctly in your deployment.";
   }
   return msg || "Transaction failed. Open your browser console for details.";
 }
