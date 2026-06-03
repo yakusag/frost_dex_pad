@@ -366,6 +366,146 @@ export interface CreateTokenOnChainResult {
   initialBuySignature?: string;
 }
 
+// ─── Build-only variants (for Phantom Universal Link / deeplink signing) ──────
+// These construct the transaction and partially sign with the mint keypair, but
+// do NOT send anything. The caller serialises and passes the bytes to Phantom
+// via the signAndSendTransaction Universal Link, which signs + broadcasts and
+// then redirects the user back to the app with the signature in URL params.
+
+export interface BuildCreateTokenResult {
+  txBytes: Uint8Array;
+  mintAddress: string;
+}
+
+export async function buildCreateTokenTransaction(
+  params: CreateTokenOnChainParams,
+  onStatus: (s: string) => void,
+): Promise<BuildCreateTokenResult> {
+  if (!isProgramConfigured()) throw new Error("On-chain program not configured (VITE_PROGRAM_ID)");
+
+  const connection = getConnection();
+  const programId  = new PublicKey(PROGRAM_ID);
+  const authority  = new PublicKey(params.walletAddress);
+  const feeRecipient = new PublicKey(PLATFORM_FEE_WALLET);
+
+  const mintKeypair = params.mintKeypair ?? Keypair.generate();
+  const mint        = mintKeypair.publicKey;
+  const curvePda    = bondingCurvePDA(mint, programId);
+  const reservesPda = solReservesPDA(curvePda, programId);
+
+  onStatus("Fetching network fees…");
+  const rent = await getMinimumBalanceForRentExemptMint(connection as any);
+
+  const createMintIx = SystemProgram.createAccount({
+    fromPubkey: authority, newAccountPubkey: mint,
+    space: MINT_SIZE, lamports: rent, programId: TOKEN_PROGRAM_ID,
+  });
+  const initMintIx = createInitializeMint2Instruction(mint, DECIMALS, authority, authority, TOKEN_PROGRAM_ID);
+
+  const preIxs: TransactionInstruction[] = [createMintIx, initMintIx];
+  if (params.name && params.symbol) {
+    onStatus("Adding token metadata…");
+    preIxs.push(createMetadataV3Ix({
+      mint, authority,
+      name: params.name, symbol: params.symbol,
+      uri: params.metadataUri || "",
+      isMutable: !params.immutableMetadata,
+    }));
+  }
+
+  // Use a mock wallet so we can call .transaction() without a real signer.
+  const mockWallet = {
+    publicKey: authority,
+    signTransaction: async (tx: Transaction) => tx,
+    signAllTransactions: async (txs: Transaction[]) => txs,
+  };
+  const mockProvider = new AnchorProvider(connection, mockWallet as any, {
+    commitment: "confirmed", preflightCommitment: "confirmed",
+  });
+  const program = new Program({ ...(IDL as any), address: PROGRAM_ID } as Idl, mockProvider);
+
+  const hasAdvanced = !!(params.revokeMint || params.revokeFreeze || params.immutableMetadata);
+  const builder = program.methods
+    .initialize(
+      new BN(VIRTUAL_SOL_LAMPORTS.toString()),
+      new BN(VIRTUAL_TOKENS_BASE.toString()),
+      new BN(TARGET_LAMPORTS.toString()),
+    )
+    .accountsPartial({
+      bondingCurve: curvePda, tokenMint: mint, solReserves: reservesPda,
+      feeRecipient, authority,
+      systemProgram: SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID, rent: SYSVAR_RENT_PUBKEY,
+    })
+    .preInstructions(preIxs);
+
+  if (hasAdvanced) {
+    const createTokenIx = await program.methods
+      .createToken(!!params.revokeMint, !!params.revokeFreeze, !!params.immutableMetadata)
+      .accountsPartial({ creator: authority, feeRecipient, systemProgram: SystemProgram.programId })
+      .instruction();
+    builder.postInstructions([createTokenIx]);
+  }
+
+  onStatus("Building transaction…");
+  const tx: Transaction = await builder.transaction();
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
+  tx.feePayer = authority;
+  // Partially sign with mint keypair so the user only needs to add their own sig.
+  tx.partialSign(mintKeypair);
+
+  onStatus("Opening Phantom for approval…");
+  return { txBytes: tx.serialize({ requireAllSignatures: false }), mintAddress: mint.toBase58() };
+}
+
+export async function buildInitialBuyTransaction(
+  mintAddress: string,
+  walletAddress: string,
+  solAmount: number,
+  onStatus: (s: string) => void,
+): Promise<Uint8Array> {
+  if (!isProgramConfigured()) throw new Error("Program not configured");
+
+  const connection  = getConnection();
+  const programId   = new PublicKey(PROGRAM_ID);
+  const mint        = new PublicKey(mintAddress);
+  const buyer       = new PublicKey(walletAddress);
+  const curvePda    = bondingCurvePDA(mint, programId);
+  const reservesPda = solReservesPDA(curvePda, programId);
+  const feeRecipient = new PublicKey(PLATFORM_FEE_WALLET);
+  const buyerAta    = getAssociatedTokenAddressSync(mint, buyer);
+
+  const solLamports  = BigInt(Math.round(solAmount * LAMPORTS_PER_SOL));
+  const expectedOut  = buyTokensOut(solLamports, VIRTUAL_SOL_LAMPORTS, VIRTUAL_TOKENS_BASE, INITIAL_BUY_FEE_BPS);
+  const minOut       = (expectedOut * (BASIS_POINTS - SLIPPAGE_BPS)) / BASIS_POINTS;
+
+  const mockWallet = {
+    publicKey: buyer,
+    signTransaction: async (tx: Transaction) => tx,
+    signAllTransactions: async (txs: Transaction[]) => txs,
+  };
+  const mockProvider = new AnchorProvider(connection, mockWallet as any, { commitment: "confirmed" });
+  const program      = new Program({ ...(IDL as any), address: PROGRAM_ID } as Idl, mockProvider);
+
+  onStatus("Building initial buy…");
+  const tx: Transaction = await program.methods
+    .initialBuy(new BN(solLamports.toString()), new BN(minOut.toString()))
+    .accountsPartial({
+      bondingCurve: curvePda, tokenMint: mint, solReserves: reservesPda,
+      feeRecipient, buyer, buyerTokenAccount: buyerAta,
+      systemProgram: SystemProgram.programId,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+    })
+    .transaction();
+
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
+  tx.feePayer = buyer;
+  return tx.serialize({ requireAllSignatures: false });
+}
+
 export async function createTokenOnChain(
   params: CreateTokenOnChainParams,
   onStatus: (s: string) => void,

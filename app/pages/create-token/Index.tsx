@@ -12,20 +12,34 @@ import {
 import {
   isProgramConfigured,
   createTokenOnChain,
+  buildCreateTokenTransaction,
+  buildInitialBuyTransaction,
   newMint,
   buyOnChain,
   sellOnChain,
   fetchCurveState,
+  getConnection,
 } from "@/services/bondingCurveProgram";
 import {
   connectWalletById,
   detectWallets,
   getActiveProvider,
+  setActiveWallet,
   isMobile,
   openInWalletApp,
   waitForProvider,
   type DetectedWallet,
 } from "@/services/solanaWallet";
+import {
+  phantomConnect,
+  parsePhantomConnectReturn,
+  parsePhantomSignReturn,
+  phantomSignAndSend,
+  hasPhantomDeeplinkSession,
+  getPhantomDeeplinkAddress,
+  clearPhantomDeeplink,
+  stripPhantomParams,
+} from "@/services/phantomDeeplink";
 
 // ─── Platform constants (from solana-bonding-curve/programs/bonding-curve/src/lib.rs) ──
 const PLATFORM_FEE_WALLET = "EPAZFYgj87LuUBP8JaAs3EiJvsTQnh2EoMtmSvC7iEzZ";
@@ -525,13 +539,14 @@ function TradeModal({ token, onClose, onUpdate, walletAddress, walletCanSign }: 
 }
 
 // ─── WalletPickerModal ──────────────────────────────────────────────────────
-// Lets the user pick a Solana wallet. Installed wallets connect directly. On
-// mobile, a non-injected wallet (e.g. Phantom inside a Brave browser) re-opens
-// this page inside the wallet's own in-app browser via its deep link, where the
-// provider IS injected — so the user connects with their real wallet and signs.
-function WalletPickerModal({ onClose, onSelect }: {
+// Installed wallets connect directly (injected provider).
+// On mobile, Phantom uses its Universal Link protocol — user approves in the
+// Phantom app and Phantom redirects back to THIS browser (no wallet-browser
+// redirect). Other non-installed wallets show a QR code.
+function WalletPickerModal({ onClose, onSelect, onPhantomMobileConnect }: {
   onClose: () => void;
   onSelect: (id: string) => void;
+  onPhantomMobileConnect?: () => void;
 }) {
   const mobile = isMobile();
   const wallets: DetectedWallet[] = detectWallets();
@@ -553,8 +568,8 @@ function WalletPickerModal({ onClose, onSelect }: {
               <QRCode value={pageUrl} size={200} level="M" fgColor="#0b0e11" bgColor="#ffffff" />
             </div>
             <div style={{ fontSize: 12, color: "rgba(180,190,210,0.7)", textAlign: "center", lineHeight: 1.6 }}>
-              <b style={{ color: "#eaecef" }}>Open your wallet app</b> → tap <b style={{ color: "#38e0f8" }}>WalletConnect</b> or the QR scanner, then scan this code.<br />
-              You'll stay on this page — no redirects.
+              <b style={{ color: "#eaecef" }}>Open your wallet app</b> → scan this QR code.<br />
+              Supported: Solflare, Trust Wallet, Backpack, Coinbase Wallet.
             </div>
             <button onClick={() => setShowQR(false)} style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: "1px solid rgba(56,224,248,0.25)", background: "rgba(56,224,248,0.06)", color: "#eaecef", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
               ← Back to wallets
@@ -564,42 +579,68 @@ function WalletPickerModal({ onClose, onSelect }: {
           <>
             {!anyInstalled && (
               <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(56,224,248,0.06)", border: "1px solid rgba(56,224,248,0.18)", borderRadius: 8, color: "rgba(180,190,210,0.7)", fontSize: 12 }}>
-                No Solana wallet detected. Install a browser extension below, or tap <b style={{ color: "#38e0f8" }}>Scan QR</b> to connect from your phone.
+                {mobile
+                  ? <>Tap <b style={{ color: "#38e0f8" }}>Phantom</b> to connect securely — you'll stay in this browser.</>
+                  : <>No Solana wallet detected. Install a browser extension, or tap <b style={{ color: "#38e0f8" }}>Scan QR</b>.</>}
               </div>
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {wallets.map(w => {
                 const installed = !!w.provider;
+                // On mobile, Phantom uses Universal Link (redirect back to this browser).
+                // Other wallets use QR.
+                const isPhantomMobile = mobile && !installed && w.id === "phantom";
                 return (
                   <button
                     key={w.id}
                     onClick={() => {
                       if (installed) { onSelect(w.id); return; }
-                      // Never navigate away — show QR so user scans from their wallet app.
-                      // This keeps the user on the page (no wallet-browser redirect).
+                      if (isPhantomMobile && onPhantomMobileConnect) {
+                        onClose();
+                        onPhantomMobileConnect();
+                        return;
+                      }
                       setShowQR(true);
                     }}
-                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: installed ? "rgba(56,224,248,0.06)" : "rgba(255,255,255,0.02)", border: `1px solid ${installed ? "rgba(56,224,248,0.25)" : "rgba(255,255,255,0.06)"}`, borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: installed ? "rgba(56,224,248,0.06)" : isPhantomMobile ? "rgba(56,224,248,0.04)" : "rgba(255,255,255,0.02)", border: `1px solid ${installed ? "rgba(56,224,248,0.25)" : isPhantomMobile ? "rgba(56,224,248,0.2)" : "rgba(255,255,255,0.06)"}`, borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
                   >
                     <span style={{ fontSize: 22 }}>{w.icon}</span>
-                    <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{w.name}</span>
-                    <span style={{ fontSize: 11, color: installed ? "#0ecb81" : "rgba(180,190,210,0.45)" }}>
-                      {installed ? "Detected" : "Scan QR"}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{w.name}</div>
+                      {isPhantomMobile && <div style={{ fontSize: 10, color: "rgba(56,224,248,0.6)", marginTop: 1 }}>Opens Phantom app → returns to this browser</div>}
+                    </div>
+                    <span style={{ fontSize: 11, color: installed ? "#0ecb81" : isPhantomMobile ? "#38e0f8" : "rgba(180,190,210,0.45)" }}>
+                      {installed ? "Detected" : isPhantomMobile ? "Universal Link" : "Scan QR"}
                     </span>
                   </button>
                 );
               })}
 
-              {/* Connect a mobile wallet on another device by scanning a QR code. */}
-              <button
-                onClick={() => setShowQR(true)}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
-              >
-                <span style={{ fontSize: 22 }}>📱</span>
-                <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>Mobile wallet</span>
-                <span style={{ fontSize: 11, color: "rgba(180,190,210,0.45)" }}>Scan QR</span>
-              </button>
+              {/* QR code option for non-Phantom mobile wallets */}
+              {mobile && (
+                <button
+                  onClick={() => setShowQR(true)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
+                >
+                  <span style={{ fontSize: 22 }}>📷</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>Other wallet</div>
+                    <div style={{ fontSize: 10, color: "rgba(180,190,210,0.45)", marginTop: 1 }}>Solflare, Trust, Backpack…</div>
+                  </div>
+                  <span style={{ fontSize: 11, color: "rgba(180,190,210,0.45)" }}>Scan QR</span>
+                </button>
+              )}
+              {!mobile && (
+                <button
+                  onClick={() => setShowQR(true)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, cursor: "pointer", textAlign: "left", color: "#eaecef" }}
+                >
+                  <span style={{ fontSize: 22 }}>📱</span>
+                  <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>Mobile wallet</span>
+                  <span style={{ fontSize: 11, color: "rgba(180,190,210,0.45)" }}>Scan QR</span>
+                </button>
+              )}
             </div>
           </>
         )}
@@ -661,6 +702,9 @@ export default function CreateTokenPage() {
   const launchBtnRef = useRef<HTMLButtonElement>(null);
   const [justConnected, setJustConnected] = useState(false);
 
+  // True when the user connected via Phantom Universal Link (no injected provider).
+  const [connectedViaDeeplink, setConnectedViaDeeplink] = useState(false);
+
   // Fee totals
   const advFee       = Object.entries(advOpts).filter(([,v])=>v).reduce((s,[k])=>s+ADVANCED_FEES[k].fee, 0);
   const advLamports  = Object.entries(advOpts).filter(([,v])=>v).reduce((s,[k])=>s+ADVANCED_FEES[k].lamports, 0);
@@ -711,6 +755,179 @@ export default function CreateTokenPage() {
     } catch (e: any) {
       setCreateError(e?.message || "Failed to connect wallet");
     } finally { setWalletLoading(false); }
+  };
+
+  // ── Phantom Universal Link return handler ────────────────────────────────
+  // When the user connects or signs via Phantom's Universal Link (deeplink), the
+  // Phantom app redirects them back to THIS browser page with result params in the
+  // URL. This effect parses those params once on mount and either:
+  //   • Connect return: sets wallet state (user stays in original browser ✓)
+  //   • Sign return:    confirms the transaction and saves the token (user stays ✓)
+  const phantomReturnRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || phantomReturnRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+
+    // ── Phase A: connect return ──────────────────────────────────────────────
+    if (params.has("phantom_encryption_public_key")) {
+      phantomReturnRef.current = true;
+      const pubkey = parsePhantomConnectReturn();
+      stripPhantomParams();
+      if (!pubkey) { setCreateError("Phantom connect was rejected or failed."); return; }
+
+      setWalletAddress(pubkey);
+      setWalletName("Phantom");
+      setWalletCanSign(true);
+      setConnectedViaDeeplink(true);
+      setActiveWallet("phantom", null); // mark phantom as active (no injected provider)
+      getWalletBalance(pubkey).then(setWalletBalance);
+
+      // Restore any form state saved before the connect redirect.
+      try {
+        const s = JSON.parse(sessionStorage.getItem("frost_phantom_form") || "{}");
+        if (s.name)        setName(s.name);
+        if (s.symbol)      setSymbol(s.symbol);
+        if (s.description) setDescription(s.description);
+        if (s.website)     setWebsite(s.website);
+        if (s.telegram)    setTelegram(s.telegram);
+        if (s.twitter)     setTwitter(s.twitter);
+        if (s.imagePreview) setImagePreview(s.imagePreview);
+        sessionStorage.removeItem("frost_phantom_form");
+      } catch { /* non-fatal */ }
+
+      setJustConnected(true);
+      setTimeout(() => {
+        launchBtnRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
+      setTimeout(() => setJustConnected(false), 3000);
+      return;
+    }
+
+    // ── Phase B: sign return ─────────────────────────────────────────────────
+    if (params.has("data") && params.has("nonce")) {
+      const pendingRaw = sessionStorage.getItem("frost_phantom_pending");
+      if (!pendingRaw) return; // not our sign return
+      phantomReturnRef.current = true;
+
+      const signature = parsePhantomSignReturn();
+      stripPhantomParams();
+      sessionStorage.removeItem("frost_phantom_pending");
+
+      let pending: any;
+      try { pending = JSON.parse(pendingRaw); } catch {
+        setCreateError("Sign return state was corrupted. Please try again.");
+        return;
+      }
+
+      // Restore wallet + form state
+      if (pending.walletAddress) {
+        setWalletAddress(pending.walletAddress);
+        setWalletName("Phantom");
+        setWalletCanSign(true);
+        setConnectedViaDeeplink(true);
+        setActiveWallet("phantom", null);
+        getWalletBalance(pending.walletAddress).then(setWalletBalance);
+      }
+      setName(pending.name || "");
+      setSymbol(pending.symbol || "");
+      setDescription(pending.description || "");
+      setWebsite(pending.website || "");
+      setTelegram(pending.telegram || "");
+      setTwitter(pending.twitter || "");
+      if (pending.imageData) setImagePreview(pending.imageData);
+
+      if (!signature) {
+        setCreateError("Phantom rejected the signing request. Please try again.");
+        return;
+      }
+
+      // Complete token creation / handle initial buy redirect
+      (async () => {
+        setCreating(true);
+        setCreateStatus("Confirming transaction…");
+        try {
+          const conn = getConnection();
+          await conn.confirmTransaction(signature, "confirmed");
+
+          if (pending.phase === "create" && pending.needsInitialBuy && pending.initBuyAmt > 0) {
+            // Build initial-buy tx and redirect to Phantom for a second signature.
+            const ibBytes = await buildInitialBuyTransaction(
+              pending.mintAddress, pending.walletAddress, pending.initBuyAmt, setCreateStatus,
+            );
+            const ibPending = { ...pending, phase: "initialBuy", createSig: signature };
+            sessionStorage.setItem("frost_phantom_pending", JSON.stringify(ibPending));
+            setCreateStatus("Opening Phantom for initial buy…");
+            phantomSignAndSend(ibBytes, window.location.href);
+            return; // navigates away
+          }
+
+          // All done — build and save the token record.
+          const createSig = pending.phase === "initialBuy" ? pending.createSig : signature;
+          const buySig    = pending.phase === "initialBuy" ? signature : null;
+
+          let vSol = VIRTUAL_SOL, vTokens = VIRTUAL_TOKENS;
+          const history: Trade[] = [];
+          if (buySig) {
+            const q = getBuyQuote(VIRTUAL_SOL, VIRTUAL_TOKENS, pending.initBuyAmt, INITIAL_BUY_FEE_BPS);
+            vSol    += pending.initBuyAmt - q.fee;
+            vTokens -= q.tokensOut;
+            history.push({ type: "buy", solAmount: pending.initBuyAmt, tokenAmount: q.tokensOut, price: q.price, ts: Date.now(), wallet: shortAddr(pending.walletAddress) });
+          }
+
+          // Try to read live on-chain state.
+          const chainState = await fetchCurveState(pending.mintAddress).catch(() => null);
+          if (chainState) { vSol = chainState.virtualSol; vTokens = chainState.virtualTokens; }
+
+          const token: TokenData = {
+            id: crypto.randomUUID(), mint: pending.mintAddress,
+            name: pending.name, symbol: pending.symbol,
+            description: pending.description, image: pending.imageData,
+            metadataUri: pending.metadataUri,
+            creator: shortAddr(pending.walletAddress), creatorAddress: pending.walletAddress,
+            createdAt: pending.createdAt,
+            website: pending.website, telegram: pending.telegram, twitter: pending.twitter,
+            virtualSol: vSol, virtualTokens: vTokens,
+            graduated: vSol >= GRADUATION_TARGET,
+            advancedOptions: pending.advancedOptions || [],
+            tradeHistory: history, marketCap: getMcap(vSol, vTokens),
+            txSignature: buySig || createSig || undefined,
+          };
+
+          const updated = [token, ...loadTokens()];
+          saveTokens(updated);
+          setTokens(updated);
+          refreshTokenList();
+          getWalletBalance(pending.walletAddress).then(setWalletBalance);
+          setCreateSuccess(`🎉 ${token.name} ($${token.symbol}) launched! Mint: ${token.mint}`);
+          setName(""); setSymbol(""); setDescription(""); setWebsite(""); setTelegram(""); setTwitter("");
+          setImageFile(null); setImagePreview("");
+          setAdvOpts({ revoke_mint: false, revoke_freeze: false, immutable_metadata: false });
+          setInitialBuy(false);
+          setTimeout(() => { setTab("trade"); setCreateSuccess(""); }, 2500);
+        } catch (e: any) {
+          console.error("Phantom sign return error:", e);
+          setCreateError(friendlyTxError(e));
+        } finally {
+          setCreating(false);
+          setCreateStatus("");
+        }
+      })();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Phantom Universal Link connect (from mobile picker) ──────────────────
+  const handlePhantomMobileConnect = () => {
+    // Save current form state so we can restore it after Phantom redirects back.
+    try {
+      sessionStorage.setItem("frost_phantom_form", JSON.stringify({
+        name, symbol, description, website, telegram, twitter,
+        imagePreview: imagePreview.startsWith("data:") ? imagePreview : "",
+      }));
+    } catch { /* quota exceeded — non-fatal */ }
+    setCreateStatus("Opening Phantom…");
+    // Redirect to Phantom. After approval, Phantom opens redirect_link in this browser.
+    phantomConnect(window.location.href);
   };
 
   // Auto-connect after a mobile deep link. When the user picks a wallet on
@@ -928,8 +1145,43 @@ export default function CreateTokenPage() {
         } catch { /* non-fatal */ }
       }
 
-      if (useChain) {
-        // ── REAL on-chain path: mint SPL token + metadata + bonding curve ──
+      if (useChain && hasPhantomDeeplinkSession()) {
+        // ── Phantom Universal Link path (mobile — no injected provider) ──────
+        // Build the transaction and let Phantom sign+send via deeplink.
+        // The page will navigate away; the sign-return handler above completes.
+        const { txBytes, mintAddress } = await buildCreateTokenTransaction(
+          {
+            walletAddress,
+            mintKeypair: chainMint!.keypair,
+            name: name.trim(),
+            symbol: symbol.trim().toUpperCase(),
+            metadataUri,
+            revokeMint: advOpts.revoke_mint,
+            revokeFreeze: advOpts.revoke_freeze,
+            immutableMetadata: advOpts.immutable_metadata,
+          },
+          setCreateStatus,
+        );
+        mint = mintAddress;
+        const pendingState = {
+          phase: "create",
+          walletAddress,
+          name: name.trim(), symbol: symbol.trim().toUpperCase(),
+          description: description.trim(), website: website.trim(),
+          telegram: telegram.trim(), twitter: twitter.trim(),
+          imageData, metadataUri, mintAddress,
+          createdAt, advancedOptions: Object.entries(advOpts).filter(([,v])=>v).map(([k])=>k),
+          needsInitialBuy: initialBuy && initBuyAmt > 0, initBuyAmt,
+        };
+        sessionStorage.setItem("frost_phantom_pending", JSON.stringify(pendingState));
+        const ok = phantomSignAndSend(txBytes, window.location.href);
+        if (!ok) {
+          sessionStorage.removeItem("frost_phantom_pending");
+          throw new Error("Phantom session expired. Please reconnect your wallet.");
+        }
+        return; // navigates away — sign-return handler completes the flow
+      } else if (useChain) {
+        // ── Normal injected-provider path ─────────────────────────────────────
         const res = await createTokenOnChain(
           {
             walletAddress,
@@ -1320,6 +1572,7 @@ export default function CreateTokenPage() {
         <WalletPickerModal
           onClose={() => setPickerOpen(false)}
           onSelect={handleSelectWallet}
+          onPhantomMobileConnect={handlePhantomMobileConnect}
         />
       )}
     </div>

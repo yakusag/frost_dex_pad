@@ -27,17 +27,45 @@ async function askGroq(messages: Message[], model: string): Promise<string> {
     temperature: 0.7,
   };
 
-  const res = await fetch("/api/groq", {
+  // 1. Try the Vercel serverless proxy first (keeps the key server-side).
+  let proxyOk = false;
+  try {
+    const res = await fetch("/api/groq", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content ?? "No response.";
+    }
+    // 4xx that isn't a "not found / method not allowed" → real error, surface it.
+    if (res.status !== 404 && res.status !== 405 && res.status < 500) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Groq API error ${res.status}`);
+    }
+    // 404 / 405 / 5xx → proxy not available; fall through to direct call.
+  } catch (e: any) {
+    if (e?.message?.startsWith("Groq API error")) throw e;
+    // Network/fetch error or proxy not found — fall through.
+  }
+
+  // 2. Direct fallback: the key is embedded at build time via vite.config define.
+  const key: string = (globalThis as any).__GROQ_KEY__ ?? "";
+  if (!key) throw new Error("FrostAI unavailable — GROQ_API_KEY not configured.");
+
+  const res2 = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Groq API error ${res.status}`);
+  if (!res2.ok) {
+    const err = await res2.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Groq API error ${res2.status}`);
   }
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "No response.";
+  const data2 = await res2.json();
+  void proxyOk; // suppress lint
+  return data2.choices?.[0]?.message?.content ?? "No response.";
 }
 
 const SUGGESTIONS = [
