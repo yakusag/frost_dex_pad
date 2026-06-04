@@ -1,3 +1,0 @@
-npx lint-staged
-npm run copyLocales
-git add public/locales/*.json

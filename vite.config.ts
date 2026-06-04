@@ -48,6 +48,15 @@ export default defineConfig(() => {
       host: "0.0.0.0",
       port: 5000,
       allowedHosts: true,
+      watch: {
+        ignored: [
+          "**/.cache/**",
+          "**/node_modules/.cache/**",
+          "**/.local/**",
+          "**/solana-bonding-curve/**",
+          "**/attached_assets/**",
+        ],
+      },
       proxy: {
         "/api/groq": {
           target: "https://api.groq.com",

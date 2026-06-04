@@ -11,8 +11,6 @@
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-// Abuse controls — this endpoint is a public proxy to a paid API key, so we cap
-// what callers can request to limit cost/quota exhaustion.
 const ALLOWED_MODELS = new Set([
   "llama-3.3-70b-versatile",
   "llama-3.1-8b-instant",
@@ -20,10 +18,9 @@ const ALLOWED_MODELS = new Set([
 ]);
 const DEFAULT_MODEL = "llama-3.1-8b-instant";
 const MAX_TOKENS_CAP = 1024;
-const MAX_BODY_BYTES = 64 * 1024; // 64 KB is plenty for a chat turn.
+const MAX_BODY_BYTES = 64 * 1024;
 
 export default async function handler(req: any, res: any) {
-  // Allow browsers (CORS) — the key never leaves this function.
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -55,7 +52,6 @@ export default async function handler(req: any, res: any) {
       return;
     }
 
-    // Enforce a known model and a hard max_tokens ceiling.
     payload.model = ALLOWED_MODELS.has(payload?.model) ? payload.model : DEFAULT_MODEL;
     const requested = Number(payload?.max_tokens) || MAX_TOKENS_CAP;
     payload.max_tokens = Math.min(requested, MAX_TOKENS_CAP);
