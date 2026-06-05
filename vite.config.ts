@@ -105,6 +105,40 @@ export default defineConfig(() => {
     },
     optimizeDeps: {
       include: ["react", "react-dom", "react-router-dom"],
+<<<<<<< HEAD
+=======
+      force: false,
+      esbuildOptions: {
+        target: "esnext",
+        treeShaking: true,
+      },
+    },
+    server: {
+      open: false,
+      host: "0.0.0.0",
+      port: 5000,
+      allowedHosts: true,
+      warmup: {
+        clientFiles: [
+          "./app/main.tsx",
+          "./app/App.tsx",
+          "./app/pages/perp/Layout.tsx",
+          "./app/pages/perp/Symbol.tsx",
+        ],
+      },
+      hmr: {
+        overlay: false,
+      },
+    },
+    esbuild: {
+      drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
+      legalComments: "none",
+      treeShaking: true,
+      minifyIdentifiers: true,
+      minifySyntax: true,
+      minifyWhitespace: true,
+      target: "esnext",
+>>>>>>> 2dcaca1 (Improve input field appearance and optimize site speed)
     },
   };
 });

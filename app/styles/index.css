@@ -21,11 +21,40 @@ nav,
   box-shadow: 0 0 10px 0 rgba(56, 224, 248, 0.2);
 }
 
-/* ─── glowing border on focused inputs ─────────────────────────────── */
+/* ─── remove ALL borders/rings on focused inputs (keep caret only) ─── */
 .oui-input:focus-within,
-input:focus {
+.oui-input:focus,
+[class*="oui-input"]:focus-within,
+[class*="oui-input"]:focus,
+[class*="oui-input-root"]:focus-within,
+[class*="oui-input-root"]:focus,
+[class*="oui-input__root"]:focus-within,
+[class*="oui-input__root"]:focus,
+[class*="oui-inputRoot"]:focus-within,
+[class*="oui-inputRoot"]:focus,
+[class*="oui-numberInput"]:focus-within,
+[class*="oui-numberInput"]:focus,
+[class*="oui-orderEntry"]:focus-within,
+[class*="oui-orderEntry"]:focus,
+input:focus,
+input:focus-visible {
   box-shadow: none !important;
   outline: none !important;
+  border-color: transparent !important;
+  ring: none !important;
+}
+
+/* Kill the ring utility classes Orderly/Tailwind might inject on focus */
+*:focus { outline: none !important; }
+*:focus-visible { outline: none !important; box-shadow: none !important; }
+
+/* Orderly UI uses CSS vars for focus ring — override them */
+:root {
+  --oui-color-input-focus-ring: transparent;
+  --oui-ring-color: transparent;
+  --tw-ring-color: transparent !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-offset-shadow: none !important;
 }
 
 /* ─── row hover ─────────────────────────────────────────────────── */
