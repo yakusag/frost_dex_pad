@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import BotChart, { Candle, Signal } from "./BotChart";
 import { useBinanceFeed } from "@/hooks/useBinanceFeed";
 
@@ -16,12 +16,14 @@ interface BacktestResult {
   equityCurve: number[];
 }
 
-const SYMBOLS = [
-  { value: "BTC", label: "BTC/USDT" },
-  { value: "ETH", label: "ETH/USDT" },
-  { value: "SOL", label: "SOL/USDT" },
-  { value: "ARB", label: "ARB/USDT" },
-  { value: "BNB", label: "BNB/USDT" },
+interface SymbolOption { value: string; label: string; }
+
+const FALLBACK_SYMBOLS: SymbolOption[] = [
+  { value: "BTC",  label: "BTC/USDT" },
+  { value: "ETH",  label: "ETH/USDT" },
+  { value: "SOL",  label: "SOL/USDT" },
+  { value: "ARB",  label: "ARB/USDT" },
+  { value: "BNB",  label: "BNB/USDT" },
 ];
 
 const TIMEFRAMES: Timeframe[] = ["15m", "1h", "4h", "1d"];
@@ -135,7 +137,6 @@ function runBacktest(candles: Candle[], strategy: Strategy, params: Record<strin
   const totalReturnPct = (totalReturn / investment) * 100;
   const winRate = trades > 0 ? (wins / Math.max(1, Math.floor(trades / 2))) * 100 : 0;
 
-  // Sharpe (simplified)
   const returns = equity.slice(1).map((v, i) => (v - equity[i]) / equity[i]);
   const meanR = returns.reduce((a, b) => a + b, 0) / returns.length;
   const stdR = Math.sqrt(returns.reduce((a, r) => a + (r - meanR) ** 2, 0) / returns.length);
@@ -187,12 +188,190 @@ function lerp(v: number, inMin: number, inMax: number, outMin: number, outMax: n
   return ((v - inMin) / (inMax - inMin)) * (outMax - outMin) + outMin;
 }
 
+function useAllMarkets(): { symbols: SymbolOption[]; loading: boolean } {
+  const [symbols, setSymbols] = useState<SymbolOption[]>(FALLBACK_SYMBOLS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("https://api.orderly.org/v1/public/futures")
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        const rows = data?.data?.rows ?? [];
+        if (rows.length === 0) return;
+        const opts: SymbolOption[] = rows
+          .map((row: any) => {
+            const sym: string = row.symbol ?? "";
+            const base = sym.replace(/^PERP_/, "").replace(/_USDC$|_USDT$/, "");
+            return base ? { value: base, label: `${base}/USDT` } : null;
+          })
+          .filter(Boolean)
+          .sort((a: SymbolOption, b: SymbolOption) => a.value.localeCompare(b.value));
+        setSymbols(opts);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  return { symbols, loading };
+}
+
+function SearchableSelect({
+  symbols,
+  value,
+  onChange,
+  loading,
+}: {
+  symbols: SymbolOption[];
+  value: string;
+  onChange: (v: string) => void;
+  loading: boolean;
+}) {
+  const [open, setOpen]     = useState(false);
+  const [query, setQuery]   = useState("");
+  const ref                 = useRef<HTMLDivElement>(null);
+  const inputRef            = useRef<HTMLInputElement>(null);
+
+  const filtered = query.trim()
+    ? symbols.filter((s) =>
+        s.value.toLowerCase().includes(query.toLowerCase()) ||
+        s.label.toLowerCase().includes(query.toLowerCase())
+      )
+    : symbols;
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 50);
+  }, [open]);
+
+  const selected = symbols.find((s) => s.value === value);
+
+  return (
+    <div ref={ref} style={{ position: "relative", minWidth: 150 }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          ...selectSt,
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          cursor: "pointer",
+          userSelect: "none",
+        }}
+      >
+        <span style={{ fontWeight: 600, color: "#eaecef" }}>
+          {selected?.label ?? value + "/USDT"}
+        </span>
+        <span style={{ color: "rgba(180,190,210,0.4)", fontSize: 10 }}>
+          {open ? "▲" : "▼"}
+        </span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute",
+          top: "calc(100% + 4px)",
+          left: 0,
+          zIndex: 9999,
+          background: "rgb(14,17,22)",
+          border: "1px solid rgba(56,224,248,0.25)",
+          borderRadius: 8,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+          minWidth: 200,
+          maxHeight: 320,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}>
+          <div style={{ padding: "8px 10px", borderBottom: "1px solid rgba(30,36,50,1)" }}>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search token…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(56,224,248,0.2)",
+                borderRadius: 5,
+                padding: "5px 9px",
+                color: "#eaecef",
+                fontSize: 13,
+                fontFamily: "Manrope, sans-serif",
+                outline: "none",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+          <div style={{ overflowY: "auto", maxHeight: 260 }}>
+            {loading && (
+              <div style={{ padding: "10px 12px", color: "rgba(180,190,210,0.4)", fontSize: 12 }}>
+                Loading markets…
+              </div>
+            )}
+            {!loading && filtered.length === 0 && (
+              <div style={{ padding: "10px 12px", color: "rgba(180,190,210,0.35)", fontSize: 12 }}>
+                No results
+              </div>
+            )}
+            {filtered.map((s) => (
+              <div
+                key={s.value}
+                onMouseDown={() => { onChange(s.value); setOpen(false); setQuery(""); }}
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: s.value === value ? 700 : 400,
+                  color: s.value === value ? "#38e0f8" : "#eaecef",
+                  background: s.value === value ? "rgba(56,224,248,0.08)" : "transparent",
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = s.value === value ? "rgba(56,224,248,0.08)" : "transparent"; }}
+              >
+                {s.label}
+              </div>
+            ))}
+          </div>
+          <div style={{
+            padding: "5px 10px",
+            borderTop: "1px solid rgba(30,36,50,1)",
+            fontSize: 10,
+            color: "rgba(180,190,210,0.3)",
+            textAlign: "right",
+          }}>
+            {filtered.length} / {symbols.length} markets
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface Props {
   defaultStrategy?: Strategy;
   defaultSymbol?: string;
 }
 
 export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol = "BTC" }: Props) {
+  const { symbols, loading: marketsLoading } = useAllMarkets();
   const [symbol, setSymbol] = useState(defaultSymbol);
   const [tf, setTf] = useState<Timeframe>("1h");
   const [strategy, setStrategy] = useState<Strategy>(defaultStrategy);
@@ -203,7 +382,6 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
 
   const feed = useBinanceFeed(symbol, tf, realtimeMode);
 
-  // Params
   const [rsiOversold, setRsiOversold] = useState(35);
   const [rsiOverbought, setRsiOverbought] = useState(68);
   const [emaFast, setEmaFast] = useState(9);
@@ -212,7 +390,6 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
   const [dcaInterval, setDcaInterval] = useState(8);
   const [dcaAmount, setDcaAmount] = useState(100);
 
-  // Reset results when symbol/tf changes
   useEffect(() => {
     setResult(null);
   }, [symbol, tf]);
@@ -237,7 +414,7 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
   const chartData = feed.candles;
   const chartSignals = result?.signals || [];
 
-  const symInfo = SYMBOLS.find((s) => s.value === symbol) || SYMBOLS[0];
+  const symInfo = symbols.find((s) => s.value === symbol) || { value: symbol, label: `${symbol}/USDT` };
 
   const fmtPrice = (p: number | null) => {
     if (!p) return "—";
@@ -252,10 +429,23 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
       {/* Controls bar */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16, alignItems: "flex-end" }}>
         <div>
-          <label style={labelSt}>Symbol</label>
-          <select value={symbol} onChange={(e) => setSymbol(e.target.value)} style={selectSt}>
-            {SYMBOLS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
+          <label style={labelSt}>
+            Symbol
+            {marketsLoading && (
+              <span style={{ marginLeft: 6, color: "rgba(56,224,248,0.5)", fontWeight: 400 }}>loading…</span>
+            )}
+            {!marketsLoading && (
+              <span style={{ marginLeft: 6, color: "rgba(14,203,129,0.6)", fontWeight: 400 }}>
+                {symbols.length} markets
+              </span>
+            )}
+          </label>
+          <SearchableSelect
+            symbols={symbols}
+            value={symbol}
+            onChange={setSymbol}
+            loading={marketsLoading}
+          />
         </div>
         <div>
           <label style={labelSt}>Timeframe</label>
@@ -351,7 +541,6 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
 
       {/* Chart */}
       <div className="bot-card" style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
-        {/* Chart header */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "12px 16px", borderBottom: "1px solid rgba(30,36,50,1)",
@@ -361,7 +550,6 @@ export default function BotBacktest({ defaultStrategy = "signal", defaultSymbol 
             <span style={{ fontSize: 11, color: "rgba(180,190,210,0.45)", background: "rgba(30,36,50,1)", padding: "2px 6px", borderRadius: 4 }}>
               {tf}
             </span>
-            {/* Live price */}
             {feed.latestPrice !== null && (
               <span style={{ fontSize: 15, fontWeight: 700, color: "#eaecef", letterSpacing: -0.3 }}>
                 ${fmtPrice(feed.latestPrice)}
