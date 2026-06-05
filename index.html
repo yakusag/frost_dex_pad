@@ -16,30 +16,32 @@
     <link rel="apple-touch-icon" href="/favicon.webp" />
 
     <title>FrostDex</title>
+    <meta name="color-scheme" content="dark" />
 
     <!-- speed: preconnect & dns-prefetch critical origins -->
     <link rel="preconnect" href="https://api.orderly.org" crossorigin />
     <link rel="preconnect" href="https://api.orderly.network" crossorigin />
     <link rel="preconnect" href="https://api.dexscreener.com" crossorigin />
     <link rel="preconnect" href="https://arb1.arbitrum.io" crossorigin />
-<<<<<<< HEAD
-    <link rel="preconnect" href="https://sol.nownodes.io" crossorigin />
-    <link rel="preconnect" href="https://api.pinata.cloud" crossorigin />
-    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-    <link rel="dns-prefetch" href="https://arbiscan.io" />
-    <link rel="dns-prefetch" href="https://phantom.app" />
-    <link rel="dns-prefetch" href="https://gateway.pinata.cloud" />
-    <link rel="dns-prefetch" href="https://rpc.ankr.com" />
-    <link rel="dns-prefetch" href="https://mainnet.helius-rpc.com" />
-=======
     <link rel="preconnect" href="https://rpc.ankr.com" crossorigin />
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
     <link rel="dns-prefetch" href="https://arbiscan.io" />
     <link rel="dns-prefetch" href="https://api.groq.com" />
     <link rel="dns-prefetch" href="https://api.binance.com" />
->>>>>>> 2dcaca1 (Improve input field appearance and optimize site speed)
+
+    <!-- speed: preload critical fonts (Bold + SemiBold used in headers/prices) -->
+    <link rel="preload" href="/fonts/Manrope/Manrope-Bold.ttf"    as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/fonts/Manrope/Manrope-SemiBold.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/fonts/Manrope/Manrope-Medium.ttf"   as="font" type="font/ttf" crossorigin />
+
+    <!-- speed: preload splash logo (above the fold, shown immediately) -->
+    <link rel="preload" href="/frostdex-logo.webp" as="image" fetchpriority="high" />
 
     <style>
+      /* ── critical: instant dark bg to prevent white flash ── */
+      html, body { background: #0b0e11; margin: 0; padding: 0; }
+      #root { min-height: 100vh; background: #0b0e11; }
+
       /* ── base ── */
       #splash {
         position: fixed;
@@ -159,7 +161,8 @@
     <div id="splash">
       <div id="splash-aurora"></div>
       <div id="splash-particles"></div>
-      <img id="splash-flake" src="/frostdex-logo.webp" alt="FrostDex" />
+      <img id="splash-flake" src="/frostdex-logo.webp" alt="FrostDex"
+        onerror="this.onerror=null;this.src='/frostdex-logo.png';" />
       <div id="splash-name">FROSTDEX</div>
       <div id="splash-candles">
         <div class="splash-candle"></div>
@@ -199,9 +202,18 @@
         var s = document.getElementById('splash');
         if (s) {
           s.classList.add('hidden');
-          setTimeout(function () { s.remove(); }, 600);
+          setTimeout(function () { if (s.parentNode) s.remove(); }, 600);
         }
       };
+
+      /* FALLBACK: force-hide splash after 8s if React never mounts */
+      setTimeout(function () {
+        var s = document.getElementById('splash');
+        if (s && !s.classList.contains('hidden')) {
+          s.classList.add('hidden');
+          setTimeout(function () { if (s.parentNode) s.remove(); }, 600);
+        }
+      }, 8000);
     </script>
   </body>
 </html>
