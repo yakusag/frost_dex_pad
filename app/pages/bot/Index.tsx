@@ -615,7 +615,7 @@ export default function BotPage() {
               }}
             >
               <img
-                src="/frostdex-badge.png"
+                src="/frostdex-badge.webp"
                 alt="FrostDex"
                 style={{ height: 28, objectFit: "contain", display: "block" }}
               />
