@@ -1,5 +1,6 @@
 {
-  "buildCommand": "yarn build",
+  "buildCommand": "yarn install --production=false && yarn build",
+  "installCommand": "yarn install --production=false",
   "outputDirectory": "build/client",
   "framework": null,
   "rewrites": [
