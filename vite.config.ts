@@ -48,6 +48,17 @@ export default defineConfig(() => {
       host: "0.0.0.0",
       port: 5000,
       allowedHosts: true,
+      watch: {
+        ignored: (watchPath: string) =>
+          watchPath.includes("/.local/") ||
+          watchPath.includes("/.cargo/") ||
+          watchPath.includes("/.cache/") ||
+          watchPath.includes("/.git/") ||
+          watchPath.includes("/target/") ||
+          watchPath.includes("/solana-bonding-curve/") ||
+          watchPath.includes("/attached_assets/") ||
+          watchPath.includes("/node_modules/.cache/"),
+      },
       warmup: {
         clientFiles: [
           "./app/main.tsx",
@@ -58,6 +69,18 @@ export default defineConfig(() => {
       },
       hmr: {
         overlay: false,
+      },
+      proxy: {
+        "/api/groq": {
+          target: "https://api.groq.com",
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api\/groq/, "/openai/v1/chat/completions"),
+          configure: (proxy) => {
+            proxy.on("proxyReq", (proxyReq) => {
+              proxyReq.setHeader("Authorization", `Bearer ${process.env.GROQ_API_KEY || ""}`);
+            });
+          },
+        },
       },
     },
     define: {
