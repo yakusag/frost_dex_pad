@@ -123,6 +123,7 @@ export default defineConfig(() => {
             "vendor-web3":     ["wagmi"],
           },
           compact: true,
+          experimentalMinChunkSize: 20000,
           generatedCode: {
             arrowFunctions: true,
             constBindings: true,
