@@ -699,6 +699,7 @@ export default function CreateTokenPage() {
   const [createStatus, setCreateStatus] = useState("");
   const [createError, setCreateError]   = useState("");
   const [createSuccess, setCreateSuccess] = useState("");
+  const [createMint, setCreateMint]       = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const launchBtnRef = useRef<HTMLButtonElement>(null);
@@ -911,12 +912,13 @@ export default function CreateTokenPage() {
           setTokens(updated);
           refreshTokenList();
           getWalletBalance(pending.walletAddress).then(setWalletBalance);
-          setCreateSuccess(`🎉 ${token.name} ($${token.symbol}) launched! Mint: ${token.mint}`);
+          setCreateSuccess(`🎉 ${token.name} ($${token.symbol}) launched!`);
+          setCreateMint(token.mint);
           setName(""); setSymbol(""); setDescription(""); setWebsite(""); setTelegram(""); setTwitter("");
           setImageFile(null); setImagePreview("");
           setAdvOpts({ revoke_mint: false, revoke_freeze: false, immutable_metadata: false });
           setInitialBuy(false);
-          setTimeout(() => { setTab("trade"); setCreateSuccess(""); }, 2500);
+          setTimeout(() => { setTab("trade"); setCreateSuccess(""); setCreateMint(""); }, 4000);
         } catch (e: any) {
           console.error("Phantom sign return error:", e);
           setCreateError(friendlyTxError(e));
@@ -1314,11 +1316,12 @@ export default function CreateTokenPage() {
       // Update balance
       getWalletBalance(walletAddress).then(setWalletBalance);
 
-      setCreateSuccess(`🎉 ${name} ($${symbol.toUpperCase()}) launched! Mint: ${mint}`);
+      setCreateSuccess(`🎉 ${name} ($${symbol.toUpperCase()}) launched!`);
+      setCreateMint(mint);
       setName(""); setSymbol(""); setDescription(""); setWebsite(""); setTelegram(""); setTwitter("");
       setImageFile(null); setImagePreview(""); setAdvOpts({ revoke_mint: false, revoke_freeze: false, immutable_metadata: false }); setInitialBuy(false);
 
-      setTimeout(() => { setTab("trade"); setCreateSuccess(""); }, 2500);
+      setTimeout(() => { setTab("trade"); setCreateSuccess(""); setCreateMint(""); }, 4000);
     } catch (e: any) {
       console.error("Launch token failed:", e);
       setCreateError(friendlyTxError(e));
@@ -1538,7 +1541,41 @@ export default function CreateTokenPage() {
 
             {/* Error / Success */}
             {createError && <div style={{ marginBottom: 14, padding: "12px 14px", background: "rgba(246,70,93,0.1)", border: "1px solid rgba(246,70,93,0.3)", borderRadius: 10, color: "#f6465d", fontSize: 13 }}>{createError}</div>}
-            {createSuccess && <div style={{ marginBottom: 14, padding: "12px 14px", background: "rgba(14,203,129,0.1)", border: "1px solid rgba(14,203,129,0.3)", borderRadius: 10, color: "#0ecb81", fontSize: 13 }}>{createSuccess}</div>}
+            {createSuccess && (
+              <div style={{ marginBottom: 14, padding: "14px 16px", background: "rgba(14,203,129,0.1)", border: "1px solid rgba(14,203,129,0.3)", borderRadius: 12 }}>
+                <div style={{ color: "#0ecb81", fontSize: 14, fontWeight: 700, marginBottom: createMint ? 10 : 0 }}>{createSuccess}</div>
+                {createMint && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,0.25)", borderRadius: 8, padding: "6px 10px" }}>
+                      <span style={{ fontFamily: "monospace", fontSize: 11, color: "rgba(180,190,210,0.7)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{createMint}</span>
+                      <button
+                        onClick={() => { navigator.clipboard?.writeText(createMint); }}
+                        style={{ flexShrink: 0, background: "none", border: "none", color: "rgba(180,190,210,0.5)", cursor: "pointer", fontSize: 14, padding: "0 4px" }}
+                        title="Copy mint address"
+                      >📋</button>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <a
+                        href={`https://solscan.io/token/${createMint}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 0", borderRadius: 9, background: "rgba(14,203,129,0.15)", border: "1px solid rgba(14,203,129,0.35)", color: "#0ecb81", fontWeight: 700, fontSize: 12, textDecoration: "none" }}
+                      >
+                        🔍 View on Solscan
+                      </a>
+                      <a
+                        href={`https://explorer.solana.com/address/${createMint}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "9px 0", borderRadius: 9, background: "rgba(56,224,248,0.08)", border: "1px solid rgba(56,224,248,0.2)", color: "#38e0f8", fontWeight: 700, fontSize: 12, textDecoration: "none" }}
+                      >
+                        🌐 Solana Explorer
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Create button */}
             {!walletAddress ? (
