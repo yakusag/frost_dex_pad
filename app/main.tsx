@@ -1,4 +1,4 @@
-import React, { lazy } from 'react';
+import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -83,90 +83,97 @@ function loadAnalytics() {
 
 const basePath = import.meta.env.BASE_URL || '/';
 
+const PageFallback = () => (
+  <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0b0e11" }}>
+    <div style={{ width: 32, height: 32, border: "3px solid rgba(56,224,248,0.15)", borderTopColor: "#38e0f8", borderRadius: "50%", animation: "spin 0.9s linear infinite" }} />
+    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+  </div>
+);
+
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     errorElement: <ErrorBoundary />,
     children: [
-      { index: true, element: <IndexPage /> },
+      { index: true, element: <Suspense fallback={<PageFallback />}><IndexPage /></Suspense> },
       {
         path: 'perp',
-        element: <PerpLayout />,
+        element: <Suspense fallback={<PageFallback />}><PerpLayout /></Suspense>,
         children: [
-          { index: true, element: <PerpIndex /> },
-          { path: ':symbol', element: <PerpSymbol /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><PerpIndex /></Suspense> },
+          { path: ':symbol', element: <Suspense fallback={<PageFallback />}><PerpSymbol /></Suspense> },
         ],
       },
       {
         path: 'portfolio',
-        element: <PortfolioLayout />,
+        element: <Suspense fallback={<PageFallback />}><PortfolioLayout /></Suspense>,
         children: [
-          { index: true, element: <PortfolioIndex /> },
-          { path: 'positions', element: <PortfolioPositions /> },
-          { path: 'orders', element: <PortfolioOrders /> },
-          { path: 'assets', element: <PortfolioAssets /> },
-          { path: 'api-key', element: <PortfolioApiKey /> },
-          { path: 'fee', element: <PortfolioFee /> },
-          { path: 'history', element: <PortfolioHistory /> },
-          { path: 'setting', element: <PortfolioSetting /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><PortfolioIndex /></Suspense> },
+          { path: 'positions', element: <Suspense fallback={<PageFallback />}><PortfolioPositions /></Suspense> },
+          { path: 'orders', element: <Suspense fallback={<PageFallback />}><PortfolioOrders /></Suspense> },
+          { path: 'assets', element: <Suspense fallback={<PageFallback />}><PortfolioAssets /></Suspense> },
+          { path: 'api-key', element: <Suspense fallback={<PageFallback />}><PortfolioApiKey /></Suspense> },
+          { path: 'fee', element: <Suspense fallback={<PageFallback />}><PortfolioFee /></Suspense> },
+          { path: 'history', element: <Suspense fallback={<PageFallback />}><PortfolioHistory /></Suspense> },
+          { path: 'setting', element: <Suspense fallback={<PageFallback />}><PortfolioSetting /></Suspense> },
         ],
       },
       {
         path: 'markets',
-        element: <MarketsLayout />,
+        element: <Suspense fallback={<PageFallback />}><MarketsLayout /></Suspense>,
         children: [
-          { index: true, element: <MarketsIndex /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><MarketsIndex /></Suspense> },
         ],
       },
       {
         path: 'leaderboard',
-        element: <LeaderboardLayout />,
+        element: <Suspense fallback={<PageFallback />}><LeaderboardLayout /></Suspense>,
         children: [
-          { index: true, element: <LeaderboardIndex /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><LeaderboardIndex /></Suspense> },
         ],
       },
       {
         path: 'rewards',
-        element: <RewardsLayout />,
+        element: <Suspense fallback={<PageFallback />}><RewardsLayout /></Suspense>,
         children: [
-          { index: true, element: <RewardsIndex /> },
-          { path: 'affiliate', element: <RewardsAffiliate /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><RewardsIndex /></Suspense> },
+          { path: 'affiliate', element: <Suspense fallback={<PageFallback />}><RewardsAffiliate /></Suspense> },
         ],
       },
       {
         path: 'vaults',
-        element: <VaultsLayout />,
+        element: <Suspense fallback={<PageFallback />}><VaultsLayout /></Suspense>,
         children: [
-          { index: true, element: <VaultsIndex /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><VaultsIndex /></Suspense> },
         ],
       },
       {
         path: 'swap',
-        element: <SwapLayout />,
+        element: <Suspense fallback={<PageFallback />}><SwapLayout /></Suspense>,
         children: [
-          { index: true, element: <SwapIndex /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><SwapIndex /></Suspense> },
         ],
       },
       {
         path: 'points',
-        element: <PointsLayout />,
+        element: <Suspense fallback={<PageFallback />}><PointsLayout /></Suspense>,
         children: [
-          { index: true, element: <PointsIndex /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><PointsIndex /></Suspense> },
         ],
       },
       {
         path: 'bot',
-        element: <BotLayout />,
+        element: <Suspense fallback={<PageFallback />}><BotLayout /></Suspense>,
         children: [
-          { index: true, element: <BotIndex /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><BotIndex /></Suspense> },
         ],
       },
       {
         path: 'create-token',
-        element: <CreateTokenLayout />,
+        element: <Suspense fallback={<PageFallback />}><CreateTokenLayout /></Suspense>,
         children: [
-          { index: true, element: <CreateTokenIndex /> },
+          { index: true, element: <Suspense fallback={<PageFallback />}><CreateTokenIndex /></Suspense> },
         ],
       },
     ],

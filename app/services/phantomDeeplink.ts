@@ -75,6 +75,46 @@ function decrypt(data: string, nonce: string, sharedKey: Uint8Array): any {
   return JSON.parse(Buffer.from(decrypted).toString("utf-8"));
 }
 
+// ─── Cross-tab broadcast ───────────────────────────────────────────────────────
+// When Phantom redirects back to ANY browser tab/window (including the system
+// default browser instead of the originating one), that landing tab calls
+// broadcastPhantomConnectResult(). Any other tab in the SAME browser that is
+// listening via subscribePhantomBroadcast() picks up the result instantly via
+// the storage event — without the user having to do anything.
+
+const LS_BC_KEY = "frost_phantom_bc_result";
+
+/**
+ * After a successful parsePhantomConnectReturn(), call this so that any
+ * sibling tab waiting in the same browser gets the wallet address immediately.
+ */
+export function broadcastPhantomConnectResult(): void {
+  const addr = localStorage.getItem(LS_WALLET_ADDR);
+  if (!addr) return;
+  localStorage.setItem(LS_BC_KEY, JSON.stringify({ addr, ts: Date.now() }));
+  // Auto-clean after 30 s to avoid stale state on future sessions.
+  setTimeout(() => { try { localStorage.removeItem(LS_BC_KEY); } catch { /* noop */ } }, 30_000);
+}
+
+/**
+ * Listen for a Phantom connect result broadcast from another tab in this
+ * browser. Returns an unsubscribe function — call it when the component
+ * unmounts or when the result has been received.
+ */
+export function subscribePhantomBroadcast(
+  onResult: (walletAddr: string) => void,
+): () => void {
+  const handler = (e: StorageEvent) => {
+    if (e.key !== LS_BC_KEY || !e.newValue) return;
+    try {
+      const { addr, ts } = JSON.parse(e.newValue) as { addr: string; ts: number };
+      if (Date.now() - ts < 60_000) onResult(addr);
+    } catch { /* ignore malformed entries */ }
+  };
+  window.addEventListener("storage", handler);
+  return () => window.removeEventListener("storage", handler);
+}
+
 // ─── Public API ────────────────────────────────────────────────────────────────
 
 /** True when a Phantom session is stored and ready for signing. */
@@ -99,19 +139,46 @@ export function clearPhantomDeeplink(): void {
 }
 
 /**
- * Redirect to Phantom for wallet connection via Universal Link.
- * `redirectLink` is the full URL Phantom should open after the user approves.
- * The user is returned to their ORIGINAL browser — Phantom's own browser is
- * never opened.
+ * Build the Phantom Universal Link connect URL without navigating.
+ * Use this when you want to open it via window.open() (preferred on mobile so
+ * the originating browser tab stays alive and can receive the broadcast).
  */
-export function phantomConnect(redirectLink: string): void {
+export function buildPhantomConnectUrl(redirectLink: string): string {
   const kp = getDappKeypair();
   const url = new URL("https://phantom.app/ul/v1/connect");
   url.searchParams.set("app_url", window.location.origin);
   url.searchParams.set("dapp_encryption_public_key", bs58.encode(kp.publicKey));
   url.searchParams.set("redirect_link", redirectLink);
   url.searchParams.set("cluster", "mainnet-beta");
-  window.location.href = url.toString();
+  return url.toString();
+}
+
+/**
+ * Open Phantom for wallet connection via Universal Link.
+ *
+ * Strategy — keep the originating browser tab alive:
+ *   1. window.open() opens the Phantom Universal Link in a new tab.
+ *      On iOS/Android, the OS intercepts it and launches the Phantom app;
+ *      the blank new tab closes itself.  The original browser tab (Brave,
+ *      Chrome, …) stays open and can receive the connection result via the
+ *      broadcastPhantomConnectResult / subscribePhantomBroadcast mechanism.
+ *   2. If window.open() is blocked (popup blocker), fall back to navigating
+ *      the current tab — same behaviour as before.
+ *
+ * After Phantom approves, it opens redirect_link in the system default
+ * browser.  If that is a different browser from the originating one,
+ * subscribePhantomBroadcast() won't fire (different localStorage), but the
+ * UI shows a "copy connection link" fallback so the user can finish manually.
+ */
+export function phantomConnect(redirectLink: string): Window | null {
+  const url = buildPhantomConnectUrl(redirectLink);
+  const popup = window.open(url, "_blank", "noopener");
+  if (!popup) {
+    // Popup blocked — navigate the current tab (legacy fallback).
+    window.location.href = url;
+    return null;
+  }
+  return popup;
 }
 
 /**

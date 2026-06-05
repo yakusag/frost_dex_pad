@@ -39,6 +39,8 @@ import {
   getPhantomDeeplinkAddress,
   clearPhantomDeeplink,
   stripPhantomParams,
+  broadcastPhantomConnectResult,
+  subscribePhantomBroadcast,
 } from "@/services/phantomDeeplink";
 
 // ─── Platform constants (from solana-bonding-curve/programs/bonding-curve/src/lib.rs) ──
@@ -705,6 +707,12 @@ export default function CreateTokenPage() {
   // True when the user connected via Phantom Universal Link (no injected provider).
   const [connectedViaDeeplink, setConnectedViaDeeplink] = useState(false);
 
+  // True while we're waiting for Phantom to return the connection in the same
+  // browser (via the localStorage broadcast). When window.open() kept this tab
+  // alive, we show a "Waiting…" banner and subscribe to the storage event.
+  const [phantomWaiting, setPhantomWaiting] = useState(false);
+  const phantomBroadcastUnsubRef = useRef<(() => void) | null>(null);
+
   // Fee totals
   const advFee       = Object.entries(advOpts).filter(([,v])=>v).reduce((s,[k])=>s+ADVANCED_FEES[k].fee, 0);
   const advLamports  = Object.entries(advOpts).filter(([,v])=>v).reduce((s,[k])=>s+ADVANCED_FEES[k].lamports, 0);
@@ -794,6 +802,11 @@ export default function CreateTokenPage() {
         if (s.imagePreview) setImagePreview(s.imagePreview);
         sessionStorage.removeItem("frost_phantom_form");
       } catch { /* non-fatal */ }
+
+      // Broadcast to any sibling tab that is waiting with window.open() still
+      // alive — this fires the subscribePhantomBroadcast storage event handler
+      // so the original browser tab picks up the wallet address instantly.
+      broadcastPhantomConnectResult();
 
       setJustConnected(true);
       setTimeout(() => {
@@ -916,6 +929,20 @@ export default function CreateTokenPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Clean up the broadcast subscription when the component unmounts (e.g. the
+  // user navigates away while the Phantom waiting overlay is showing).
+  useEffect(() => () => {
+    phantomBroadcastUnsubRef.current?.();
+  }, []);
+
+  // ── Cancel the Phantom waiting state (user tapped "Cancel") ─────────────
+  const handleCancelPhantomWait = () => {
+    phantomBroadcastUnsubRef.current?.();
+    phantomBroadcastUnsubRef.current = null;
+    setPhantomWaiting(false);
+    setCreateStatus("");
+  };
+
   // ── Phantom Universal Link connect (from mobile picker) ──────────────────
   const handlePhantomMobileConnect = () => {
     // Save current form state so we can restore it after Phantom redirects back.
@@ -925,9 +952,42 @@ export default function CreateTokenPage() {
         imagePreview: imagePreview.startsWith("data:") ? imagePreview : "",
       }));
     } catch { /* quota exceeded — non-fatal */ }
+
     setCreateStatus("Opening Phantom…");
-    // Redirect to Phantom. After approval, Phantom opens redirect_link in this browser.
-    phantomConnect(window.location.href);
+
+    // phantomConnect() tries window.open() first so THIS tab stays alive in
+    // Brave (or whichever browser the user is on). iOS intercepts the
+    // phantom.app URL as a Universal Link and opens the Phantom app; the blank
+    // new tab closes itself. If window.open() is blocked the current tab
+    // navigates away (old behaviour).
+    const popup = phantomConnect(window.location.href);
+
+    if (popup !== null) {
+      // window.open() succeeded — this tab is still alive. Subscribe to the
+      // localStorage broadcast so we pick up the result the moment Phantom
+      // opens the redirect_link in another tab of the SAME browser.
+      setPhantomWaiting(true);
+      const unsub = subscribePhantomBroadcast((addr) => {
+        unsub();
+        phantomBroadcastUnsubRef.current = null;
+        setPhantomWaiting(false);
+        setCreateStatus("");
+
+        setWalletAddress(addr);
+        setWalletName("Phantom");
+        setWalletCanSign(true);
+        setConnectedViaDeeplink(true);
+        setActiveWallet("phantom", null);
+        getWalletBalance(addr).then(setWalletBalance);
+        setJustConnected(true);
+        setTimeout(() => {
+          launchBtnRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 200);
+        setTimeout(() => setJustConnected(false), 3000);
+      });
+      phantomBroadcastUnsubRef.current = unsub;
+    }
+    // If popup === null the tab was navigated away — no waiting state needed.
   };
 
   // Auto-connect after a mobile deep link. When the user picks a wallet on
@@ -1574,6 +1634,35 @@ export default function CreateTokenPage() {
           onSelect={handleSelectWallet}
           onPhantomMobileConnect={handlePhantomMobileConnect}
         />
+      )}
+
+      {/* ── Phantom "waiting" overlay ──────────────────────────────────────
+          Shown while window.open() keeps this tab alive and we're listening
+          for Phantom to broadcast the approval result. Hides automatically
+          once the storage event fires and we receive the wallet address.     */}
+      {phantomWaiting && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "#0f1117", border: "1px solid rgba(56,224,248,0.25)", borderRadius: 20, padding: 28, width: "100%", maxWidth: 340, textAlign: "center" }}>
+            {/* Spinner */}
+            <div style={{ width: 48, height: 48, margin: "0 auto 18px", border: "3px solid rgba(56,224,248,0.15)", borderTopColor: "#38e0f8", borderRadius: "50%", animation: "spin 0.9s linear infinite" }} />
+            <div style={{ fontSize: 17, fontWeight: 800, color: "#eaecef", marginBottom: 8 }}>
+              Waiting for Phantom…
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(180,190,210,0.65)", lineHeight: 1.6, marginBottom: 20 }}>
+              Approve the connection in the <b style={{ color: "#38e0f8" }}>Phantom app</b>, then come back to this browser tab — it will connect automatically.
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(180,190,210,0.4)", background: "rgba(56,224,248,0.04)", border: "1px solid rgba(56,224,248,0.1)", borderRadius: 8, padding: "8px 12px", marginBottom: 16, lineHeight: 1.6 }}>
+              💡 If this tab doesn't auto-connect, open the approval link that Phantom redirected to and copy the URL — then paste it in this browser's address bar.
+            </div>
+            <button
+              onClick={handleCancelPhantomWait}
+              style={{ width: "100%", padding: "12px 0", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "rgba(180,190,210,0.7)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+            >
+              Cancel
+            </button>
+          </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
       )}
     </div>
   );
