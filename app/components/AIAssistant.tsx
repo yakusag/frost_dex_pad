@@ -20,52 +20,22 @@ const GROQ_MODELS = [
 ];
 
 async function askGroq(messages: Message[], model: string): Promise<string> {
-  const payload = {
-    model,
-    messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
-    max_tokens: 800,
-    temperature: 0.7,
-  };
-
-  // 1. Try the Vercel serverless proxy first (keeps the key server-side).
-  let proxyOk = false;
-  try {
-    const res = await fetch("/api/groq", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content ?? "No response.";
-    }
-    // 4xx that isn't a "not found / method not allowed" → real error, surface it.
-    if (res.status !== 404 && res.status !== 405 && res.status < 500) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `Groq API error ${res.status}`);
-    }
-    // 404 / 405 / 5xx → proxy not available; fall through to direct call.
-  } catch (e: any) {
-    if (e?.message?.startsWith("Groq API error")) throw e;
-    // Network/fetch error or proxy not found — fall through.
-  }
-
-  // 2. Direct fallback: the key is embedded at build time via vite.config define.
-  const key: string = (globalThis as any).__GROQ_KEY__ ?? "";
-  if (!key) throw new Error("FrostAI unavailable — GROQ_API_KEY not configured.");
-
-  const res2 = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch("/api/groq", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+      max_tokens: 800,
+      temperature: 0.7,
+    }),
   });
-  if (!res2.ok) {
-    const err = await res2.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Groq API error ${res2.status}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Groq API error ${res.status}`);
   }
-  const data2 = await res2.json();
-  void proxyOk; // suppress lint
-  return data2.choices?.[0]?.message?.content ?? "No response.";
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? "No response.";
 }
 
 const SUGGESTIONS = [
@@ -79,13 +49,15 @@ const SUGGESTIONS = [
 interface Props { onHide: () => void; }
 
 export default function AIAssistant({ onHide }: Props) {
-  const [open, setOpen]         = useState(false);
+  const [open, setOpen]     = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput]       = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
-  const [hovered, setHovered]   = useState(false);
+  const [input, setInput]   = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError]   = useState("");
+  const [hovered, setHovered] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  const needsKey = false;
 
   const [model, setModel] = useState(() => localStorage.getItem("frost_groq_model") || GROQ_MODELS[0].id);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
@@ -108,6 +80,7 @@ export default function AIAssistant({ onHide }: Props) {
   const send = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || loading) return;
+    if (needsKey) { setShowSettings(true); return; }
     const userMsg: Message = { role: "user", content };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -118,7 +91,7 @@ export default function AIAssistant({ onHide }: Props) {
       const reply = await askGroq(newMessages, model);
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
     } catch (e: any) {
-      setError(e.message || "Request failed. Please try again.");
+      setError(e.message || "Error. Check API key.");
     } finally { setLoading(false); }
   };
 
@@ -167,6 +140,7 @@ export default function AIAssistant({ onHide }: Props) {
             </div>
           </div>
 
+          {/* Settings panel — model picker only */}
           {showSettings && (
             <div className="ai-key-box" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
               <p className="ai-key-label" style={{ color: "#38e0f8" }}>Model</p>
@@ -182,7 +156,14 @@ export default function AIAssistant({ onHide }: Props) {
           )}
 
           <div className="ai-messages" onMouseDown={e => e.stopPropagation()} onTouchStart={e => e.stopPropagation()}>
-            {messages.length === 0 && !showSettings && (
+            {needsKey && (
+              <div className="ai-welcome">
+                <div className="ai-welcome-icon">❄</div>
+                <div className="ai-welcome-title">FrostAI</div>
+                <div className="ai-welcome-sub" style={{ color: "rgba(246,70,93,0.8)" }}>AI assistant is not configured yet.</div>
+              </div>
+            )}
+            {messages.length === 0 && !showSettings && !needsKey && (
               <div className="ai-welcome">
                 <div className="ai-welcome-icon">❄</div>
                 <div className="ai-welcome-title">FrostAI</div>
