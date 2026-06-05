@@ -1,4 +1,5 @@
 window.__RUNTIME_CONFIG__ = {
+  "GROQ_API_KEY": "",
   "VITE_ORDERLY_BROKER_ID": "frostdex",
   "VITE_ORDERLY_BROKER_NAME": "FrostDex",
   "VITE_BROKER_EOA_ADDRESS": "0xcb775f72acd4870570121fb038920517ea3e2d18",
@@ -18,7 +19,7 @@ window.__RUNTIME_CONFIG__ = {
   "VITE_APP_DESCRIPTION": "FrostDex — Decentralized Exchange",
   "VITE_HAS_PRIMARY_LOGO": "true",
   "VITE_HAS_SECONDARY_LOGO": "true",
-  "VITE_ENABLED_MENUS": "Trading,Portfolio,Markets,Swap,Leaderboard,Bot,CreateToken",
+  "VITE_ENABLED_MENUS": "Trading,Portfolio,Markets,Swap,Leaderboard,Bot,Vaults,Token,About",
   "VITE_CUSTOM_MENUS": "",
   "VITE_ENABLE_SERVICE_DISCLAIMER_DIALOG": "false",
   "VITE_ENABLE_CAMPAIGNS": "false",
