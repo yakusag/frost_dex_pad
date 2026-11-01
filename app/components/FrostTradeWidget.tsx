@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { FROST_TOKEN } from "@/utils/customTokens";
 import { useDraggable } from "@/hooks/useDraggable";
+import { FROST_TOKEN } from "@/utils/customTokens";
 
 interface FrostData {
   priceUsd: string;
@@ -43,14 +43,21 @@ export default function FrostTradeWidget({ onHide }: Props) {
   const prevPrice = useRef<number>(0);
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
 
-  const { pos, isDragging, isSnapping, elementRef, isBottomHalf, dragHandleProps } =
-    useDraggable("frost-widget", getDefaultPos());
+  const {
+    pos,
+    isDragging,
+    isSnapping,
+    elementRef,
+    isBottomHalf,
+    wasDragged,
+    dragHandleProps,
+  } = useDraggable("frost-widget", getDefaultPos());
 
   const fetchPrice = async () => {
     try {
       const res = await fetch(
         `https://api.dexscreener.com/latest/dex/pairs/arbitrum/${FROST_TOKEN.poolAddress}`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
       const json = await res.json();
       const pair = json?.pair ?? json?.pairs?.[0];
@@ -83,8 +90,8 @@ export default function FrostTradeWidget({ onHide }: Props) {
     flash === "up"
       ? "frost-widget-flash-up"
       : flash === "down"
-      ? "frost-widget-flash-down"
-      : "";
+        ? "frost-widget-flash-down"
+        : "";
 
   return (
     <div
@@ -97,8 +104,8 @@ export default function FrostTradeWidget({ onHide }: Props) {
         transition: isSnapping
           ? "left 0.3s cubic-bezier(0.34,1.56,0.64,1), top 0.3s cubic-bezier(0.34,1.56,0.64,1)"
           : isDragging
-          ? "none"
-          : undefined,
+            ? "none"
+            : undefined,
         cursor: isDragging ? "grabbing" : undefined,
         zIndex: isDragging ? 300 : 50,
         userSelect: isDragging ? "none" : undefined,
@@ -111,7 +118,10 @@ export default function FrostTradeWidget({ onHide }: Props) {
       >
         <div
           className="frost-trade-widget__title"
-          onClick={() => { if (wasDragged()) return; setCollapsed((v) => !v); }}
+          onClick={() => {
+            if (wasDragged()) return;
+            setCollapsed((v) => !v);
+          }}
           style={{ flex: 1, cursor: isDragging ? "grabbing" : "grab" }}
         >
           <span className="frost-trade-widget__icon">❄</span>
@@ -119,14 +129,17 @@ export default function FrostTradeWidget({ onHide }: Props) {
         </div>
         <div
           className="frost-trade-widget__toggle"
-          onClick={() => { if (wasDragged()) return; setCollapsed((v) => !v); }}
+          onClick={() => {
+            if (wasDragged()) return;
+            setCollapsed((v) => !v);
+          }}
         >
           {collapsed ? "▲" : "▼"}
         </div>
         {onHide && (
           <button
             className="frost-trade-widget__close"
-            onMouseDown={e => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={onHide}
             title="Hide widget"
           >
@@ -138,7 +151,11 @@ export default function FrostTradeWidget({ onHide }: Props) {
       {!collapsed && (
         <div className="frost-trade-widget__body">
           <div className={`frost-trade-widget__price ${priceFlashClass}`}>
-            {data ? fmtPrice(price) : <span className="frost-trade-widget__loading">…</span>}
+            {data ? (
+              fmtPrice(price)
+            ) : (
+              <span className="frost-trade-widget__loading">…</span>
+            )}
           </div>
 
           <div className="frost-trade-widget__row">
@@ -153,7 +170,9 @@ export default function FrostTradeWidget({ onHide }: Props) {
 
           <div className="frost-trade-widget__row">
             <span className="frost-trade-widget__label">Vol</span>
-            <span className="frost-trade-widget__val">{data ? fmtVol(vol) : "—"}</span>
+            <span className="frost-trade-widget__val">
+              {data ? fmtVol(vol) : "—"}
+            </span>
           </div>
 
           <div className="frost-trade-widget__actions">

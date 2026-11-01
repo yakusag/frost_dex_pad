@@ -7,19 +7,3 @@ node_modules
 # SpecStory explanation file
 .specstory/.what-is-this.md
 /public/manifest.json
-.vercel
-.env*
-
-# Editor
-.vscode/
-.idea/
-
-# Vercel / GitHub Pages artifacts
-vercel.json
-CNAME
-
-# Rust build artifacts
-solana-bonding-curve/target/
-
-# Duplicate project copies
-frost_dex_pad/

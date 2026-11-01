@@ -21,40 +21,33 @@ nav,
   box-shadow: 0 0 10px 0 rgba(56, 224, 248, 0.2);
 }
 
-/* ─── remove ALL borders/rings on focused inputs (keep caret only) ─── */
-.oui-input:focus-within,
-.oui-input:focus,
-[class*="oui-input"]:focus-within,
-[class*="oui-input"]:focus,
-[class*="oui-input-root"]:focus-within,
-[class*="oui-input-root"]:focus,
-[class*="oui-input__root"]:focus-within,
-[class*="oui-input__root"]:focus,
-[class*="oui-inputRoot"]:focus-within,
-[class*="oui-inputRoot"]:focus,
-[class*="oui-numberInput"]:focus-within,
-[class*="oui-numberInput"]:focus,
-[class*="oui-orderEntry"]:focus-within,
-[class*="oui-orderEntry"]:focus,
-input:focus,
-input:focus-visible {
-  box-shadow: none !important;
-  outline: none !important;
-  border-color: transparent !important;
-  ring: none !important;
+/* ─── glowing border on focused inputs — disabled ───────────────────── */
+
+/* ─── hide Orderly "Powered by" branding, show FrostDex instead ─────── */
+.oui-scaffold-footer-powered-by {
+  display: none !important;
 }
 
-/* Kill the ring utility classes Orderly/Tailwind might inject on focus */
-*:focus { outline: none !important; }
-*:focus-visible { outline: none !important; box-shadow: none !important; }
+@media (min-width: 768px) {
+  .oui-scaffold-footer > div > div:first-child > :nth-child(2),
+  .oui-scaffold-footer > div > div:first-child > :nth-child(3) > :first-child,
+  .oui-scaffold-footer > div > div:first-child > :nth-child(3) > :nth-child(2) {
+    display: none !important;
+  }
 
-/* Orderly UI uses CSS vars for focus ring — override them */
-:root {
-  --oui-color-input-focus-ring: transparent;
-  --oui-ring-color: transparent;
-  --tw-ring-color: transparent !important;
-  --tw-ring-shadow: none !important;
-  --tw-ring-offset-shadow: none !important;
+  .oui-trading-tradingview-container {
+    position: relative;
+  }
+
+  .oui-trading-tradingview-container::after {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: url("/logo.webp") center / min(34vw, 260px) auto no-repeat;
+    content: "";
+    opacity: 0.06;
+    pointer-events: none;
+  }
 }
 
 /* ─── row hover ─────────────────────────────────────────────────── */
@@ -206,12 +199,28 @@ body {
   padding-top: 28px;
 }
 
+@media (max-width: 767px) {
+  .market-ticker-bar {
+    z-index: 5;
+  }
+
+  .oui-scaffold-topNavbar:has(.frost-mobile-header) {
+    height: 56px !important;
+  }
+}
+
 /* Any OUI element that is sticky or fixed at top:0 must shift down */
 .oui-sticky.oui-top-0,
 .oui-fixed.oui-top-0,
 [class*="oui-sticky"][class*="oui-top-0"],
 [class*="oui-fixed"][class*="oui-top-0"] {
   top: 28px !important;
+}
+
+@media (min-width: 768px) {
+  #oui-markets-home-page .oui-table-thead {
+    top: 0 !important;
+  }
 }
 
 /* Orderly symbol info bar on mobile — stays below the mobile header */
@@ -1812,4 +1821,3 @@ select,
   direction: rtl;
   flex-direction: row-reverse;
 }
-

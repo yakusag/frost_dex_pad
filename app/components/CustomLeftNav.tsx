@@ -1,5 +1,6 @@
 import { FC, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -8,12 +9,11 @@ import {
   VectorIcon,
 } from "@orderly.network/ui";
 import { LeftNavProps, LeftNavItem } from "@orderly.network/ui-scaffold";
-import { ExternalLink } from "lucide-react";
+import { withBasePath } from "@/utils/base-path";
 import {
   getRuntimeConfig,
   getRuntimeConfigBoolean,
 } from "@/utils/runtime-config";
-import { withBasePath } from "@/utils/base-path";
 
 type LeftNavUIProps = LeftNavProps & {
   className?: string;
@@ -62,12 +62,12 @@ const LeftNavSheet = modal.create<LeftNavUIProps>((props) => {
         closeOpacity={0.54}
       >
         <div className="oui-relative oui-flex oui-h-full oui-flex-col oui-gap-3">
-          <div className="oui-mt-[6px] oui-flex oui-h-[56px] oui-items-center">
+          <div className="oui-mt-[6px] oui-flex oui-h-[128px] oui-shrink-0 oui-items-center">
             {getRuntimeConfigBoolean("VITE_HAS_PRIMARY_LOGO") ? (
               <img
                 src={withBasePath("/logo.webp")}
                 alt="logo"
-                className="oui-h-[48px]"
+                className="oui-h-[120px] oui-max-w-full oui-object-contain"
               />
             ) : (
               <h1 className="oui-text-base-contrast-80 oui-font-bold">
@@ -76,7 +76,7 @@ const LeftNavSheet = modal.create<LeftNavUIProps>((props) => {
             )}
           </div>
 
-          <div className="oui-flex oui-h-[calc(100vh-120px)] oui-flex-col oui-items-start oui-overflow-y-auto">
+          <div className="oui-flex oui-h-[calc(100vh-192px)] oui-flex-col oui-items-start oui-overflow-y-auto">
             {Array.isArray(props?.menus) && props.menus.length > 0 && (
               <>
                 {props.menus?.map((item) => (

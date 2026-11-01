@@ -24,6 +24,8 @@ type LinkTag = {
 
 const SUPPORTED_LANGUAGES = [
   { code: "en", name: "English", flag: "🇺🇸" },
+  { code: "ar", name: "العربية", flag: "🇸🇦" },
+  { code: "ma", name: "الدارجة المغربية", flag: "🇲🇦" },
   { code: "zh", name: "中文", flag: "🇨🇳" },
   { code: "ja", name: "日本語", flag: "🇯🇵" },
   { code: "es", name: "Español", flag: "🇪🇸" },
@@ -46,8 +48,12 @@ export function getUserLanguage(): string {
     const urlParams = new URLSearchParams(window.location.search);
     const langParam = urlParams.get("lang");
     if (langParam) {
+      localStorage.setItem("frostdex_lang", langParam);
       return langParam;
     }
+
+    const saved = localStorage.getItem("frostdex_lang");
+    if (saved) return saved;
 
     if (navigator.language) {
       return navigator.language.split("-")[0];
@@ -76,7 +82,7 @@ function getAvailableLanguages(): string[] {
   return languages
     .map((code: string) => code.trim())
     .filter((code: string) =>
-      SUPPORTED_LANGUAGES.some((lang) => lang.code === code)
+      SUPPORTED_LANGUAGES.some((lang) => lang.code === code),
     );
 }
 
@@ -164,7 +170,7 @@ export function getPageMeta(): (MetaTag | LinkTag)[] {
 
     tags.push(
       { property: "og:type", content: "website" },
-      { property: "og:url", content: fullUrl }
+      { property: "og:url", content: fullUrl },
     );
     if (metaImage) {
       tags.push({ property: "og:image", content: metaImage });

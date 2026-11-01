@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -37,8 +37,16 @@ const PointsLayout = lazy(() => import('./pages/points/Layout'));
 const PointsIndex = lazy(() => import('./pages/points/Index'));
 const BotLayout = lazy(() => import('./pages/bot/Layout'));
 const BotIndex = lazy(() => import('./pages/bot/Index'));
-const CreateTokenLayout = lazy(() => import('./pages/create-token/Layout'));
-const CreateTokenIndex = lazy(() => import('./pages/create-token/Index'));
+const AboutLayout = lazy(() => import('./pages/about/Layout'));
+const AboutIndex = lazy(() => import('./pages/about/Index'));
+const TokenLayout = lazy(() => import('./pages/token/Layout'));
+const TokenIndex = lazy(() => import('./pages/token/Index'));
+const LaunchLayout = lazy(() => import('./pages/launch/Layout'));
+const LaunchIndex = lazy(() => import('./pages/launch/Index'));
+const ReferralLayout = lazy(() => import('./pages/referral/Layout'));
+const ReferralIndex = lazy(() => import('./pages/referral/Index'));
+const WhitepaperLayout = lazy(() => import('./pages/whitepaper/Layout'));
+const WhitepaperIndex = lazy(() => import('./pages/whitepaper/Index'));
 
 
 async function loadRuntimeConfig() {
@@ -83,97 +91,118 @@ function loadAnalytics() {
 
 const basePath = import.meta.env.BASE_URL || '/';
 
-const PageFallback = () => (
-  <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0b0e11" }}>
-    <div style={{ width: 32, height: 32, border: "3px solid rgba(56,224,248,0.15)", borderTopColor: "#38e0f8", borderRadius: "50%", animation: "spin 0.9s linear infinite" }} />
-    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-  </div>
-);
-
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     errorElement: <ErrorBoundary />,
     children: [
-      { index: true, element: <Suspense fallback={<PageFallback />}><IndexPage /></Suspense> },
+      { index: true, element: <IndexPage /> },
       {
         path: 'perp',
-        element: <Suspense fallback={<PageFallback />}><PerpLayout /></Suspense>,
+        element: <PerpLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><PerpIndex /></Suspense> },
-          { path: ':symbol', element: <Suspense fallback={<PageFallback />}><PerpSymbol /></Suspense> },
+          { index: true, element: <PerpIndex /> },
+          { path: ':symbol', element: <PerpSymbol /> },
         ],
       },
       {
         path: 'portfolio',
-        element: <Suspense fallback={<PageFallback />}><PortfolioLayout /></Suspense>,
+        element: <PortfolioLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><PortfolioIndex /></Suspense> },
-          { path: 'positions', element: <Suspense fallback={<PageFallback />}><PortfolioPositions /></Suspense> },
-          { path: 'orders', element: <Suspense fallback={<PageFallback />}><PortfolioOrders /></Suspense> },
-          { path: 'assets', element: <Suspense fallback={<PageFallback />}><PortfolioAssets /></Suspense> },
-          { path: 'api-key', element: <Suspense fallback={<PageFallback />}><PortfolioApiKey /></Suspense> },
-          { path: 'fee', element: <Suspense fallback={<PageFallback />}><PortfolioFee /></Suspense> },
-          { path: 'history', element: <Suspense fallback={<PageFallback />}><PortfolioHistory /></Suspense> },
-          { path: 'setting', element: <Suspense fallback={<PageFallback />}><PortfolioSetting /></Suspense> },
+          { index: true, element: <PortfolioIndex /> },
+          { path: 'positions', element: <PortfolioPositions /> },
+          { path: 'orders', element: <PortfolioOrders /> },
+          { path: 'assets', element: <PortfolioAssets /> },
+          { path: 'api-key', element: <PortfolioApiKey /> },
+          { path: 'fee', element: <PortfolioFee /> },
+          { path: 'history', element: <PortfolioHistory /> },
+          { path: 'setting', element: <PortfolioSetting /> },
         ],
       },
       {
         path: 'markets',
-        element: <Suspense fallback={<PageFallback />}><MarketsLayout /></Suspense>,
+        element: <MarketsLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><MarketsIndex /></Suspense> },
+          { index: true, element: <MarketsIndex /> },
         ],
       },
       {
         path: 'leaderboard',
-        element: <Suspense fallback={<PageFallback />}><LeaderboardLayout /></Suspense>,
+        element: <LeaderboardLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><LeaderboardIndex /></Suspense> },
+          { index: true, element: <LeaderboardIndex /> },
         ],
       },
       {
         path: 'rewards',
-        element: <Suspense fallback={<PageFallback />}><RewardsLayout /></Suspense>,
+        element: <RewardsLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><RewardsIndex /></Suspense> },
-          { path: 'affiliate', element: <Suspense fallback={<PageFallback />}><RewardsAffiliate /></Suspense> },
+          { index: true, element: <RewardsIndex /> },
+          { path: 'affiliate', element: <RewardsAffiliate /> },
         ],
       },
       {
         path: 'vaults',
-        element: <Suspense fallback={<PageFallback />}><VaultsLayout /></Suspense>,
+        element: <VaultsLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><VaultsIndex /></Suspense> },
+          { index: true, element: <VaultsIndex /> },
         ],
       },
       {
         path: 'swap',
-        element: <Suspense fallback={<PageFallback />}><SwapLayout /></Suspense>,
+        element: <SwapLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><SwapIndex /></Suspense> },
+          { index: true, element: <SwapIndex /> },
         ],
       },
       {
         path: 'points',
-        element: <Suspense fallback={<PageFallback />}><PointsLayout /></Suspense>,
+        element: <PointsLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><PointsIndex /></Suspense> },
+          { index: true, element: <PointsIndex /> },
         ],
       },
       {
         path: 'bot',
-        element: <Suspense fallback={<PageFallback />}><BotLayout /></Suspense>,
+        element: <BotLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><BotIndex /></Suspense> },
+          { index: true, element: <BotIndex /> },
         ],
       },
       {
-        path: 'create-token',
-        element: <Suspense fallback={<PageFallback />}><CreateTokenLayout /></Suspense>,
+        path: 'about',
+        element: <AboutLayout />,
         children: [
-          { index: true, element: <Suspense fallback={<PageFallback />}><CreateTokenIndex /></Suspense> },
+          { index: true, element: <AboutIndex /> },
+        ],
+      },
+      {
+        path: 'token',
+        element: <TokenLayout />,
+        children: [
+          { index: true, element: <TokenIndex /> },
+        ],
+      },
+      {
+        path: 'launch',
+        element: <LaunchLayout />,
+        children: [
+          { index: true, element: <LaunchIndex /> },
+        ],
+      },
+      {
+        path: 'referral',
+        element: <ReferralLayout />,
+        children: [
+          { index: true, element: <ReferralIndex /> },
+        ],
+      },
+      {
+        path: 'whitepaper',
+        element: <WhitepaperLayout />,
+        children: [
+          { index: true, element: <WhitepaperIndex /> },
         ],
       },
     ],
@@ -194,12 +223,18 @@ function prefetchRoutes() {
     import('./pages/swap/Index');
     import('./pages/bot/Layout');
     import('./pages/bot/Index');
-    import('./pages/rewards/Layout');
-    import('./pages/rewards/Index');
+    import('./pages/launch/Layout');
+    import('./pages/launch/Index');
     import('./pages/vaults/Layout');
     import('./pages/vaults/Index');
-    import('./pages/create-token/Layout');
-    import('./pages/create-token/Index');
+    import('./pages/about/Layout');
+    import('./pages/about/Index');
+    import('./pages/token/Layout');
+    import('./pages/token/Index');
+    import('./pages/referral/Layout');
+    import('./pages/referral/Index');
+    import('./pages/whitepaper/Layout');
+    import('./pages/whitepaper/Index');
   };
 
   if ('requestIdleCallback' in window) {
@@ -223,18 +258,6 @@ loadRuntimeConfig().then(() => {
   prefetchRoutes();
 });
 
-// Recover from stale dynamic-import chunks after a new deployment.
-// When the page's HTML references a chunk hash that no longer exists on the
-// server (e.g. "Failed to fetch dynamically imported module"), reload once to
-// pull the fresh index.html and its current chunk references.
-window.addEventListener('vite:preloadError', () => {
-  const last = Number(sessionStorage.getItem('vitePreloadReload') || '0');
-  if (Date.now() - last > 10000) {
-    sessionStorage.setItem('vitePreloadReload', String(Date.now()));
-    window.location.reload();
-  }
-});
-
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
@@ -247,4 +270,3 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-

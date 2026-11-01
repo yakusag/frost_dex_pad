@@ -40,7 +40,9 @@ function fmt(price: number, base: string): string {
 
 async function fetchMarkets(): Promise<MarketItem[]> {
   try {
-    const res = await fetch("https://api.orderly.org/v1/public/futures");
+    const res = await fetch("https://api.orderly.org/v1/public/futures", {
+      cache: "no-store",
+    });
     if (!res.ok) return [];
     const json = await res.json();
     const rows: MarketItem[] = [];
@@ -62,7 +64,8 @@ async function fetchMarkets(): Promise<MarketItem[]> {
 async function fetchFrostPrice(): Promise<MarketItem | null> {
   try {
     const res = await fetch(
-      `https://api.geckoterminal.com/api/v2/networks/arbitrum/pools/${FROST_TOKEN.poolAddress}`
+      `https://api.geckoterminal.com/api/v2/networks/arbitrum/pools/${FROST_TOKEN.poolAddress}`,
+      { cache: "no-store" }
     );
     if (!res.ok) return null;
     const json = await res.json();

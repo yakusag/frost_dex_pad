@@ -16,32 +16,20 @@
     <link rel="apple-touch-icon" href="/favicon.webp" />
 
     <title>FrostDex</title>
-    <meta name="color-scheme" content="dark" />
 
-    <!-- speed: preconnect & dns-prefetch critical origins -->
+    <!-- speed: preconnect + prefetch critical origins -->
     <link rel="preconnect" href="https://api.orderly.org" crossorigin />
-    <link rel="preconnect" href="https://api.orderly.network" crossorigin />
+    <link rel="preconnect" href="https://api.groq.com" crossorigin />
     <link rel="preconnect" href="https://api.dexscreener.com" crossorigin />
     <link rel="preconnect" href="https://arb1.arbitrum.io" crossorigin />
-    <link rel="preconnect" href="https://rpc.ankr.com" crossorigin />
+    <link rel="preconnect" href="https://ws.orderly.org" crossorigin />
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
     <link rel="dns-prefetch" href="https://arbiscan.io" />
-    <link rel="dns-prefetch" href="https://api.groq.com" />
-    <link rel="dns-prefetch" href="https://api.binance.com" />
-
-    <!-- speed: preload critical fonts (Bold + SemiBold used in headers/prices) -->
-    <link rel="preload" href="/fonts/Manrope/Manrope-Bold.ttf"    as="font" type="font/ttf" crossorigin />
-    <link rel="preload" href="/fonts/Manrope/Manrope-SemiBold.ttf" as="font" type="font/ttf" crossorigin />
-    <link rel="preload" href="/fonts/Manrope/Manrope-Medium.ttf"   as="font" type="font/ttf" crossorigin />
-
-    <!-- speed: preload splash logo (above the fold, shown immediately) -->
-    <link rel="preload" href="/frostdex-logo.webp" as="image" fetchpriority="high" />
+    <link rel="dns-prefetch" href="https://api.coingecko.com" />
+    <link rel="dns-prefetch" href="https://wss.orderly.org" />
+    <link rel="dns-prefetch" href="https://static.orderly.org" />
 
     <style>
-      /* ── critical: instant dark bg to prevent white flash ── */
-      html, body { background: #0b0e11; margin: 0; padding: 0; }
-      #root { min-height: 100vh; background: #0b0e11; }
-
       /* ── base ── */
       #splash {
         position: fixed;
@@ -105,28 +93,6 @@
         display: none;
       }
 
-      /* ── candle signal bars ── */
-      #splash-candles {
-        display: flex;
-        align-items: flex-end;
-        gap: 7px;
-        height: 48px;
-      }
-      .splash-candle {
-        width: 12px;
-        border-radius: 3px 3px 0 0;
-        transform-origin: bottom;
-        animation: candle-rise 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
-      }
-      .splash-candle:nth-child(1) { height: 12px; background: #e74c3c; box-shadow: 0 0 8px rgba(231,76,60,0.6);  animation-delay: 0.3s; }
-      .splash-candle:nth-child(2) { height: 24px; background: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.6); animation-delay: 0.55s; }
-      .splash-candle:nth-child(3) { height: 36px; background: #e74c3c; box-shadow: 0 0 8px rgba(231,76,60,0.6);  animation-delay: 0.8s; }
-      .splash-candle:nth-child(4) { height: 48px; background: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.6); animation-delay: 1.05s; }
-      @keyframes candle-rise {
-        from { transform: scaleY(0); opacity: 0; }
-        to   { transform: scaleY(1); opacity: 1; }
-      }
-
       /* ── tagline ── */
       #splash-tag {
         margin-top: 18px;
@@ -137,6 +103,19 @@
         text-transform: uppercase;
         color: rgba(60, 230, 255, 0.35);
         animation: name-appear 0.6s ease 0.6s both;
+      }
+      #splash-motto {
+        margin-top: 6px;
+        font-family: 'Manrope', 'Segoe UI', sans-serif;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        background: linear-gradient(90deg, #38e0f8 0%, #0ecb81 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: name-appear 0.6s ease 0.9s both;
       }
 
       /* ── falling snowflakes ── */
@@ -161,16 +140,10 @@
     <div id="splash">
       <div id="splash-aurora"></div>
       <div id="splash-particles"></div>
-      <img id="splash-flake" src="/frostdex-logo.webp" alt="FrostDex"
-        onerror="this.onerror=null;this.src='/frostdex-logo.png';" />
+      <img id="splash-flake" src="/frostdex-logo.webp" alt="FrostDex" />
       <div id="splash-name">FROSTDEX</div>
-      <div id="splash-candles">
-        <div class="splash-candle"></div>
-        <div class="splash-candle"></div>
-        <div class="splash-candle"></div>
-        <div class="splash-candle"></div>
-      </div>
       <div id="splash-tag">Decentralized Exchange</div>
+      <div id="splash-motto">TRUST &bull; FREEDOM &bull; TRADE</div>
     </div>
 
     <div id="root"></div>
@@ -202,18 +175,9 @@
         var s = document.getElementById('splash');
         if (s) {
           s.classList.add('hidden');
-          setTimeout(function () { if (s.parentNode) s.remove(); }, 600);
+          setTimeout(function () { s.remove(); }, 600);
         }
       };
-
-      /* FALLBACK: force-hide splash after 8s if React never mounts */
-      setTimeout(function () {
-        var s = document.getElementById('splash');
-        if (s && !s.classList.contains('hidden')) {
-          s.classList.add('hidden');
-          setTimeout(function () { if (s.parentNode) s.remove(); }, 600);
-        }
-      }, 8000);
     </script>
   </body>
 </html>

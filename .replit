@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "rust-stable"]
+modules = ["nodejs-20", "web", "nix"]
 [agent]
 expertMode = true
 stack = "BEST_EFFORT_FALLBACK"
@@ -35,12 +35,6 @@ bash -c '
         yarn install 2>&1
       fi
 
-      if [ ! -f node_modules/date-fns/package.json ]; then
-        echo \"Bootstrapping date-fns...\"
-        npm install date-fns@\"^3.6.0\" --legacy-peer-deps --no-save --prefix /tmp/dfns 2>/dev/null
-        cp -r /tmp/dfns/node_modules/date-fns node_modules/date-fns
-      fi
-
       mkdir -p node_modules/@rollup node_modules/@oxc-parser
 
       if [ ! -f node_modules/@rollup/rollup-linux-x64-gnu/rollup.linux-x64-gnu.node ]; then
@@ -53,20 +47,17 @@ bash -c '
         cp -r /tmp/oxc/node_modules/@oxc-parser/binding-linux-x64-gnu node_modules/@oxc-parser/
       fi
 
-      if [ ! -d node_modules/@emnapi ]; then
-        npm install --prefix /tmp/emnapi @emnapi/core @emnapi/runtime 2>/dev/null
-        mkdir -p node_modules/@emnapi
-        cp -r /tmp/emnapi/node_modules/@emnapi/. node_modules/@emnapi/
-      fi
-
-      node_modules/.bin/tsx scripts/generate-manifest.ts 2>/dev/null || true
-      node_modules/.bin/vite --port 5000
+      yarn dev
     '"""
 waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 5001
+externalPort = 3000
 
 [deployment]
 deploymentTarget = "static"
@@ -76,13 +67,7 @@ publicDir = "build/client"
 [userenv]
 
 [userenv.shared]
-VITE_PROGRAM_ID = "CqzUoSdSQPpcTJXhiTgAdupoaJ9yRTjbVXVfC41Aqckm"
-VITE_SOLANA_RPC = "https://sol.nownodes.io/050b7243-6502-4f3c-8de3-4438f7ddf8a0"
 
 [userenv.development]
 
 [userenv.production]
-
-[postMerge]
-path = "scripts/post-merge.sh"
-timeoutMs = 120000

@@ -7,7 +7,7 @@ This template provides a quick way to set up a customized trading UI for Orderly
 ## Quick Start
 
 1. **Fork the Repository**
-   
+
    Fork this repository to your GitHub account to create your broker's UI.
 
 2. **Clone Your Fork**
@@ -93,9 +93,10 @@ For custom domain setup:
    - Navigate to the "Domains" section
    - Add and configure your custom domain
 
+FrostAI's shared Groq access is served through the Vercel function in `api/frostai.ts`. Add `GROQ_API_KEY` in the Vercel project's Environment Variables for the environments where FrostAI should be available. Do not add this secret as a `VITE_` variable or expose it in `public/config.js`; redeploy after setting it. Users can alternatively enter their own Groq key in FrostAI settings.
+
 ## Additional Resources
 
 - [Orderly JS SDK Documentation](https://github.com/OrderlyNetwork/js-sdk)
 - [Orderly Network Documentation](https://orderly.network/docs/sdks)
 - [Storybook Theme Editor](https://storybook.orderly.network/?path=/story/package-trading-tradingpage--page)
-

@@ -3,8 +3,10 @@ import { useState } from "react";
 interface Props {
   visibility: { ai: boolean; whale: boolean; sentiment: boolean; frost: boolean; smartmoney: boolean; liq: boolean; mac: boolean; palert: boolean };
   anyHidden: boolean;
+  allVisible: boolean;
   onToggle: (key: "ai" | "whale" | "sentiment" | "frost" | "smartmoney" | "liq" | "mac" | "palert") => void;
   onShowAll: () => void;
+  onHideAll: () => void;
 }
 
 const WIDGETS = [
@@ -18,10 +20,8 @@ const WIDGETS = [
   { key: "sentiment"  as const, label: "Market Mood",         icon: "📊" },
 ];
 
-export default function WidgetManager({ visibility, anyHidden, onToggle, onShowAll }: Props) {
+export default function WidgetManager({ visibility, anyHidden, allVisible, onToggle, onShowAll, onHideAll }: Props) {
   const [open, setOpen] = useState(false);
-
-  if (!anyHidden && !open) return null;
 
   return (
     <div className="wm-wrap">
@@ -43,7 +43,12 @@ export default function WidgetManager({ visibility, anyHidden, onToggle, onShowA
               </button>
             </div>
           ))}
-          {anyHidden && (
+
+          {allVisible ? (
+            <button className="wm-show-all" onClick={() => { onHideAll(); setOpen(false); }}>
+              Hide All
+            </button>
+          ) : (
             <button className="wm-show-all" onClick={() => { onShowAll(); setOpen(false); }}>
               Show All
             </button>

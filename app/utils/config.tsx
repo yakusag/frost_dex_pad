@@ -1,15 +1,8 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "@orderly.network/i18n";
-import { TradingPageProps } from "@orderly.network/trading";
-import {
-  BottomNavProps,
-  FooterProps,
-  MainNavWidgetProps,
-  MainNavItem as MainNavItemType,
-} from "@orderly.network/ui-scaffold";
 import { AppLogos } from "@orderly.network/react-app";
-import { OrderlyActiveIcon, OrderlyIcon } from "../components/icons/orderly";
-import { withBasePath } from "./base-path";
+import { TradingPageProps } from "@orderly.network/trading";
 import {
   PortfolioActiveIcon,
   PortfolioInactiveIcon,
@@ -24,13 +17,20 @@ import {
   cn,
 } from "@orderly.network/ui";
 import {
+  BottomNavProps,
+  FooterProps,
+  MainNavWidgetProps,
+  MainNavItem as MainNavItemType,
+} from "@orderly.network/ui-scaffold";
+import { CampaignsNavTitle } from "@/components/CampaignsNavTitle";
+import CustomLeftNav from "@/components/CustomLeftNav";
+import { OrderlyActiveIcon, OrderlyIcon } from "../components/icons/orderly";
+import { withBasePath } from "./base-path";
+import {
   getRuntimeConfig,
   getRuntimeConfigBoolean,
   getRuntimeConfigNumber,
 } from "./runtime-config";
-import { Link } from "react-router-dom";
-import CustomLeftNav from "@/components/CustomLeftNav";
-import { CampaignsNavTitle } from "@/components/CampaignsNavTitle";
 
 interface MainNavItem {
   name: string;
@@ -96,7 +96,7 @@ const getCustomMenuItems = (): MainNavItem[] => {
       if (!name || !href) {
         console.warn(
           "Invalid custom menu item format. Expected 'name,url':",
-          pair
+          pair,
         );
         continue;
       }
@@ -117,7 +117,7 @@ const getCustomMenuItems = (): MainNavItem[] => {
 
 const getEnabledMenus = (
   allMenuItems: MenuConfigItem[],
-  defaultEnabledMenus: MenuConfigItem[]
+  defaultEnabledMenus: MenuConfigItem[],
 ) => {
   const enabledMenusEnv = getRuntimeConfig("VITE_ENABLED_MENUS");
 
@@ -152,7 +152,7 @@ const getPnLBackgroundImages = (): string[] => {
 
   if (useCustomPnL) {
     const customPnLCount = getRuntimeConfigNumber(
-      "VITE_CUSTOM_PNL_POSTER_COUNT"
+      "VITE_CUSTOM_PNL_POSTER_COUNT",
     );
 
     if (isNaN(customPnLCount) || customPnLCount < 1) {
@@ -181,24 +181,105 @@ const getPnLBackgroundImages = (): string[] => {
 };
 
 const BotActiveIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3" y="8" width="18" height="13" rx="2" fill="currentColor" opacity="0.9"/>
-    <rect x="9" y="3" width="6" height="5" rx="1" fill="currentColor" opacity="0.7"/>
-    <circle cx="9" cy="13" r="1.5" fill="white"/>
-    <circle cx="15" cy="13" r="1.5" fill="white"/>
-    <rect x="9" y="16.5" width="6" height="1.5" rx="0.75" fill="white" opacity="0.7"/>
-    <line x1="12" y1="3" x2="12" y2="5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect
+      x="3"
+      y="8"
+      width="18"
+      height="13"
+      rx="2"
+      fill="currentColor"
+      opacity="0.9"
+    />
+    <rect
+      x="9"
+      y="3"
+      width="6"
+      height="5"
+      rx="1"
+      fill="currentColor"
+      opacity="0.7"
+    />
+    <circle cx="9" cy="13" r="1.5" fill="white" />
+    <circle cx="15" cy="13" r="1.5" fill="white" />
+    <rect
+      x="9"
+      y="16.5"
+      width="6"
+      height="1.5"
+      rx="0.75"
+      fill="white"
+      opacity="0.7"
+    />
+    <line
+      x1="12"
+      y1="3"
+      x2="12"
+      y2="5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
 const BotInactiveIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3" y="8" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
-    <rect x="9" y="3" width="6" height="5" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
-    <circle cx="9" cy="13" r="1.5" fill="currentColor" opacity="0.6"/>
-    <circle cx="15" cy="13" r="1.5" fill="currentColor" opacity="0.6"/>
-    <rect x="9" y="16.5" width="6" height="1.5" rx="0.75" fill="currentColor" opacity="0.4"/>
-    <line x1="12" y1="3" x2="12" y2="5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect
+      x="3"
+      y="8"
+      width="18"
+      height="13"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      fill="none"
+      opacity="0.6"
+    />
+    <rect
+      x="9"
+      y="3"
+      width="6"
+      height="5"
+      rx="1"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      fill="none"
+      opacity="0.6"
+    />
+    <circle cx="9" cy="13" r="1.5" fill="currentColor" opacity="0.6" />
+    <circle cx="15" cy="13" r="1.5" fill="currentColor" opacity="0.6" />
+    <rect
+      x="9"
+      y="16.5"
+      width="6"
+      height="1.5"
+      rx="0.75"
+      fill="currentColor"
+      opacity="0.4"
+    />
+    <line
+      x1="12"
+      y1="3"
+      x2="12"
+      y2="5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      opacity="0.6"
+    />
   </svg>
 );
 
@@ -236,7 +317,7 @@ const getBottomNavIcon = (menuId: string) => {
 
 const getColorConfig = (): ColorConfigInterface | undefined => {
   const customColorConfigEnv = getRuntimeConfig(
-    "VITE_TRADING_VIEW_COLOR_CONFIG"
+    "VITE_TRADING_VIEW_COLOR_CONFIG",
   );
 
   if (
@@ -298,6 +379,16 @@ export const useOrderlyConfig = () => {
       },
 
       { id: "Rewards", href: "/rewards", name: t("tradingRewards.rewards") },
+      { id: "Token", href: "/token", name: "Token Search" },
+      {
+        id: "Launch",
+        href: "/launch",
+        name: "Launch Token",
+        isDefault: true,
+      },
+      { id: "About", href: "/about", name: "Legal" },
+      { id: "Referral", href: "/referral", name: "Refer & Earn" },
+      { id: "Whitepaper", href: "/whitepaper", name: "Whitepaper" },
       { id: "Vaults", href: "/vaults", name: t("common.vaults") },
       {
         id: "Points",
@@ -305,7 +396,6 @@ export const useOrderlyConfig = () => {
         name: t("extend.tradingPoints.points"),
       },
       { id: "Bot", href: "/bot", name: "🤖 Bot" },
-      { id: "CreateToken", href: "/create-token", name: "🪙 Create Your Token", isDefault: true },
     ];
 
     const defaultEnabledMenus = allMenuItems.filter((menu) => menu.isDefault);
@@ -366,10 +456,13 @@ export const useOrderlyConfig = () => {
 
     mainNavProps.customRender = (components) => {
       return (
-        <Flex justify="between" className="oui-w-full">
+        <Flex
+          justify="between"
+          className={cn("oui-w-full", isMobile && "frost-mobile-header")}
+        >
           <Flex
             itemAlign={"center"}
-            className={cn("oui-gap-3", "oui-overflow-hidden")}
+            className={cn("oui-gap-3", !isMobile && "oui-overflow-hidden")}
           >
             {isMobile && (
               <CustomLeftNav
@@ -377,13 +470,32 @@ export const useOrderlyConfig = () => {
                 externalLinks={customMenus}
               />
             )}
-            <Link to="/" style={{ display: "inline-flex", alignItems: "center", overflow: "hidden", maxHeight: "52px" }}>
-              {isMobile &&
-              getRuntimeConfigBoolean("VITE_HAS_SECONDARY_LOGO") ? (
+            <Link
+              to="/"
+              style={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                overflow: "visible",
+                width: isMobile ? "min(148px, calc(100vw - 180px))" : undefined,
+                height: isMobile ? "44px" : undefined,
+                flexShrink: 0,
+              }}
+            >
+              {isMobile ? (
                 <img
-                  src={withBasePath("/logo-secondary.webp")}
-                  alt="logo"
-                  style={{ height: "120px", maxHeight: "120x" }}
+                  src={withBasePath("/logo.webp")}
+                  alt="FrostDex"
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "50%",
+                    height: "96px",
+                    width: "auto",
+                    objectFit: "contain",
+                    maxWidth: "100%",
+                    transform: "translateY(-50%)",
+                  }}
                 />
               ) : (
                 components.title
@@ -417,14 +529,9 @@ export const useOrderlyConfig = () => {
           twitterUrl: getRuntimeConfig("VITE_TWITTER_URL") || undefined,
           trailing: (
             <span className="oui-text-2xs oui-text-base-contrast-54">
-              Charts powered by{" "}
-              <a
-                href="https://tradingview.com"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                TradingView
-              </a>
+              <span style={{ color: "rgba(56,224,248,0.5)", fontWeight: 700 }}>
+                ❄ Powered by FrostDex
+              </span>
             </span>
           ),
         },
@@ -452,7 +559,7 @@ export const useOrderlyConfig = () => {
       tradingPage: {
         tradingViewConfig: {
           scriptSRC: withBasePath(
-            "/tradingview/charting_library/charting_library.js"
+            "/tradingview/charting_library/charting_library.js",
           ),
           library_path: withBasePath("/tradingview/charting_library/"),
           customCssUrl: withBasePath("/tradingview/chart.css"),

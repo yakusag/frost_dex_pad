@@ -1,5 +1,4 @@
 window.__RUNTIME_CONFIG__ = {
-  "GROQ_API_KEY": "",
   "VITE_ORDERLY_BROKER_ID": "frostdex",
   "VITE_ORDERLY_BROKER_NAME": "FrostDex",
   "VITE_BROKER_EOA_ADDRESS": "0xcb775f72acd4870570121fb038920517ea3e2d18",
@@ -19,7 +18,7 @@ window.__RUNTIME_CONFIG__ = {
   "VITE_APP_DESCRIPTION": "FrostDex — Decentralized Exchange",
   "VITE_HAS_PRIMARY_LOGO": "true",
   "VITE_HAS_SECONDARY_LOGO": "true",
-  "VITE_ENABLED_MENUS": "Trading,Portfolio,Markets,Swap,Leaderboard,Bot,Vaults,Token,About",
+  "VITE_ENABLED_MENUS": "Trading,Portfolio,Markets,Swap,Leaderboard,Bot,Vaults,Token,Launch,About,Referral,Whitepaper",
   "VITE_CUSTOM_MENUS": "",
   "VITE_ENABLE_SERVICE_DISCLAIMER_DIALOG": "false",
   "VITE_ENABLE_CAMPAIGNS": "false",
@@ -34,7 +33,7 @@ window.__RUNTIME_CONFIG__ = {
   "VITE_SEO_TWITTER_HANDLE": "",
   "VITE_SEO_THEME_COLOR": "#14b8a6",
   "VITE_SEO_KEYWORDS": "dex, crypto, trading, frost, frostdex, ethereum, arbitrum",
-  "VITE_AVAILABLE_LANGUAGES": "en,ar,dz,ma,pt,zh,de,es,fr,nl",
+  "VITE_AVAILABLE_LANGUAGES": "en,ar,ma,pt,zh,de,es,fr,nl",
   "VITE_USE_CUSTOM_PNL_POSTERS": "false",
   "VITE_CUSTOM_PNL_POSTER_COUNT": "0",
   "VITE_TRADING_VIEW_COLOR_CONFIG": "",

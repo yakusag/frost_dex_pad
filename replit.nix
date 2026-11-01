@@ -1,9 +1,5 @@
 {pkgs}: {
   deps = [
-    pkgs.rustup
-    pkgs.anchor
-    pkgs.nano
-    pkgs.solana-cli
     pkgs.libusb1
     pkgs.gnumake
     pkgs.gcc

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useWalletConnector } from "@orderly.network/hooks";
 import {
   createPublicClient,
   createWalletClient,
@@ -13,6 +12,7 @@ import {
   type Address,
 } from "viem";
 import { arbitrum } from "viem/chains";
+import { useWalletConnector } from "@orderly.network/hooks";
 import { FROST_TOKEN } from "@/utils/customTokens";
 
 const WETH: Address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
@@ -25,23 +25,29 @@ const ARBITRUM_ID = 42161;
 
 const ARB_RPC = "https://arb1.arbitrum.io/rpc";
 
-const publicClient = createPublicClient({ chain: arbitrum, transport: http(ARB_RPC) });
+const publicClient = createPublicClient({
+  chain: arbitrum,
+  transport: http(ARB_RPC),
+});
 
 const QUOTER_ABI = [
   {
     name: "quoteExactInputSingle",
     type: "function",
     stateMutability: "nonpayable",
-    inputs: [{
-      name: "params", type: "tuple",
-      components: [
-        { name: "tokenIn", type: "address" },
-        { name: "tokenOut", type: "address" },
-        { name: "amountIn", type: "uint256" },
-        { name: "fee", type: "uint24" },
-        { name: "sqrtPriceLimitX96", type: "uint160" },
-      ],
-    }],
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "tokenIn", type: "address" },
+          { name: "tokenOut", type: "address" },
+          { name: "amountIn", type: "uint256" },
+          { name: "fee", type: "uint24" },
+          { name: "sqrtPriceLimitX96", type: "uint160" },
+        ],
+      },
+    ],
     outputs: [
       { name: "amountOut", type: "uint256" },
       { name: "sqrtPriceX96After", type: "uint160" },
@@ -56,18 +62,21 @@ const ROUTER_ABI = [
     name: "exactInputSingle",
     type: "function",
     stateMutability: "payable",
-    inputs: [{
-      name: "params", type: "tuple",
-      components: [
-        { name: "tokenIn", type: "address" },
-        { name: "tokenOut", type: "address" },
-        { name: "fee", type: "uint24" },
-        { name: "recipient", type: "address" },
-        { name: "amountIn", type: "uint256" },
-        { name: "amountOutMinimum", type: "uint256" },
-        { name: "sqrtPriceLimitX96", type: "uint160" },
-      ],
-    }],
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "tokenIn", type: "address" },
+          { name: "tokenOut", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "recipient", type: "address" },
+          { name: "amountIn", type: "uint256" },
+          { name: "amountOutMinimum", type: "uint256" },
+          { name: "sqrtPriceLimitX96", type: "uint160" },
+        ],
+      },
+    ],
     outputs: [{ name: "amountOut", type: "uint256" }],
   },
   {
@@ -91,17 +100,29 @@ const ROUTER_ABI = [
 
 const ERC20_ABI = [
   {
-    name: "allowance", type: "function", stateMutability: "view",
-    inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }],
+    name: "allowance",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
     outputs: [{ name: "", type: "uint256" }],
   },
   {
-    name: "approve", type: "function", stateMutability: "nonpayable",
-    inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }],
+    name: "approve",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
     outputs: [{ name: "", type: "bool" }],
   },
   {
-    name: "balanceOf", type: "function", stateMutability: "view",
+    name: "balanceOf",
+    type: "function",
+    stateMutability: "view",
     inputs: [{ name: "account", type: "address" }],
     outputs: [{ name: "", type: "uint256" }],
   },
@@ -134,8 +155,18 @@ export default function FrostSwapWidget() {
       try {
         const [eth, frost, allow] = await Promise.all([
           publicClient.getBalance({ address }),
-          publicClient.readContract({ address: FROST, abi: ERC20_ABI, functionName: "balanceOf", args: [address] }),
-          publicClient.readContract({ address: FROST, abi: ERC20_ABI, functionName: "allowance", args: [address, SWAP_ROUTER] }),
+          publicClient.readContract({
+            address: FROST,
+            abi: ERC20_ABI,
+            functionName: "balanceOf",
+            args: [address],
+          }),
+          publicClient.readContract({
+            address: FROST,
+            abi: ERC20_ABI,
+            functionName: "allowance",
+            args: [address, SWAP_ROUTER],
+          }),
         ]);
         setEthBalance(eth);
         setFrostBalance(frost as bigint);
@@ -147,29 +178,51 @@ export default function FrostSwapWidget() {
   useEffect(() => {
     clearTimeout(quoteTimer.current);
     const val = parseFloat(inputVal);
-    if (!val || val <= 0) { setQuote(null); return; }
+    if (!val || val <= 0) {
+      setQuote(null);
+      return;
+    }
     setQuoteLoading(true);
     quoteTimer.current = setTimeout(async () => {
       try {
-        const amountIn = dir === "buy"
-          ? parseEther(inputVal)
-          : parseUnits(inputVal, FROST_TOKEN.decimals);
-        const [tokenIn, tokenOut] = dir === "buy" ? [WETH, FROST] : [FROST, WETH];
+        const amountIn =
+          dir === "buy"
+            ? parseEther(inputVal)
+            : parseUnits(inputVal, FROST_TOKEN.decimals);
+        const [tokenIn, tokenOut] =
+          dir === "buy" ? [WETH, FROST] : [FROST, WETH];
         const result = await publicClient.simulateContract({
           address: QUOTER_V2,
           abi: QUOTER_ABI,
           functionName: "quoteExactInputSingle",
-          args: [{ tokenIn, tokenOut, amountIn, fee: POOL_FEE, sqrtPriceLimitX96: 0n }],
+          args: [
+            {
+              tokenIn,
+              tokenOut,
+              amountIn,
+              fee: POOL_FEE,
+              sqrtPriceLimitX96: 0n,
+            },
+          ],
         });
-        setQuote((result.result as [bigint])[0]);
-      } catch { setQuote(null); }
+        const [amountOut] = result.result as readonly [
+          bigint,
+          bigint,
+          number,
+          bigint,
+        ];
+        setQuote(amountOut);
+      } catch {
+        setQuote(null);
+      }
       setQuoteLoading(false);
     }, 600);
   }, [inputVal, dir]);
 
   const getWalletClient = useCallback(() => {
-    if (!wallet?.provider) return null;
-    return createWalletClient({ chain: arbitrum, transport: custom(wallet.provider) });
+    const provider = wallet?.provider;
+    if (!provider || !("request" in provider)) return null;
+    return createWalletClient({ chain: arbitrum, transport: custom(provider) });
   }, [wallet]);
 
   const switchToArbitrum = useCallback(async () => {
@@ -177,14 +230,15 @@ export default function FrostSwapWidget() {
   }, [setChain]);
 
   const handleSwap = useCallback(async () => {
-    if (!address || !quote || !isArbitrum) return;
+    if (!address || quote === null || !isArbitrum) return;
     const wc = getWalletClient();
     if (!wc) return;
     setErrMsg(null);
     try {
-      const amountIn = dir === "buy"
-        ? parseEther(inputVal)
-        : parseUnits(inputVal, FROST_TOKEN.decimals);
+      const amountIn =
+        dir === "buy"
+          ? parseEther(inputVal)
+          : parseUnits(inputVal, FROST_TOKEN.decimals);
       const amountOutMin = quote - (quote * BigInt(SLIPPAGE_BPS)) / 10000n;
 
       if (dir === "sell") {
@@ -210,15 +264,17 @@ export default function FrostSwapWidget() {
           address: SWAP_ROUTER,
           abi: ROUTER_ABI,
           functionName: "exactInputSingle",
-          args: [{
-            tokenIn: WETH,
-            tokenOut: FROST,
-            fee: POOL_FEE,
-            recipient: address,
-            amountIn,
-            amountOutMinimum: amountOutMin,
-            sqrtPriceLimitX96: 0n,
-          }],
+          args: [
+            {
+              tokenIn: WETH,
+              tokenOut: FROST,
+              fee: POOL_FEE,
+              recipient: address,
+              amountIn,
+              amountOutMinimum: amountOutMin,
+              sqrtPriceLimitX96: 0n,
+            },
+          ],
           value: amountIn,
         });
         setTxHash(hash);
@@ -227,15 +283,17 @@ export default function FrostSwapWidget() {
         const swapData = encodeFunctionData({
           abi: ROUTER_ABI,
           functionName: "exactInputSingle",
-          args: [{
-            tokenIn: FROST,
-            tokenOut: WETH,
-            fee: POOL_FEE,
-            recipient: SWAP_ROUTER,
-            amountIn,
-            amountOutMinimum: amountOutMin,
-            sqrtPriceLimitX96: 0n,
-          }],
+          args: [
+            {
+              tokenIn: FROST,
+              tokenOut: WETH,
+              fee: POOL_FEE,
+              recipient: SWAP_ROUTER,
+              amountIn,
+              amountOutMinimum: amountOutMin,
+              sqrtPriceLimitX96: 0n,
+            },
+          ],
         });
         const unwrapData = encodeFunctionData({
           abi: ROUTER_ABI,
@@ -265,18 +323,25 @@ export default function FrostSwapWidget() {
   }, [address, quote, dir, inputVal, allowance, isArbitrum, getWalletClient]);
 
   const fmt = (val: bigint, dec: number, digits = 4) =>
-    parseFloat(formatUnits(val, dec)).toLocaleString("en-US", { maximumFractionDigits: digits });
+    parseFloat(formatUnits(val, dec)).toLocaleString("en-US", {
+      maximumFractionDigits: digits,
+    });
 
   const inputDec = dir === "buy" ? 18 : FROST_TOKEN.decimals;
   const inputBalance = dir === "buy" ? ethBalance : frostBalance;
   const inputSym = dir === "buy" ? "ETH" : "FROST";
   const outputSym = dir === "buy" ? "FROST ❄" : "ETH";
-  const needsApproval = dir === "sell" && inputVal
-    ? parseUnits(inputVal || "0", FROST_TOKEN.decimals) > allowance
-    : false;
+  const needsApproval =
+    dir === "sell" && inputVal
+      ? parseUnits(inputVal || "0", FROST_TOKEN.decimals) > allowance
+      : false;
 
-  const btnDisabled = txStatus === "approving" || txStatus === "swapping" ||
-    !inputVal || parseFloat(inputVal) <= 0 || quoteLoading;
+  const btnDisabled =
+    txStatus === "approving" ||
+    txStatus === "swapping" ||
+    !inputVal ||
+    parseFloat(inputVal) <= 0 ||
+    quoteLoading;
 
   const s = (c: string) => ({ style: c });
 
@@ -286,34 +351,54 @@ export default function FrostSwapWidget() {
       style={{
         background: "rgb(var(--oui-color-base-2))",
         border: "1px solid rgba(var(--oui-color-primary), 0.2)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(60,230,255,0.05)",
+        boxShadow:
+          "0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(60,230,255,0.05)",
       }}
     >
       <div className="flex items-center justify-between">
-        <span className="font-bold text-base" style={{ color: "rgb(var(--oui-color-base-foreground))" }}>
+        <span
+          className="font-bold text-base"
+          style={{ color: "rgb(var(--oui-color-base-foreground))" }}
+        >
           ❄ Swap FROST
         </span>
-        <span className="text-xs px-2 py-1 rounded-full font-medium" style={{
-          background: "rgba(var(--oui-color-primary), 0.12)",
-          color: "rgb(var(--oui-color-primary))",
-        }}>
+        <span
+          className="text-xs px-2 py-1 rounded-full font-medium"
+          style={{
+            background: "rgba(var(--oui-color-primary), 0.12)",
+            color: "rgb(var(--oui-color-primary))",
+          }}
+        >
           Arbitrum · Uniswap V3
         </span>
       </div>
 
-      <div className="flex gap-1 p-1 rounded-xl" style={{ background: "rgb(var(--oui-color-base-3))" }}>
+      <div
+        className="flex gap-1 p-1 rounded-xl"
+        style={{ background: "rgb(var(--oui-color-base-3))" }}
+      >
         {(["buy", "sell"] as Direction[]).map((d) => (
           <button
             key={d}
-            onClick={() => { setDir(d); setInputVal(""); setQuote(null); setTxStatus("idle"); setErrMsg(null); }}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
-            style={dir === d ? {
-              background: "rgb(var(--oui-color-primary))",
-              color: "rgb(var(--oui-color-base-1))",
-            } : {
-              background: "transparent",
-              color: "rgba(var(--oui-color-base-foreground), 0.5)",
+            onClick={() => {
+              setDir(d);
+              setInputVal("");
+              setQuote(null);
+              setTxStatus("idle");
+              setErrMsg(null);
             }}
+            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={
+              dir === d
+                ? {
+                    background: "rgb(var(--oui-color-primary))",
+                    color: "rgb(var(--oui-color-base-1))",
+                  }
+                : {
+                    background: "transparent",
+                    color: "rgba(var(--oui-color-base-foreground), 0.5)",
+                  }
+            }
           >
             {d === "buy" ? "Buy FROST" : "Sell FROST"}
           </button>
@@ -321,7 +406,10 @@ export default function FrostSwapWidget() {
       </div>
 
       <div className="flex flex-col gap-1">
-        <div className="flex justify-between text-xs px-1" style={{ color: "rgba(var(--oui-color-base-foreground), 0.5)" }}>
+        <div
+          className="flex justify-between text-xs px-1"
+          style={{ color: "rgba(var(--oui-color-base-foreground), 0.5)" }}
+        >
           <span>You pay</span>
           {isConnected && (
             <button
@@ -342,7 +430,11 @@ export default function FrostSwapWidget() {
             min="0"
             placeholder="0.0"
             value={inputVal}
-            onChange={(e) => { setInputVal(e.target.value); setTxStatus("idle"); setErrMsg(null); }}
+            onChange={(e) => {
+              setInputVal(e.target.value);
+              setTxStatus("idle");
+              setErrMsg(null);
+            }}
             className="flex-1 bg-transparent outline-none text-lg font-semibold"
             style={{ color: "rgb(var(--oui-color-base-foreground))" }}
           />
@@ -358,18 +450,41 @@ export default function FrostSwapWidget() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center text-lg" style={{ color: "rgba(var(--oui-color-primary), 0.6)" }}>↓</div>
+      <div
+        className="flex items-center justify-center text-lg"
+        style={{ color: "rgba(var(--oui-color-primary), 0.6)" }}
+      >
+        ↓
+      </div>
 
       <div className="flex flex-col gap-1">
-        <div className="text-xs px-1" style={{ color: "rgba(var(--oui-color-base-foreground), 0.5)" }}>
+        <div
+          className="text-xs px-1"
+          style={{ color: "rgba(var(--oui-color-base-foreground), 0.5)" }}
+        >
           You receive (est.)
         </div>
         <div
           className="flex items-center gap-3 p-3 rounded-xl"
           style={{ background: "rgb(var(--oui-color-base-3))" }}
         >
-          <div className="flex-1 text-lg font-semibold" style={{ color: quote ? "rgb(var(--oui-color-primary))" : "rgba(var(--oui-color-base-foreground), 0.3)" }}>
-            {quoteLoading ? "…" : quote ? fmt(quote, dir === "buy" ? FROST_TOKEN.decimals : 18, dir === "buy" ? 2 : 6) : "0.0"}
+          <div
+            className="flex-1 text-lg font-semibold"
+            style={{
+              color: quote
+                ? "rgb(var(--oui-color-primary))"
+                : "rgba(var(--oui-color-base-foreground), 0.3)",
+            }}
+          >
+            {quoteLoading
+              ? "…"
+              : quote
+                ? fmt(
+                    quote,
+                    dir === "buy" ? FROST_TOKEN.decimals : 18,
+                    dir === "buy" ? 2 : 6,
+                  )
+                : "0.0"}
           </div>
           <span
             className="text-sm font-bold px-3 py-1 rounded-lg"
@@ -383,8 +498,11 @@ export default function FrostSwapWidget() {
         </div>
       </div>
 
-      {quote && (
-        <div className="text-xs px-1 flex justify-between" style={{ color: "rgba(var(--oui-color-base-foreground), 0.4)" }}>
+      {quote !== null && (
+        <div
+          className="text-xs px-1 flex justify-between"
+          style={{ color: "rgba(var(--oui-color-base-foreground), 0.4)" }}
+        >
           <span>Slippage: 0.5%</span>
           <span>Uniswap V3 · 1% fee tier</span>
         </div>
@@ -393,7 +511,11 @@ export default function FrostSwapWidget() {
       {errMsg && (
         <div
           className="text-xs p-3 rounded-xl"
-          style={{ background: "rgba(255,80,110,0.1)", color: "rgb(255,130,150)", border: "1px solid rgba(255,80,110,0.2)" }}
+          style={{
+            background: "rgba(255,80,110,0.1)",
+            color: "rgb(255,130,150)",
+            border: "1px solid rgba(255,80,110,0.2)",
+          }}
         >
           {errMsg}
         </div>
@@ -402,7 +524,11 @@ export default function FrostSwapWidget() {
       {txStatus === "success" && txHash && (
         <div
           className="text-xs p-3 rounded-xl flex items-center justify-between"
-          style={{ background: "rgba(60,230,180,0.1)", color: "rgb(60,230,180)", border: "1px solid rgba(60,230,180,0.2)" }}
+          style={{
+            background: "rgba(60,230,180,0.1)",
+            color: "rgb(60,230,180)",
+            border: "1px solid rgba(60,230,180,0.2)",
+          }}
         >
           <span>Swap successful!</span>
           <a
@@ -420,7 +546,10 @@ export default function FrostSwapWidget() {
         <button
           onClick={() => connect()}
           className="w-full py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98]"
-          style={{ background: "rgb(var(--oui-color-primary))", color: "rgb(var(--oui-color-base-1))" }}
+          style={{
+            background: "rgb(var(--oui-color-primary))",
+            color: "rgb(var(--oui-color-base-1))",
+          }}
         >
           Connect Wallet
         </button>
@@ -428,7 +557,11 @@ export default function FrostSwapWidget() {
         <button
           onClick={switchToArbitrum}
           className="w-full py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98]"
-          style={{ background: "rgba(255,200,80,0.15)", color: "rgb(255,200,80)", border: "1px solid rgba(255,200,80,0.3)" }}
+          style={{
+            background: "rgba(255,200,80,0.15)",
+            color: "rgb(255,200,80)",
+            border: "1px solid rgba(255,200,80,0.3)",
+          }}
         >
           Switch to Arbitrum
         </button>
@@ -437,12 +570,18 @@ export default function FrostSwapWidget() {
           onClick={handleSwap}
           disabled={btnDisabled}
           className="w-full py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: "rgb(var(--oui-color-primary))", color: "rgb(var(--oui-color-base-1))" }}
+          style={{
+            background: "rgb(var(--oui-color-primary))",
+            color: "rgb(var(--oui-color-base-1))",
+          }}
         >
-          {txStatus === "approving" ? "Approving…"
-            : txStatus === "swapping" ? "Swapping…"
-            : needsApproval ? `Approve FROST`
-            : `Swap ${inputSym} → ${outputSym}`}
+          {txStatus === "approving"
+            ? "Approving…"
+            : txStatus === "swapping"
+              ? "Swapping…"
+              : needsApproval
+                ? `Approve FROST`
+                : `Swap ${inputSym} → ${outputSym}`}
         </button>
       )}
     </div>
