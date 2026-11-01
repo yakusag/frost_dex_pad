@@ -45,17 +45,28 @@ export default function LaunchIndex() {
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [description, setDescription] = useState("");
+  const [initialBuySol, setInitialBuySol] = useState("");
   const [message, setMessage] = useState("");
   const selectedChain = chains.find((chain) => chain.id === chainId)!;
+  const initialBuyAmount = Number(initialBuySol);
+  const validInitialBuy =
+    Number.isFinite(initialBuyAmount) && initialBuyAmount > 0;
+  const creationFee = validInitialBuy ? initialBuyAmount * 0.145 : 0;
+  const initialTradeFee = validInitialBuy ? initialBuyAmount * 0.045 : 0;
+  const firstBuyTotalFees = creationFee + initialTradeFee;
 
   const previewLaunch = () => {
     if (!name.trim() || !symbol.trim()) {
       setMessage("Enter a token name and ticker to preview your launch.");
       return;
     }
+    if (!validInitialBuy) {
+      setMessage("Enter a valid initial buy amount in SOL to review the fees.");
+      return;
+    }
 
     setMessage(
-      "Launch preview ready. No wallet request or blockchain transaction was created.",
+      "Launch details ready. This preview does not request a wallet or submit a transaction.",
     );
   };
 
@@ -79,9 +90,9 @@ export default function LaunchIndex() {
               Create your token
             </h1>
             <p style={introStyle}>
-              Preview a transparent, bonding-curve launch for Ethereum, Solana,
-              BNB Chain, or Robinhood Chain. No coding is needed to explore the
-              flow.
+              Review the planned Solana bonding-curve launch and its Raydium
+              CPMM graduation destination. Other listed chains are concepts
+              only; live launch transactions are not enabled.
             </p>
           </header>
 
@@ -166,9 +177,9 @@ export default function LaunchIndex() {
               <div style={noticeStyle}>
                 <CircleHelp size={16} style={{ flexShrink: 0 }} />
                 <span>
-                  {selectedChain.name} is available here as a UI preview only.
-                  Live launches require a reviewed contract, wallet
-                  integration, and tested liquidity plan for that chain.
+                  {selectedChain.id === "solana"
+                    ? "Solana tokens are planned to graduate to a Raydium CPMM pool. The migration contract is not implemented or deployed yet."
+                    : `${selectedChain.name} is a visual concept only. The selected Raydium CPMM route applies to Solana; live launches on other chains are not supported.`}
                 </span>
               </div>
 
@@ -215,6 +226,26 @@ export default function LaunchIndex() {
                     />
                   </label>
                   <label
+                    htmlFor="launch-initial-buy"
+                    style={{ gridColumn: "1 / -1" }}
+                  >
+                    <span style={labelStyle}>Creator initial buy (SOL)</span>
+                    <input
+                      id="launch-initial-buy"
+                      inputMode="decimal"
+                      min="0"
+                      onChange={(event) => {
+                        setInitialBuySol(event.target.value);
+                        setMessage("");
+                      }}
+                      placeholder="Enter the planned initial buy"
+                      step="any"
+                      style={inputStyle}
+                      type="number"
+                      value={initialBuySol}
+                    />
+                  </label>
+                  <label
                     htmlFor="launch-token-description"
                     style={{ gridColumn: "1 / -1" }}
                   >
@@ -255,7 +286,7 @@ export default function LaunchIndex() {
                 }}
                 type="button"
               >
-                Preview launch
+                Review launch details
                 <ArrowRight size={15} />
               </button>
               {message && (
@@ -275,24 +306,44 @@ export default function LaunchIndex() {
             <aside style={{ display: "grid", gap: 16 }}>
               <section style={panelStyle}>
                 <h2 style={{ margin: "0 0 15px", fontSize: 15 }}>
-                  Launch principles
+                  Fees and destination
                 </h2>
-                <Rule icon={<Check size={14} />}>
-                  Fixed supply and clear mint permissions
-                </Rule>
-                <Rule icon={<Check size={14} />}>
-                  Public bonding-curve pricing and fees
-                </Rule>
+                <SummaryRow
+                  label="Creation fee"
+                  value={`14.5% · ${creationFee.toFixed(4)} SOL`}
+                />
+                <SummaryRow
+                  label="Initial buy fee"
+                  value={`4.5% · ${initialTradeFee.toFixed(4)} SOL`}
+                />
+                <SummaryRow
+                  label="Initial buy fees total"
+                  value={`19% · ${firstBuyTotalFees.toFixed(4)} SOL`}
+                />
+                <SummaryRow label="Every later buy" value="4.5% · no exemption" />
+                <SummaryRow label="Every sell" value="4.5% · no exemption" />
+                <SummaryRow
+                  label="Graduation DEX"
+                  value={
+                    selectedChain.id === "solana"
+                      ? "Raydium CPMM (planned)"
+                      : "Not selected"
+                  }
+                />
                 <Rule icon={<LockKeyhole size={14} />}>
-                  Show graduation threshold and liquidity destination up front
+                  These are the requested rates. Solana network fees, account
+                  rent, and Raydium pool costs are separate.
                 </Rule>
                 <Rule icon={<ShieldCheck size={14} />}>
-                  Review and test contracts before accepting funds
+                  On-chain fee enforcement and Raydium migration are not
+                  implemented or deployed.
                 </Rule>
                 <p style={finePrintStyle}>
-                  These are proposed launch principles, not final on-chain
-                  parameters. Fees, supply, curve, and migration rules must be
-                  published before real launches are enabled.
+                  For a creator initial buy of{" "}
+                  {validInitialBuy ? initialBuyAmount.toFixed(4) : "0.0000"}{" "}
+                  SOL, the planned 14.5% creation fee and 4.5% buy fee total{" "}
+                  {validInitialBuy ? firstBuyTotalFees.toFixed(4) : "0.0000"}{" "}
+                  SOL. No first-buy exemption is planned.
                 </p>
               </section>
 
@@ -312,7 +363,22 @@ export default function LaunchIndex() {
                 <SummaryRow label="Ticker" value={symbol || "TICKER"} />
                 <SummaryRow label="Network" value={selectedChain.name} />
                 <SummaryRow label="Supply" value="Set by published rules" />
-                <SummaryRow label="Trading" value="Bonding curve (planned)" />
+                <SummaryRow
+                  label="Initial buy"
+                  value={
+                    validInitialBuy
+                      ? `${initialBuyAmount.toFixed(4)} SOL`
+                      : "Not set"
+                  }
+                />
+                <SummaryRow
+                  label="Trading"
+                  value={
+                    selectedChain.id === "solana"
+                      ? "Bonding curve → Raydium CPMM (planned)"
+                      : "Not available on this chain"
+                  }
+                />
                 {description.trim() && (
                   <p
                     style={{
@@ -330,8 +396,8 @@ export default function LaunchIndex() {
               <p style={finePrintStyle}>
                 Preview only. This page does not connect a wallet, upload
                 metadata, create a token, collect funds, or send a transaction.
-                Trading and listings on other DEXs require a separately
-                implemented and verified liquidity migration.
+                The smart contract and Raydium CPMM migration still need to be
+                implemented, reviewed, and deployed before real trading.
               </p>
             </aside>
           </div>
