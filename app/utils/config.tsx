@@ -383,7 +383,7 @@ export const useOrderlyConfig = () => {
       {
         id: "Launch",
         href: "/launch",
-        name: "Launch Token",
+        name: "Launch Your Token",
         isDefault: true,
       },
       { id: "About", href: "/about", name: "Legal" },

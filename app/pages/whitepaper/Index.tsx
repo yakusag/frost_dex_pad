@@ -103,7 +103,8 @@ export default function WhitepaperIndex() {
             </div>
             <p className="oui-text-sm oui-text-base-contrast-54 oui-leading-relaxed oui-mb-3">
               FrostDex is a high-performance, non-custodial perpetuals DEX built on top of
-              <span className="oui-text-base-contrast oui-font-semibold"> FrostDex</span>'s
+              <span className="oui-text-base-contrast oui-font-semibold"> FrostDex</span>
+              &apos;s
               shared infrastructure. By leveraging a unified cross-chain orderbook, FrostDex delivers
               a centralized-exchange-grade trading experience while preserving full self-custody and
               on-chain settlement guarantees.
@@ -281,9 +282,15 @@ export default function WhitepaperIndex() {
                 </div>
                 <Link
                   to="/launch"
-                  className="oui-inline-flex oui-items-center oui-gap-2 oui-px-6 oui-py-3 oui-rounded-xl oui-text-sm oui-font-bold oui-no-underline"
+                  className="oui-inline-flex oui-items-center oui-gap-2 oui-px-6 oui-py-3 oui-rounded-xl oui-text-sm oui-font-bold oui-no-underline oui-whitespace-nowrap"
                   style={{ background: `${CYAN}12`, color: CYAN, border: `1px solid ${CYAN}35` }}>
-                  Open launch preview <ChevronRight size={16} />
+                  <img
+                    src={withBasePath("/logo.webp")}
+                    alt=""
+                    aria-hidden="true"
+                    className="oui-h-7 oui-w-7 oui-object-contain"
+                  />
+                  Launch Your Token <ChevronRight size={16} />
                 </Link>
               </div>
             </div>

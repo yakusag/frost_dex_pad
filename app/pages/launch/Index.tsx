@@ -1,13 +1,16 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Helmet } from "react-helmet-async";
 import {
   ArrowRight,
   Check,
   CircleHelp,
+  ImagePlus,
   LockKeyhole,
   Rocket,
   ShieldCheck,
+  X,
 } from "lucide-react";
+import { withBasePath } from "@/utils/base-path";
 import { generatePageTitle } from "@/utils/utils";
 
 const chains = [
@@ -16,6 +19,8 @@ const chains = [
   { id: "bnb", name: "BNB Chain", ticker: "BNB", mark: "◆" },
   { id: "robinhood", name: "Robinhood Chain", ticker: "RH", mark: "R" },
 ] as const;
+const MAX_TOKEN_IMAGE_SIZE = 5 * 1024 * 1024;
+const TOKEN_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const inputStyle: CSSProperties = {
   width: "100%",
@@ -45,8 +50,13 @@ export default function LaunchIndex() {
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [description, setDescription] = useState("");
+  const [tokenImage, setTokenImage] = useState<File | null>(null);
+  const [tokenImagePreview, setTokenImagePreview] = useState<string | null>(
+    null,
+  );
   const [initialBuySol, setInitialBuySol] = useState("");
   const [message, setMessage] = useState("");
+  const tokenImageInputRef = useRef<HTMLInputElement>(null);
   const selectedChain = chains.find((chain) => chain.id === chainId)!;
   const initialBuyAmount = Number(initialBuySol);
   const validInitialBuy =
@@ -54,6 +64,40 @@ export default function LaunchIndex() {
   const creationFee = validInitialBuy ? initialBuyAmount * 0.145 : 0;
   const initialTradeFee = validInitialBuy ? initialBuyAmount * 0.045 : 0;
   const firstBuyTotalFees = creationFee + initialTradeFee;
+
+  useEffect(() => {
+    if (!tokenImage) {
+      setTokenImagePreview(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(tokenImage);
+    setTokenImagePreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [tokenImage]);
+
+  const selectTokenImage = (file: File | undefined) => {
+    if (!file) return;
+    if (!TOKEN_IMAGE_TYPES.includes(file.type)) {
+      setMessage("Choose a PNG, JPG, or WebP image for your token logo.");
+      if (tokenImageInputRef.current) tokenImageInputRef.current.value = "";
+      return;
+    }
+    if (file.size > MAX_TOKEN_IMAGE_SIZE) {
+      setMessage("Token logo must be 5 MB or smaller.");
+      if (tokenImageInputRef.current) tokenImageInputRef.current.value = "";
+      return;
+    }
+
+    setTokenImage(file);
+    setMessage("");
+  };
+
+  const removeTokenImage = () => {
+    setTokenImage(null);
+    setMessage("");
+    if (tokenImageInputRef.current) tokenImageInputRef.current.value = "";
+  };
 
   const previewLaunch = () => {
     if (!name.trim() || !symbol.trim()) {
@@ -85,7 +129,26 @@ export default function LaunchIndex() {
       >
         <div style={{ maxWidth: 1050, margin: "0 auto" }}>
           <header style={{ marginBottom: 25 }}>
-            <span style={eyebrowStyle}>FROSTDEX LAUNCHPAD</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 14,
+              }}
+            >
+              <img
+                src={withBasePath("/logo.webp")}
+                alt="FrostDex"
+                style={{
+                  width: 68,
+                  height: 68,
+                  objectFit: "contain",
+                  flexShrink: 0,
+                }}
+              />
+              <span style={eyebrowStyle}>FROSTDEX LAUNCHPAD</span>
+            </div>
             <h1 style={{ fontSize: 34, fontWeight: 800, margin: "12px 0 8px" }}>
               Create your token
             </h1>
@@ -225,6 +288,133 @@ export default function LaunchIndex() {
                       value={symbol}
                     />
                   </label>
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <span style={labelStyle}>Token logo (optional)</span>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        padding: 14,
+                        border: "1px dashed rgba(56,224,248,0.28)",
+                        borderRadius: 10,
+                        background: "rgba(255,255,255,0.02)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 64,
+                          height: 64,
+                          display: "grid",
+                          placeItems: "center",
+                          flexShrink: 0,
+                          overflow: "hidden",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          borderRadius: 12,
+                          background: "rgba(255,255,255,0.04)",
+                        }}
+                      >
+                        {tokenImagePreview ? (
+                          <img
+                            src={tokenImagePreview}
+                            alt={`${name.trim() || "Token"} logo preview`}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <ImagePlus
+                            size={23}
+                            aria-hidden="true"
+                            color="rgba(180,190,210,0.55)"
+                          />
+                        )}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <p
+                          style={{
+                            margin: "0 0 5px",
+                            color: "#eaecef",
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {tokenImage?.name || "Add your token image"}
+                        </p>
+                        <p
+                          style={{
+                            margin: "0 0 9px",
+                            color: "rgba(180,190,210,0.52)",
+                            fontSize: 10,
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          PNG, JPG, or WebP · up to 5 MB. Preview only; the
+                          image stays on this device.
+                        </p>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              tokenImageInputRef.current?.click()
+                            }
+                            style={{
+                              padding: 0,
+                              border: 0,
+                              background: "transparent",
+                              color: "#38e0f8",
+                              cursor: "pointer",
+                              fontSize: 11,
+                              fontWeight: 700,
+                            }}
+                          >
+                            {tokenImage ? "Change image" : "Choose image"}
+                          </button>
+                          {tokenImage && (
+                            <button
+                              type="button"
+                              onClick={removeTokenImage}
+                              aria-label="Remove token logo"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 3,
+                                padding: 0,
+                                border: 0,
+                                background: "transparent",
+                                color: "rgba(220,100,100,0.85)",
+                                cursor: "pointer",
+                                fontSize: 11,
+                              }}
+                            >
+                              <X size={13} />
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          ref={tokenImageInputRef}
+                          id="launch-token-image"
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          aria-hidden="true"
+                          tabIndex={-1}
+                          onChange={(event) =>
+                            selectTokenImage(event.currentTarget.files?.[0])
+                          }
+                          style={{ display: "none" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <label
                     htmlFor="launch-initial-buy"
                     style={{ gridColumn: "1 / -1" }}
@@ -358,6 +548,54 @@ export default function LaunchIndex() {
                 >
                   <Rocket size={17} color="#38e0f8" />
                   <h2 style={{ margin: 0, fontSize: 15 }}>Launch preview</h2>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 8,
+                  }}
+                >
+                  {tokenImagePreview ? (
+                    <img
+                      src={tokenImagePreview}
+                      alt={`${name.trim() || "Token"} logo`}
+                      style={{
+                        width: 52,
+                        height: 52,
+                        borderRadius: 12,
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      aria-label="No token logo selected"
+                      style={{
+                        width: 52,
+                        height: 52,
+                        display: "grid",
+                        placeItems: "center",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: 12,
+                        background: "rgba(255,255,255,0.04)",
+                      }}
+                    >
+                      <ImagePlus
+                        size={20}
+                        aria-hidden="true"
+                        color="rgba(180,190,210,0.45)"
+                      />
+                    </div>
+                  )}
+                  <span
+                    style={{
+                      color: "rgba(180,190,210,0.52)",
+                      fontSize: 11,
+                    }}
+                  >
+                    {tokenImage ? "Token logo preview" : "No token logo yet"}
+                  </span>
                 </div>
                 <SummaryRow label="Name" value={name.trim() || "Token name"} />
                 <SummaryRow label="Ticker" value={symbol || "TICKER"} />
